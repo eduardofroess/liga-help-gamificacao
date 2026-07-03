@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Liga Lojas Help! — Ranking (acompanhamento)</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏆</text></svg>">
+<style>
+:root{
+  --bg:#0f1115; --card:#181b22; --card2:#1f232c; --border:#2a2f3a;
+  --text:#eef0f3; --muted:#9aa0a8; --orange:#ff7a1a; --gold:#ffd23f;
+  --success:#22c55e; --warning:#f59e0b; --danger:#ef4444; --blue:#60a5fa; --purple:#a78bfa;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.app{max-width:1000px;margin:0 auto;padding:20px}
+header{margin-bottom:20px}
+header h1{margin:0;font-size:22px}
+header h1 span{color:var(--orange)}
+header .sub{color:var(--muted);font-size:13px;margin-top:4px}
+
+.team-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:22px}
+.tcard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px}
+.tcard .label{font-size:12px;color:var(--muted)}
+.tcard .value{font-size:22px;font-weight:700;margin-top:4px}
+.tcard .value.orange{color:var(--orange)}
+.tcard .value.gold{color:var(--gold)}
+.progress{height:8px;border-radius:6px;background:var(--card2);overflow:hidden;margin-top:10px}
+.progress > div{height:100%;background:linear-gradient(90deg,var(--orange),var(--gold))}
+
+.ranking{display:flex;flex-direction:column;gap:12px;margin-bottom:24px}
+.loja-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:center;position:relative;overflow:hidden}
+.loja-card.rank-1{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
+.loja-card.rank-2{border-color:#c0c5ce}
+.loja-card.rank-3{border-color:#cd7f32}
+.rank-num{font-size:20px;font-weight:800;color:var(--muted);text-align:center}
+.rank-1 .rank-num{color:var(--gold)}
+.rank-2 .rank-num{color:#c0c5ce}
+.rank-3 .rank-num{color:#cd7f32}
+.loja-info .nome{font-weight:700;font-size:15px}
+.loja-info .codigo{color:var(--muted);font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 8px;border-radius:20px;margin-left:8px;font-weight:600}
+.valores{display:flex;gap:16px;margin-top:8px;flex-wrap:wrap}
+.valores .item{font-size:12px;color:var(--muted)}
+.valores .item b{color:var(--text);font-size:13px;display:block}
+.mentor{margin-top:10px;background:var(--card2);border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.5}
+.mentor .princ{font-weight:600;margin-bottom:4px}
+.mentor .ritmo{color:var(--muted)}
+.side-stats{text-align:right;min-width:100px}
+.spark{width:110px;height:30px;color:var(--orange);display:block;margin-left:auto}
+.streak{font-size:11px;color:var(--warning);margin-top:4px}
+.mix-details{margin-top:10px;font-size:12px}
+.mix-details summary{cursor:pointer;color:var(--muted);outline:none;user-select:none}
+.mix-row{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)}
+.mix-row span{color:var(--muted)}
+.mix-row b{white-space:nowrap}
+.mix-row small{color:var(--muted);white-space:nowrap}
+
+.panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:18px}
+.panel h3{margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.faixas-table{width:100%;border-collapse:collapse;font-size:12px}
+.faixas-table td{padding:4px 2px;border-bottom:1px solid var(--border)}
+.faixas-note{font-size:11px;color:var(--muted);margin-top:8px}
+.cons-table{width:100%;border-collapse:collapse;font-size:13px}
+.cons-table th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em;padding:8px 10px;border-bottom:1px solid var(--border)}
+.cons-table td{padding:8px 10px;border-bottom:1px solid var(--border)}
+.cons-table tr.top1{background:rgba(255,210,63,.08)}
+.cons-table tr.top2{background:rgba(192,197,206,.06)}
+.cons-table tr.top3{background:rgba(205,127,50,.06)}
+.cons-table .rank-cell{color:var(--muted);font-weight:700}
+.hist-empty{color:var(--muted);font-size:12px;text-align:center;padding:10px 0}
+
+#confetti-container{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:999}
+.confetti-piece{position:absolute;top:-10px;width:8px;height:14px;opacity:.9;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(105vh) rotate(360deg);opacity:0}}
+footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🏆 Liga Lojas <span>Help!</span> — Ranking</h1>
+    <div class="sub" id="subMes"></div>
+  </header>
+
+  <div class="panel" id="dicaDia" style="margin-bottom:18px"></div>
+
+  <section class="team-summary" id="teamSummary"></section>
+
+  <section class="ranking" id="ranking"></section>
+
+  <div class="panel">
+    <h3>🏅 Ranking Geral de Consultores (CNC)</h3>
+    <div id="rankingConsultores"></div>
+  </div>
+
+  <div class="panel">
+    <h3>📊 Faixas individuais de CNC (referência)</h3>
+    <table class="faixas-table" id="faixasTable"></table>
+    <div class="faixas-note">Valores da Cartilha LIGA (julho/26) para consultores. Referência para orientar o time — o cálculo oficial de premiação é sempre feito pelo BI / Portal LIGA.</div>
+  </div>
+
+  <div class="panel">
+    <h3>✅ Elegibilidade ao prêmio (além do CNC)</h3>
+    <div class="faixas-note" style="margin-top:0">Exceto Consultor Novo. Sem isso, o consultor pode bater a meta de CNC e ainda assim não receber:</div>
+    <ul style="margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.7;color:var(--text)">
+      <li>Certificação <b>teddi</b>: Trilha Obrigatória + Trilha Soluções e Sistemas help!</li>
+      <li><b>Cartões:</b> mínimo 2 emitidos (3+ pra não ter desconto no prêmio)</li>
+      <li><b>Seguros independentes:</b> mínimo 2 formalizações (3+ pra não ter desconto)</li>
+      <li><b>Super Conta:</b> mínimo 4 contratos (exceto lojas PDV)</li>
+      <li><b>Reclamações:</b> 0 no mês (1 já tira 10% do prêmio, 2+ tiram 20%)</li>
+    </ul>
+  </div>
+
+  <footer>Painel de acompanhamento — só leitura. A alimentação dos dados é feita pela gestão a partir do Portal LIGA / BI.</footer>
+</div>
+<div id="confetti-container"></div>
+
+<script>
+const STORAGE_KEY = 'ligaHelpGamificacao_v1';
+const LOJAS_SEED = [
+  {codigo:'53631', nome:'São Luís - São Francisco'},
+  {codigo:'54123', nome:'Imperatriz - Centro'},
+  {codigo:'54245', nome:'Açailândia - Centro'},
+  {codigo:'54275', nome:'Pinheiro - Centro'},
+  {codigo:'54412', nome:'Grajaú - Centro'},
+  {codigo:'55237', nome:'Codó - Centro'},
+  {codigo:'56097', nome:'São Luís - Anjo da Guarda'},
+  {codigo:'57035', nome:'Imperatriz - Bernardo Sayão'},
+  {codigo:'57036', nome:'Balsas - Centro'},
+  {codigo:'57037', nome:'Barra do Corda - Centro'},
+];
+const HISTORICO_SEED = [
+  {codigo:'53631', data:'2026-07-02', valores:{CNC:{atual:15620.19,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:15620.19,meta:49348.56}}},
+  {codigo:'54123', data:'2026-07-02', valores:{CNC:{atual:10383.33,meta:59285.2}, CartaoBeneficio:{atual:0,meta:0.8}, BmgCard:{atual:0,meta:0.8}, FGTS:{atual:0,meta:0.8}, CPparaTodos:{atual:0,meta:0.8}, Antecipacao:{atual:0,meta:7000.64}, ConsigPrivado:{atual:0,meta:8758.64}, EmprestimoConsignado:{atual:0,meta:23649.44}, ProducaoMix:{atual:10383.33,meta:98697.12}}},
+  {codigo:'54245', data:'2026-07-02', valores:{CNC:{atual:3660.56,meta:59285.2}, CartaoBeneficio:{atual:0,meta:0.8}, BmgCard:{atual:0,meta:0.8}, FGTS:{atual:0,meta:0.8}, CPparaTodos:{atual:0,meta:0.8}, Antecipacao:{atual:0,meta:7000.64}, ConsigPrivado:{atual:0,meta:8758.64}, EmprestimoConsignado:{atual:0,meta:23649.44}, ProducaoMix:{atual:3660.56,meta:98697.12}}},
+  {codigo:'54275', data:'2026-07-02', valores:{CNC:{atual:2181.49,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:2181.49,meta:49348.56}}},
+  {codigo:'54412', data:'2026-07-02', valores:{CNC:{atual:2425.73,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:2425.73,meta:49348.56}}},
+  {codigo:'55237', data:'2026-07-02', valores:{CNC:{atual:3319.12,meta:59285.2}, CartaoBeneficio:{atual:0,meta:0.8}, BmgCard:{atual:0,meta:0.8}, FGTS:{atual:0,meta:0.8}, CPparaTodos:{atual:0,meta:0.8}, Antecipacao:{atual:0,meta:7000.64}, ConsigPrivado:{atual:0,meta:8758.64}, EmprestimoConsignado:{atual:0,meta:23649.44}, ProducaoMix:{atual:3319.12,meta:98697.12}}},
+  {codigo:'56097', data:'2026-07-02', valores:{CNC:{atual:4925.25,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:3501.55,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:8426.8,meta:49348.56}}},
+  {codigo:'57035', data:'2026-07-02', valores:{CNC:{atual:7603.26,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:7603.26,meta:49348.56}}},
+  {codigo:'57036', data:'2026-07-02', valores:{CNC:{atual:4188.74,meta:59285.2}, CartaoBeneficio:{atual:0,meta:0.8}, BmgCard:{atual:0,meta:0.8}, FGTS:{atual:1300.83,meta:0.8}, CPparaTodos:{atual:0,meta:0.8}, Antecipacao:{atual:0,meta:7000.64}, ConsigPrivado:{atual:0,meta:8758.64}, EmprestimoConsignado:{atual:0,meta:23649.44}, ProducaoMix:{atual:5489.57,meta:98697.12}}},
+  {codigo:'57037', data:'2026-07-02', valores:{CNC:{atual:2411.96,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:3548.88,meta:11824.72}, ProducaoMix:{atual:5960.84,meta:49348.56}}},
+];
+const CONSULTOR_LOJA_SEED = {
+  'ROSEANE ARAUJO DE LIMA':'53631', 'LINDAMIRES SILVA DOS SANTOS':'53631', 'GABRIELLA FERNANDA DE LIMA SANTOS':'53631',
+  'JULIA GRACIELA LIRA OLIVEIRA':'54123', 'GEOVANA CAMELO CARDOSO':'54123',
+  'STEPHANI CRISTINY COSTA SILVA':'54245', 'MARIA HELOISA DIAS FAGUNDES':'54245',
+  'GRACIONE DE JESUS VIEGAS CORREA':'54275', 'THAYANA DOS SANTOS SOARES':'54275',
+  'GIANNA SALES FARIA':'54412', 'HUDSON BINHO LIMA DE SOUSA':'54412',
+  'LUZIA DA CRUZ OLIVEIRA SILVA':'55237', 'ALDEANE SOUSA DA SILVA':'55237',
+  'GIRLENE ANDRESSA PINTO RODRIGUES':'56097',
+  'MARILIA PAULA SILVA':'57035',
+  'BARBARA MORAES DE BRITO ROCHA':'57036', 'DANIELA COELHO DE SOUSA CARVALHO':'57036',
+  'FRANCISCO MARCOS DE ASSUNCAO DE LUCENA':'57037', 'ANA CLARA FERREIRA DOS SANTOS':'57037',
+};
+const HISTORICO_CONSULTOR_SEED = [
+  {nome:'THAYANA DOS SANTOS SOARES', data:'2026-07-02', valores:{CNC:{atual:2181.49,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:2181.49,meta:49348.56}}},
+  {nome:'STEPHANI CRISTINY COSTA SILVA', data:'2026-07-02', valores:{CNC:{atual:1410.01,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:1410.01,meta:49348.56}}},
+  {nome:'MARILIA PAULA SILVA', data:'2026-07-02', valores:{CNC:{atual:7603.26,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:7603.26,meta:49348.56}}},
+  {nome:'MARIA HELOISA DIAS FAGUNDES', data:'2026-07-02', valores:{CNC:{atual:2250.55,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:2250.55,meta:49348.56}}},
+  {nome:'LUZIA DA CRUZ OLIVEIRA SILVA', data:'2026-07-02', valores:{CNC:{atual:864.68,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:864.68,meta:49348.56}}},
+  {nome:'LINDAMIRES SILVA DOS SANTOS', data:'2026-07-02', valores:{CNC:{atual:15620.19,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:15620.19,meta:49348.56}}},
+  {nome:'JULIA GRACIELA LIRA OLIVEIRA', data:'2026-07-02', valores:{CNC:{atual:4415.05,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:4415.05,meta:49348.56}}},
+  {nome:'HUDSON BINHO LIMA DE SOUSA', data:'2026-07-02', valores:{CNC:{atual:2425.73,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:2425.73,meta:49348.56}}},
+  {nome:'GIRLENE ANDRESSA PINTO RODRIGUES', data:'2026-07-02', valores:{CNC:{atual:4925.25,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:3501.55,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:8426.8,meta:49348.56}}},
+  {nome:'GEOVANA CAMELO CARDOSO', data:'2026-07-02', valores:{CNC:{atual:5968.28,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:5968.28,meta:49348.56}}},
+  {nome:'DANIELA COELHO DE SOUSA CARVALHO', data:'2026-07-02', valores:{CNC:{atual:2718.05,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:2718.05,meta:49348.56}}},
+  {nome:'BARBARA MORAES DE BRITO ROCHA', data:'2026-07-02', valores:{CNC:{atual:1470.69,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:1300.83,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:2771.52,meta:49348.56}}},
+  {nome:'ANA CLARA FERREIRA DOS SANTOS', data:'2026-07-02', valores:{CNC:{atual:2411.96,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:3548.88,meta:11824.72}, ProducaoMix:{atual:5960.84,meta:49348.56}}},
+  {nome:'ALDEANE SOUSA DA SILVA', data:'2026-07-02', valores:{CNC:{atual:2454.44,meta:29642.6}, CartaoBeneficio:{atual:0,meta:0.4}, BmgCard:{atual:0,meta:0.4}, FGTS:{atual:0,meta:0.4}, CPparaTodos:{atual:0,meta:0.4}, Antecipacao:{atual:0,meta:3500.32}, ConsigPrivado:{atual:0,meta:4379.32}, EmprestimoConsignado:{atual:0,meta:11824.72}, ProducaoMix:{atual:2454.44,meta:49348.56}}},
+];
+const PRODUCT_KEYS_ALL = ['CNC','CartaoBeneficio','BmgCard','FGTS','CPparaTodos','Antecipacao','ConsigPrivado','EmprestimoConsignado','ProducaoMix'];
+const PRODUCT_LABELS = {
+  CNC:'CNC', CartaoBeneficio:'Cartão Benefício', BmgCard:'Bmg Card', FGTS:'FGTS',
+  CPparaTodos:'CP pra Todos', Antecipacao:'Antecipação', ConsigPrivado:'Consig. Privado',
+  EmprestimoConsignado:'Empréstimo Consignado', ProducaoMix:'Produção Mix (total)',
+};
+const COUNT_META_PRODUCTS = new Set(['CartaoBeneficio','BmgCard','FGTS','CPparaTodos']);
+const FAIXAS_CNC = [
+  {v:15000,p:0.30},{v:30000,p:0.60},{v:35000,p:0.90},{v:40000,p:1.20},
+  {v:45000,p:1.50},{v:50000,p:1.80},{v:55000,p:2.10},{v:60000,p:2.40},
+  {v:65000,p:2.70},{v:75000,p:3.00},{v:85000,p:4.00},{v:100000,p:5.00},
+];
+const TIPS = {
+  1:'🚀 Início de mês, foco total! Priorize CNC pros clientes ativos que ainda não digitaram — cada contrato já acelera a faixa. E lembre: Super Conta vale +20% pro atingimento das faixas de CNC.',
+  2:'🔥 Já saiu do zero! Aproveite os mesmos clientes de CNC pra ofertar Cartão Benefício e FGTS e girar o mix sem gastar leads novos.',
+  3:'💪 Passou da metade! Mantenha o ritmo diário e fique de olho nas liquidações antecipadas — elas descontam da produção do mês.',
+  4:'🎯 Reta final pra bater a meta! Confira se o time já tem os mínimos pra receber o prêmio: teddi em dia, 2+ cartões, 2+ seguros independentes e 4+ contratos Super Conta.',
+  5:'🏆 Meta batida! Agora é hora de subir de faixa — cada R$ 5 mil a mais aumenta o % de prêmio da loja. Puxe Super Conta junto: ela vale +20% pro atingimento da faixa.',
+  6:'👑 Loja referência do mês! Compartilhe o que está funcionando por aí com as outras lojas do grupo.',
+};
+const DICAS_LIGA = [
+  '💡 A produção de Super Conta vale +20% para o atingimento das faixas de CNC — ofereça Super Conta junto com o CNC pra subir de faixa mais rápido.',
+  '💡 Pra receber o prêmio, além do CNC o consultor precisa de: certificação teddi em dia, mínimo 2 cartões emitidos, mínimo 2 seguros independentes e 4 contratos de Super Conta no mês (exceto lojas PDV).',
+  '💡 Zero reclamações = 0% de desconto no prêmio final. 1 reclamação já tira 10%, 2 ou mais tiram 20%. Reforce o pós-venda pra evitar cancelamentos.',
+  '💡 Emitir só 0 ou 1 cartão no mês deixa o consultor inelegível ao prêmio de cartões — a meta segura é 3 ou mais cartões emitidos.',
+  '💡 Contratos de CNC e Cartões liquidados em até 90 dias são descontados da produção — reforce com o cliente a importância de manter o contrato ativo.',
+  '💡 A Meta MIX (CNC + Cartões + Consignado + Antecipação + Consignado Privado) é o que conta pro bônus extra de supervisores e coordenadores — vale reforçar produtos além do CNC.',
+  '💡 Clientes cadastrados no "Não Me Perturbe" NÃO afetam a produção de CNC — pode ofertar CNC sem restrição pra essa base.',
+  '💡 Recuperar dívida de CNC (Recuperação CNC) rende 1% de prêmio sobre o valor recuperado — vale revisar a carteira de inadimplentes.',
+  '💡 Contratos Novos de CNC (Super Conta) valem pontos extras: 20 pontos entre 11 e 15 contratos, 30 entre 16 e 24, 40 acima de 25.',
+  '💡 3 ou mais seguros independentes (Bmg Med / Vida Familiar) dão 0% de desconto no prêmio final — com só 2 já cai 10%, e com 0 ou 1 o consultor fica inelegível.',
+];
+
+function loadState(){
+  return {
+    metaPorMes:{}, lojas:LOJAS_SEED.map(l=>({...l})), historico:HISTORICO_SEED.map(h=>({...h})),
+    consultorLoja:{...CONSULTOR_LOJA_SEED}, historicoConsultor:HISTORICO_CONSULTOR_SEED.map(h=>({...h})),
+  };
+}
+let state = loadState();
+
+function MES(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function diasNoMes(mes){ const [y,m]=mes.split('-').map(Number); return new Date(y,m,0).getDate(); }
+function diaDoMes(){ return new Date().getDate(); }
+function diasRestantes(mes){ if(mes!==MES()) return 0; return Math.max(diasNoMes(mes)-diaDoMes(),0); }
+function getMeta(mes){ return state.metaPorMes[mes] || 60000; }
+function fmtBRL(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function fmtPct(v){ return (v||0).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%'; }
+
+function normalizeEntry(h){
+  if(h.valores) return h;
+  return {codigo:h.codigo, data:h.data, valores:{CNC:{atual:h.valor||0, meta:0}}};
+}
+function entriesFor(codigo,mes){
+  return state.historico.filter(h=>h.codigo===codigo && h.data.startsWith(mes)).map(normalizeEntry).sort((a,b)=>a.data.localeCompare(b.data));
+}
+function valorProduto(codigo,mes,produto){
+  const es = entriesFor(codigo,mes);
+  for(let i=es.length-1;i>=0;i--){ if(es[i].valores[produto]) return es[i].valores[produto]; }
+  return {atual:0, meta:0};
+}
+function valorAtual(codigo,mes){ return valorProduto(codigo,mes,'CNC').atual; }
+
+function entriesForConsultor(nome,mes){
+  return state.historicoConsultor.filter(h=>h.nome===nome && h.data.startsWith(mes)).sort((a,b)=>a.data.localeCompare(b.data));
+}
+function valorProdutoConsultor(nome,mes,produto){
+  const es = entriesForConsultor(nome,mes);
+  for(let i=es.length-1;i>=0;i--){ if(es[i].valores[produto]) return es[i].valores[produto]; }
+  return {atual:0, meta:0};
+}
+
+function streak(codigo){
+  const uniqueDates = [...new Set(state.historico.filter(h=>h.codigo===codigo).map(h=>h.data))].sort().reverse();
+  if(!uniqueDates.length) return 0;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const last = new Date(uniqueDates[0]+'T00:00:00');
+  if(Math.round((today-last)/86400000) > 1) return 0;
+  let count=1;
+  for(let i=1;i<uniqueDates.length;i++){
+    const cur=new Date(uniqueDates[i-1]+'T00:00:00'), prev=new Date(uniqueDates[i]+'T00:00:00');
+    if(Math.round((cur-prev)/86400000)===1) count++; else break;
+  }
+  return count;
+}
+
+function nivel(pct){
+  if(pct>=150) return {n:6,label:'Lenda da Praça',emoji:'👑',color:'var(--gold)'};
+  if(pct>=100) return {n:5,label:'Meta Batida',emoji:'🏆',color:'var(--success)'};
+  if(pct>=75)  return {n:4,label:'Quase Lá',emoji:'🎯',color:'var(--blue)'};
+  if(pct>=50)  return {n:3,label:'Embalado',emoji:'💪',color:'var(--purple)'};
+  if(pct>=25)  return {n:2,label:'Aquecendo',emoji:'🔥',color:'var(--warning)'};
+  return {n:1,label:'Largada',emoji:'🚀',color:'var(--muted)'};
+}
+
+function mentorTip(codigo,mes){
+  const meta=getMeta(mes), atual=valorAtual(codigo,mes);
+  const pct = meta? atual/meta*100:0;
+  const dRest=diasRestantes(mes), dPassed=diaDoMes();
+  const mediaDia = dPassed? atual/dPassed:0;
+  const falta = Math.max(meta-atual,0);
+  const necessarioDia = dRest>0? falta/dRest : (falta>0? Infinity:0);
+  const lvl = nivel(pct);
+  let ritmo;
+  if(pct>=100){
+    ritmo = `Excedente de ${fmtBRL(atual-meta)} sobre a meta. Continue vendendo pra subir de faixa!`;
+  } else if(dRest<=0){
+    ritmo = `⏰ Mês fechando! Faltam ${fmtBRL(falta)} pra bater a meta — corra atrás das propostas em análise.`;
+  } else if(mediaDia >= necessarioDia){
+    ritmo = `✅ No ritmo certo: média de ${fmtBRL(mediaDia)}/dia. Mantendo esse ritmo a meta é batida antes do fim do mês.`;
+  } else if(necessarioDia === Infinity){
+    ritmo = `⚠️ Ainda sem produção e restam ${dRest} dia(s). Bora começar a girar hoje.`;
+  } else {
+    ritmo = `⚠️ Faltam ${fmtBRL(falta)} em ${dRest} dia(s) → precisa vender ${fmtBRL(necessarioDia)}/dia (média atual: ${fmtBRL(mediaDia)}/dia).`;
+  }
+  return {principal:TIPS[lvl.n], ritmo, lvl, pct};
+}
+
+function sparklineSVG(codigo,mes){
+  const es=entriesFor(codigo,mes).filter(e=>e.valores.CNC);
+  if(es.length<2) return '';
+  const vals=es.map(e=>e.valores.CNC.atual);
+  const max=Math.max(...vals,1), min=Math.min(...vals,0);
+  const w=110,h=30;
+  const pts=vals.map((v,i)=>{
+    const x=(i/(vals.length-1))*w;
+    const y=h-((v-min)/((max-min)||1))*h;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  }).join(' ');
+  return `<svg viewBox="0 0 ${w} ${h}" class="spark"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
+}
+
+function render(){
+  const mes = MES();
+  document.getElementById('subMes').textContent =
+    'Apuração de ' + new Date(mes+'-02').toLocaleDateString('pt-BR',{month:'long',year:'numeric'}) +
+    ' • dia ' + diaDoMes() + ' de ' + diasNoMes(mes) + ' • ' + diasRestantes(mes) + ' dia(s) restante(s)';
+
+  const diaAno = Math.floor((new Date() - new Date(new Date().getFullYear(),0,0)) / 86400000);
+  document.getElementById('dicaDia').innerHTML =
+    `<h3 style="margin-bottom:6px">📖 Dica da LIGA de hoje</h3><div style="font-size:13.5px;line-height:1.5">${DICAS_LIGA[diaAno % DICAS_LIGA.length]}</div>`;
+
+  const meta = getMeta(mes);
+  const lojas = state.lojas.map(l=>{
+    const atual = valorAtual(l.codigo,mes);
+    return {...l, atual, pct: meta? atual/meta*100:0};
+  }).sort((a,b)=>b.atual-a.atual);
+
+  const totalMeta = meta*state.lojas.length;
+  const totalAtual = lojas.reduce((s,l)=>s+l.atual,0);
+  const pctColetivo = totalMeta? totalAtual/totalMeta*100:0;
+  const dRest = diasRestantes(mes);
+  const faltaColetivo = Math.max(totalMeta-totalAtual,0);
+  const ritmoColetivo = dRest>0? faltaColetivo/dRest : 0;
+  const lojasNaMeta = lojas.filter(l=>l.pct>=100).length;
+
+  document.getElementById('teamSummary').innerHTML = `
+    <div class="tcard"><div class="label">Meta coletiva (10 lojas)</div><div class="value">${fmtBRL(totalMeta)}</div></div>
+    <div class="tcard"><div class="label">CNC acumulado no mês</div><div class="value orange">${fmtBRL(totalAtual)}</div>
+      <div class="progress"><div style="width:${Math.min(pctColetivo,100)}%"></div></div></div>
+    <div class="tcard"><div class="label">% da meta coletiva</div><div class="value gold">${fmtPct(pctColetivo)}</div></div>
+    <div class="tcard"><div class="label">Lojas com meta batida</div><div class="value">${lojasNaMeta} / ${state.lojas.length}</div></div>
+    <div class="tcard"><div class="label">Ritmo necessário (equipe)</div><div class="value">${dRest>0? fmtBRL(ritmoColetivo)+'/dia':'—'}</div></div>
+  `;
+
+  document.getElementById('ranking').innerHTML = lojas.map((l,i)=>{
+    const rank=i+1;
+    const {principal,ritmo,lvl,pct} = mentorTip(l.codigo,mes);
+    const st = streak(l.codigo);
+    const outros = PRODUCT_KEYS_ALL.filter(k=>k!=='CNC').map(k=>{
+      const v = valorProduto(l.codigo, mes, k);
+      const pctP = v.meta? v.atual/v.meta*100 : null;
+      const contagem = COUNT_META_PRODUCTS.has(k);
+      const metaTxt = !v.meta ? 'sem meta importada' : contagem ? `mín. ${v.meta.toLocaleString('pt-BR',{maximumFractionDigits:1})} contrato(s)` : 'meta '+fmtBRL(v.meta)+' • '+fmtPct(pctP);
+      return `<div class="mix-row"><span>${PRODUCT_LABELS[k]}</span><b>${fmtBRL(v.atual)}</b><small>${metaTxt}</small></div>`;
+    }).join('');
+    return `<div class="loja-card rank-${rank<=3?rank:'x'}">
+      <div class="rank-num">${rank}</div>
+      <div class="loja-info">
+        <div class="nome">${l.nome} <span class="badge" style="background:${lvl.color}22;color:${lvl.color}">${lvl.emoji} ${lvl.label}</span></div>
+        <div class="codigo">Loja ${l.codigo}</div>
+        <div class="valores">
+          <div class="item">CNC atual<b>${fmtBRL(l.atual)}</b></div>
+          <div class="item">Meta<b>${fmtBRL(meta)}</b></div>
+          <div class="item">% atingido<b>${fmtPct(pct)}</b></div>
+        </div>
+        <div class="progress"><div style="width:${Math.min(pct,100)}%"></div></div>
+        <div class="mentor"><div class="princ">${principal}</div><div class="ritmo">${ritmo}</div></div>
+        ${st>0?`<div class="streak">🔥 ${st} dia(s) seguidos alimentando dados</div>`:''}
+        <details class="mix-details"><summary>Ver mix completo (todos os produtos)</summary>${outros}</details>
+      </div>
+      <div class="side-stats">${sparklineSVG(l.codigo,mes)}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('faixasTable').innerHTML = FAIXAS_CNC.map(f=>
+    `<tr><td>${fmtBRL(f.v)}</td><td style="text-align:right;color:var(--orange)">${f.p.toLocaleString('pt-BR',{minimumFractionDigits:2})}%</td></tr>`
+  ).join('');
+
+  const consultores = Object.keys(state.consultorLoja).map(nome=>{
+    const cnc = valorProdutoConsultor(nome, mes, 'CNC');
+    const loja = state.lojas.find(l=>l.codigo===state.consultorLoja[nome]);
+    const pctC = cnc.meta? cnc.atual/cnc.meta*100 : 0;
+    return {nome, lojaNome: loja? loja.nome : 'loja não identificada', atual:cnc.atual, meta:cnc.meta, pct:pctC};
+  }).sort((a,b)=>b.atual-a.atual);
+
+  document.getElementById('rankingConsultores').innerHTML = !consultores.length
+    ? '<div class="hist-empty">Nenhum consultor cadastrado ainda.</div>'
+    : `<table class="cons-table">
+        <thead><tr><th>#</th><th>Consultor</th><th>Loja</th><th>CNC atual</th><th>Meta individual</th><th>% atingido</th></tr></thead>
+        <tbody>
+        ${consultores.map((c,i)=>{
+          const lvl = nivel(c.pct);
+          const medalha = i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':'';
+          return `<tr class="${i<3?'top'+(i+1):''}">
+            <td class="rank-cell">${i+1}</td>
+            <td>${c.nome}${medalha}</td>
+            <td>${c.lojaNome}</td>
+            <td>${fmtBRL(c.atual)}</td>
+            <td>${c.meta? fmtBRL(c.meta) : '—'}</td>
+            <td><span class="badge" style="background:${lvl.color}22;color:${lvl.color}">${lvl.emoji} ${fmtPct(c.pct)}</span></td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>`;
+}
+
+render();
+</script>
+</body>
+</html>
