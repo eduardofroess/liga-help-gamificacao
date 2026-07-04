@@ -176,6 +176,12 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
     <div id="rankingConsultores"></div>
   </div>
 
+  <div class="panel">
+    <h3>🛡️ Ranking de Seguros (individual)</h3>
+    <div class="faixas-note" style="margin-top:0">Prêmio: R$ 6,00 por seguro vendido + R$ 50,00 de bônus para o 1º lugar. Elegibilidade: mínimo de 15 seguros vendidos no mês.</div>
+    <div id="rankingSeguros" style="margin-top:10px"></div>
+  </div>
+
   <footer>Dados de produção alimentados manualmente a partir do Portal LIGA / BI. Uso interno para acompanhamento e motivação do time.</footer>
 </div>
 <div id="confetti-container"></div>
@@ -242,6 +248,13 @@ const PRODUCT_LABELS = {
   EmprestimoConsignado:'Empréstimo Consignado', ProducaoMix:'Produção Mix (total)',
 };
 const COUNT_META_PRODUCTS = new Set(['CartaoBeneficio','BmgCard','FGTS','CPparaTodos']);
+const SEGUROS_CONSULTOR_SEED = [
+  {nome:'GIRLENE ANDRESSA PINTO RODRIGUES', data:'2026-07-03', qtd:4},
+  {nome:'LINDAMIRES SILVA DOS SANTOS', data:'2026-07-03', qtd:1},
+];
+const PREMIO_SEGURO_UNITARIO = 6.00;
+const PREMIO_SEGURO_PRIMEIRO = 50.00;
+const MIN_SEGUROS_ELEGIVEL = 15;
 const FAIXAS_CNC = [
   {v:15000,p:0.30},{v:30000,p:0.60},{v:35000,p:0.90},{v:40000,p:1.20},
   {v:45000,p:1.50},{v:50000,p:1.80},{v:55000,p:2.10},{v:60000,p:2.40},
@@ -275,12 +288,14 @@ function loadState(){
       const parsed = JSON.parse(raw);
       if(!parsed.consultorLoja) parsed.consultorLoja = {...CONSULTOR_LOJA_SEED};
       if(!parsed.historicoConsultor) parsed.historicoConsultor = HISTORICO_CONSULTOR_SEED.map(h=>({...h}));
+      if(!parsed.segurosConsultor) parsed.segurosConsultor = SEGUROS_CONSULTOR_SEED.map(h=>({...h}));
       return parsed;
     }catch(e){}
   }
   return {
     metaPorMes:{}, lojas:LOJAS_SEED.map(l=>({...l})), historico:HISTORICO_SEED.map(h=>({...h})),
     consultorLoja:{...CONSULTOR_LOJA_SEED}, historicoConsultor:HISTORICO_CONSULTOR_SEED.map(h=>({...h})),
+    segurosConsultor:SEGUROS_CONSULTOR_SEED.map(h=>({...h})),
   };
 }
 let state = loadState();
@@ -317,6 +332,11 @@ function valorProdutoConsultor(nome,mes,produto){
   const es = entriesForConsultor(nome,mes);
   for(let i=es.length-1;i>=0;i--){ if(es[i].valores[produto]) return es[i].valores[produto]; }
   return {atual:0, meta:0};
+}
+
+function qtdSegurosAtual(nome,mes){
+  const es = state.segurosConsultor.filter(h=>h.nome===nome && h.data.startsWith(mes)).sort((a,b)=>a.data.localeCompare(b.data));
+  return es.length? es[es.length-1].qtd : 0;
 }
 
 function streak(codigo){
@@ -495,6 +515,36 @@ function render(){
         </tbody>
       </table>`;
 
+  const seguros = Object.keys(state.consultorLoja).map(nome=>{
+    const qtd = qtdSegurosAtual(nome, mes);
+    const loja = state.lojas.find(l=>l.codigo===state.consultorLoja[nome]);
+    return {nome, lojaNome: loja? loja.nome : 'loja não identificada', qtd};
+  }).sort((a,b)=>b.qtd-a.qtd);
+
+  document.getElementById('rankingSeguros').innerHTML = !seguros.length
+    ? '<div class="hist-empty">Nenhum consultor cadastrado ainda.</div>'
+    : `<table class="cons-table">
+        <thead><tr><th>#</th><th>Consultor</th><th>Loja</th><th>Qtd. Seguros</th><th>Elegibilidade</th><th>Prêmio</th></tr></thead>
+        <tbody>
+        ${seguros.map((c,i)=>{
+          const medalha = i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':'';
+          const elegivel = c.qtd >= MIN_SEGUROS_ELEGIVEL;
+          const premio = elegivel ? c.qtd*PREMIO_SEGURO_UNITARIO + (i===0? PREMIO_SEGURO_PRIMEIRO : 0) : 0;
+          const elegTxt = elegivel
+            ? `<span class="badge" style="background:var(--success)22;color:var(--success)">✅ Elegível</span>`
+            : `<span class="badge" style="background:var(--danger)22;color:var(--danger)">Faltam ${MIN_SEGUROS_ELEGIVEL - c.qtd}</span>`;
+          return `<tr class="${i<3?'top'+(i+1):''}">
+            <td class="rank-cell">${i+1}</td>
+            <td>${c.nome}${medalha}</td>
+            <td>${c.lojaNome}</td>
+            <td>${c.qtd}</td>
+            <td>${elegTxt}</td>
+            <td>${elegivel? fmtBRL(premio) : '—'}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>`;
+
   const hist = state.historico.filter(h=>h.data.startsWith(mes)).sort((a,b)=>b.data.localeCompare(a.data));
   const historyLog = document.getElementById('historyLog');
   if(!hist.length){
@@ -548,11 +598,29 @@ document.getElementById('btnSalvar').onclick = ()=>{
 
 function detectHeaderRow(aoa){
   for(let i=0;i<Math.min(aoa.length,5);i++){
-    const c0 = String((aoa[i]&&aoa[i][0])||'').trim();
+    const row = aoa[i]||[];
+    const c0 = String(row[0]||'').trim();
+    if(row.some(c=>String(c||'').trim()==='Qtd Seguro')) return {type:'seguros', row:i};
     if(c0==='Franquia') return {type:'franquia', row:i};
     if(c0==='Consultor') return {type:'consultor', row:i};
   }
   return null;
+}
+function parseSegurosRows(aoa, headerRow){
+  const header = (aoa[headerRow]||[]).map(h=>String(h||'').trim());
+  const idxConsultor = header.indexOf('Consultor');
+  const idxFranquia = header.indexOf('Franquia');
+  const idxQtdSeguro = header.indexOf('Qtd Seguro');
+  const rows = [];
+  for(let r=headerRow+1; r<aoa.length; r++){
+    const row = aoa[r] || [];
+    const nome = String(row[idxConsultor]||'').trim();
+    if(!nome || nome==='Total' || nome.startsWith('Filtros')) continue;
+    const franquiaLabel = String(row[idxFranquia]||'').trim();
+    const m = franquiaLabel.match(/^(\d+)/);
+    rows.push({nome, codigo: m? m[1] : null, qtd: Number(row[idxQtdSeguro])||0});
+  }
+  return rows;
 }
 function parseValores(row){
   const valores = {};
@@ -605,7 +673,7 @@ document.getElementById('xlsxFile').onchange = (e)=>{
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const aoa = XLSX.utils.sheet_to_json(sheet, {header:1, defval:0});
       const head = detectHeaderRow(aoa);
-      if(!head){ alert('Não encontrei o cabeçalho "Franquia" ou "Consultor" nessa planilha.'); e.target.value=''; return; }
+      if(!head){ alert('Não reconheço o formato dessa planilha (esperava cabeçalho "Franquia", "Consultor" ou uma coluna "Qtd Seguro").'); e.target.value=''; return; }
 
       if(head.type==='franquia'){
         const parsed = parseFranquiaRows(aoa, head.row);
@@ -623,6 +691,18 @@ document.getElementById('xlsxFile').onchange = (e)=>{
         saveState();
         if(bateuMeta) confetti();
         alert(`Importado! ${parsed.length} loja(s) atualizada(s) para ${data.split('-').reverse().join('/')}.${novas? ' ('+novas+' loja(s) nova(s) cadastrada(s))':''}`);
+      } else if(head.type==='seguros'){
+        const parsed = parseSegurosRows(aoa, head.row);
+        if(!parsed.length){ alert('Não encontrei nenhum consultor nessa planilha.'); e.target.value=''; return; }
+        parsed.forEach(p=>{
+          const idxS = state.segurosConsultor.findIndex(h=>h.nome===p.nome && h.data===data);
+          if(idxS>=0) state.segurosConsultor[idxS] = {nome:p.nome, data, qtd:p.qtd};
+          else state.segurosConsultor.push({nome:p.nome, data, qtd:p.qtd});
+          if(p.codigo) state.consultorLoja[p.nome] = p.codigo;
+          else if(!(p.nome in state.consultorLoja)) state.consultorLoja[p.nome] = null;
+        });
+        saveState();
+        alert(`Importado! ${parsed.length} consultor(es) com dados de seguros atualizados para ${data.split('-').reverse().join('/')}.`);
       } else {
         const parsed = parseConsultorRows(aoa, head.row);
         if(!parsed.length){ alert('Não encontrei nenhum consultor nessa planilha.'); e.target.value=''; return; }
