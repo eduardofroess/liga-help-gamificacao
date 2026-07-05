@@ -72,6 +72,18 @@ header .sub{color:var(--muted);font-size:13px;margin-top:4px}
 .cons-table tr.top3{background:rgba(205,127,50,.06)}
 .cons-table .rank-cell{color:var(--muted);font-weight:700}
 .hist-empty{color:var(--muted);font-size:12px;text-align:center;padding:10px 0}
+.rv-panel{margin-top:8px}
+.rv-item{margin-bottom:14px}
+.rv-item:last-child{margin-bottom:0}
+.rv-item-head{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:5px}
+.rv-item-head b{color:var(--text)}
+.rv-bar{position:relative;height:8px;background:var(--card2);border-radius:4px;margin:0 1px 5px}
+.rv-bar-fill{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,#a78bfa,#60a5fa);border-radius:4px}
+.rv-mark{position:absolute;top:-3px;width:2px;height:14px;background:var(--muted)}
+.rv-mark.hit{background:var(--gold)}
+.rv-status{font-size:11.5px;color:var(--muted);line-height:1.5}
+.rv-status b{color:var(--gold)}
+.rv-badge{display:inline-flex;align-items:center;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
 
 #confetti-container{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:999}
 .confetti-piece{position:absolute;top:-10px;width:8px;height:14px;opacity:.9;animation:fall linear forwards}
@@ -213,6 +225,8 @@ const PRODUCT_LABELS = {
   EmprestimoConsignado:'Empréstimo Consignado', ProducaoMix:'Produção Mix (total)',
 };
 const COUNT_META_PRODUCTS = new Set(['CartaoBeneficio','BmgCard','FGTS','CPparaTodos']);
+const RV_SUPERVISOR = {"53631":{"CNC":[{"faixa":1,"producao":100000,"bonus":750,"percentual":0.0075},{"faixa":2,"producao":120000,"bonus":1200,"percentual":0.01},{"faixa":3,"producao":140000,"bonus":1680,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":30000,"bonus":300,"percentual":0.01},{"faixa":2,"producao":40000,"bonus":440,"percentual":0.011},{"faixa":3,"producao":50000,"bonus":600,"percentual":0.012}],"FGTS":[{"faixa":1,"producao":20000,"bonus":60,"percentual":0.003},{"faixa":2,"producao":40000,"bonus":160,"percentual":0.004},{"faixa":3,"producao":50000,"bonus":300,"percentual":0.006}],"Consignado":[{"faixa":1,"producao":120000,"bonus":360,"percentual":0.003},{"faixa":2,"producao":140000,"bonus":560,"percentual":0.004},{"faixa":3,"producao":160000,"bonus":800,"percentual":0.005}]},"54123":{"CNC":[{"faixa":1,"producao":90000,"bonus":675,"percentual":0.0075},{"faixa":2,"producao":110000,"bonus":1100,"percentual":0.01},{"faixa":3,"producao":130000,"bonus":1560,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":30000,"bonus":300,"percentual":0.01},{"faixa":2,"producao":40000,"bonus":440,"percentual":0.011},{"faixa":3,"producao":50000,"bonus":600,"percentual":0.012}],"FGTS":[{"faixa":1,"producao":30000,"bonus":90,"percentual":0.003},{"faixa":2,"producao":40000,"bonus":160,"percentual":0.004},{"faixa":3,"producao":50000,"bonus":300,"percentual":0.006}],"Consignado":[{"faixa":1,"producao":120000,"bonus":360,"percentual":0.003},{"faixa":2,"producao":140000,"bonus":560,"percentual":0.004},{"faixa":3,"producao":160000,"bonus":800,"percentual":0.005}]},"54245":{"CNC":[{"faixa":1,"producao":80000,"bonus":600,"percentual":0.0075},{"faixa":2,"producao":100000,"bonus":1000,"percentual":0.01},{"faixa":3,"producao":120000,"bonus":1440,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":30000,"bonus":300,"percentual":0.01},{"faixa":2,"producao":40000,"bonus":440,"percentual":0.011},{"faixa":3,"producao":50000,"bonus":600,"percentual":0.012}],"FGTS":[{"faixa":1,"producao":30000,"bonus":90,"percentual":0.003},{"faixa":2,"producao":45000,"bonus":180,"percentual":0.004},{"faixa":3,"producao":60000,"bonus":360,"percentual":0.006}],"Consignado":[{"faixa":1,"producao":120000,"bonus":360,"percentual":0.003},{"faixa":2,"producao":140000,"bonus":560,"percentual":0.004},{"faixa":3,"producao":160000,"bonus":800,"percentual":0.005}]},"54275":{"CNC":[{"faixa":1,"producao":90000,"bonus":675,"percentual":0.0075},{"faixa":2,"producao":110000,"bonus":1100,"percentual":0.01},{"faixa":3,"producao":130000,"bonus":1560,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":30000,"bonus":300,"percentual":0.01},{"faixa":2,"producao":40000,"bonus":440,"percentual":0.011},{"faixa":3,"producao":50000,"bonus":600,"percentual":0.012}],"FGTS":[{"faixa":1,"producao":20000,"bonus":60,"percentual":0.003},{"faixa":2,"producao":40000,"bonus":160,"percentual":0.004},{"faixa":3,"producao":60000,"bonus":360,"percentual":0.006}],"Consignado":[{"faixa":1,"producao":120000,"bonus":360,"percentual":0.003},{"faixa":2,"producao":140000,"bonus":560,"percentual":0.004},{"faixa":3,"producao":160000,"bonus":800,"percentual":0.005}]},"54412":{"CNC":[{"faixa":1,"producao":90000,"bonus":675,"percentual":0.0075},{"faixa":2,"producao":110000,"bonus":1100,"percentual":0.01},{"faixa":3,"producao":130000,"bonus":1560,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":30000,"bonus":300,"percentual":0.01},{"faixa":2,"producao":40000,"bonus":440,"percentual":0.011},{"faixa":3,"producao":50000,"bonus":600,"percentual":0.012}],"FGTS":[{"faixa":1,"producao":20000,"bonus":60,"percentual":0.003},{"faixa":2,"producao":30000,"bonus":120,"percentual":0.004},{"faixa":3,"producao":40000,"bonus":240,"percentual":0.006}],"Consignado":[{"faixa":1,"producao":120000,"bonus":360,"percentual":0.003},{"faixa":2,"producao":140000,"bonus":560,"percentual":0.004},{"faixa":3,"producao":160000,"bonus":800,"percentual":0.005}]},"55237":{"CNC":[{"faixa":1,"producao":80000,"bonus":600,"percentual":0.0075},{"faixa":2,"producao":100000,"bonus":1000,"percentual":0.01},{"faixa":3,"producao":120000,"bonus":1440,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":45000,"bonus":450,"percentual":0.01},{"faixa":2,"producao":60000,"bonus":660,"percentual":0.011},{"faixa":3,"producao":75000,"bonus":900,"percentual":0.012}],"FGTS":[{"faixa":1,"producao":30000,"bonus":90,"percentual":0.003},{"faixa":2,"producao":40000,"bonus":160,"percentual":0.004},{"faixa":3,"producao":50000,"bonus":300,"percentual":0.006}],"Consignado":[{"faixa":1,"producao":180000,"bonus":540,"percentual":0.003},{"faixa":2,"producao":210000,"bonus":840,"percentual":0.004},{"faixa":3,"producao":240000,"bonus":1200,"percentual":0.005}]},"56097":{"CNC":[{"faixa":1,"producao":100000,"bonus":750,"percentual":0.0075},{"faixa":2,"producao":140000,"bonus":1400,"percentual":0.01},{"faixa":3,"producao":160000,"bonus":1920,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":30000,"bonus":300,"percentual":0.01},{"faixa":2,"producao":40000,"bonus":440,"percentual":0.011},{"faixa":3,"producao":50000,"bonus":600,"percentual":0.012}],"FGTS":[{"faixa":1,"producao":30000,"bonus":90,"percentual":0.003},{"faixa":2,"producao":40000,"bonus":160,"percentual":0.004},{"faixa":3,"producao":50000,"bonus":300,"percentual":0.006}],"Consignado":[{"faixa":1,"producao":120000,"bonus":360,"percentual":0.003},{"faixa":2,"producao":140000,"bonus":560,"percentual":0.004},{"faixa":3,"producao":160000,"bonus":800,"percentual":0.005}]},"57035":{"CNC":[{"faixa":1,"producao":90000,"bonus":675,"percentual":0.0075},{"faixa":2,"producao":110000,"bonus":1100,"percentual":0.01},{"faixa":3,"producao":130000,"bonus":1560,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":40000,"bonus":400,"percentual":0.01},{"faixa":2,"producao":50000,"bonus":550,"percentual":0.011},{"faixa":3,"producao":60000,"bonus":720,"percentual":0.012}],"FGTS":[{"faixa":1,"producao":20000,"bonus":60,"percentual":0.003},{"faixa":2,"producao":40000,"bonus":160,"percentual":0.004},{"faixa":3,"producao":50000,"bonus":300,"percentual":0.006}],"Consignado":[{"faixa":1,"producao":120000,"bonus":360,"percentual":0.003},{"faixa":2,"producao":140000,"bonus":560,"percentual":0.004},{"faixa":3,"producao":160000,"bonus":800,"percentual":0.005}]},"57036":{"CNC":[{"faixa":1,"producao":70000,"bonus":525,"percentual":0.0075},{"faixa":2,"producao":90000,"bonus":900,"percentual":0.01},{"faixa":3,"producao":110000,"bonus":1320,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":30000,"bonus":300,"percentual":0.01},{"faixa":2,"producao":40000,"bonus":440,"percentual":0.011},{"faixa":3,"producao":50000,"bonus":600,"percentual":0.012}],"FGTS":[{"faixa":1,"producao":20000,"bonus":60,"percentual":0.003},{"faixa":2,"producao":40000,"bonus":160,"percentual":0.004},{"faixa":3,"producao":50000,"bonus":300,"percentual":0.006}],"Consignado":[{"faixa":1,"producao":120000,"bonus":360,"percentual":0.003},{"faixa":2,"producao":140000,"bonus":560,"percentual":0.004},{"faixa":3,"producao":160000,"bonus":800,"percentual":0.005}]},"57037":{"CNC":[{"faixa":1,"producao":70000,"bonus":525,"percentual":0.0075},{"faixa":2,"producao":90000,"bonus":900,"percentual":0.01},{"faixa":3,"producao":110000,"bonus":1320,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":30000,"bonus":300,"percentual":0.01},{"faixa":2,"producao":40000,"bonus":440,"percentual":0.011},{"faixa":3,"producao":50000,"bonus":600,"percentual":0.012}],"FGTS":[{"faixa":1,"producao":20000,"bonus":60,"percentual":0.003},{"faixa":2,"producao":40000,"bonus":160,"percentual":0.004},{"faixa":3,"producao":50000,"bonus":300,"percentual":0.006}],"Consignado":[{"faixa":1,"producao":120000,"bonus":360,"percentual":0.003},{"faixa":2,"producao":140000,"bonus":560,"percentual":0.004},{"faixa":3,"producao":160000,"bonus":800,"percentual":0.005}]}};
+const RV_CONSULTOR = {"53631":{"CNC":[{"faixa":1,"producao":50000,"bonus":375,"percentual":0.0075},{"faixa":2,"producao":60000,"bonus":600,"percentual":0.01},{"faixa":3,"producao":70000,"bonus":840,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":15000,"bonus":150,"percentual":0.01},{"faixa":2,"producao":20000,"bonus":240,"percentual":0.012},{"faixa":3,"producao":25000,"bonus":375,"percentual":0.015}],"FGTS":[{"faixa":1,"producao":10000,"bonus":50,"percentual":0.005},{"faixa":2,"producao":20000,"bonus":120,"percentual":0.006},{"faixa":3,"producao":25000,"bonus":200,"percentual":0.008}],"Consignado":[{"faixa":1,"producao":60000,"bonus":120,"percentual":0.003},{"faixa":2,"producao":70000,"bonus":240,"percentual":0.004},{"faixa":3,"producao":80000,"bonus":400,"percentual":0.005}]},"54123":{"CNC":[{"faixa":1,"producao":45000,"bonus":337.5,"percentual":0.0075},{"faixa":2,"producao":55000,"bonus":550,"percentual":0.01},{"faixa":3,"producao":65000,"bonus":780,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":15000,"bonus":150,"percentual":0.01},{"faixa":2,"producao":20000,"bonus":240,"percentual":0.012},{"faixa":3,"producao":25000,"bonus":375,"percentual":0.015}],"FGTS":[{"faixa":1,"producao":15000,"bonus":75,"percentual":0.005},{"faixa":2,"producao":20000,"bonus":120,"percentual":0.006},{"faixa":3,"producao":25000,"bonus":200,"percentual":0.008}],"Consignado":[{"faixa":1,"producao":60000,"bonus":120,"percentual":0.003},{"faixa":2,"producao":70000,"bonus":240,"percentual":0.004},{"faixa":3,"producao":80000,"bonus":400,"percentual":0.005}]},"54245":{"CNC":[{"faixa":1,"producao":40000,"bonus":300,"percentual":0.0075},{"faixa":2,"producao":50000,"bonus":500,"percentual":0.01},{"faixa":3,"producao":60000,"bonus":720,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":15000,"bonus":150,"percentual":0.01},{"faixa":2,"producao":20000,"bonus":240,"percentual":0.012},{"faixa":3,"producao":25000,"bonus":375,"percentual":0.015}],"FGTS":[{"faixa":1,"producao":10000,"bonus":50,"percentual":0.005},{"faixa":2,"producao":15000,"bonus":90,"percentual":0.006},{"faixa":3,"producao":20000,"bonus":160,"percentual":0.008}],"Consignado":[{"faixa":1,"producao":60000,"bonus":120,"percentual":0.003},{"faixa":2,"producao":70000,"bonus":240,"percentual":0.004},{"faixa":3,"producao":80000,"bonus":400,"percentual":0.005}]},"54275":{"CNC":[{"faixa":1,"producao":45000,"bonus":337.5,"percentual":0.0075},{"faixa":2,"producao":55000,"bonus":550,"percentual":0.01},{"faixa":3,"producao":65000,"bonus":780,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":15000,"bonus":150,"percentual":0.01},{"faixa":2,"producao":20000,"bonus":240,"percentual":0.012},{"faixa":3,"producao":25000,"bonus":375,"percentual":0.015}],"FGTS":[{"faixa":1,"producao":10000,"bonus":50,"percentual":0.005},{"faixa":2,"producao":20000,"bonus":120,"percentual":0.006},{"faixa":3,"producao":30000,"bonus":240,"percentual":0.008}],"Consignado":[{"faixa":1,"producao":60000,"bonus":180,"percentual":0.003},{"faixa":2,"producao":70000,"bonus":280,"percentual":0.004},{"faixa":3,"producao":80000,"bonus":400,"percentual":0.005}]},"54412":{"CNC":[{"faixa":1,"producao":45000,"bonus":337.5,"percentual":0.0075},{"faixa":2,"producao":55000,"bonus":550,"percentual":0.01},{"faixa":3,"producao":65000,"bonus":780,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":15000,"bonus":150,"percentual":0.01},{"faixa":2,"producao":20000,"bonus":240,"percentual":0.012},{"faixa":3,"producao":25000,"bonus":375,"percentual":0.015}],"FGTS":[{"faixa":1,"producao":10000,"bonus":50,"percentual":0.005},{"faixa":2,"producao":15000,"bonus":150,"percentual":0.006},{"faixa":3,"producao":20000,"bonus":160,"percentual":0.008}],"Consignado":[{"faixa":1,"producao":60000,"bonus":180,"percentual":0.003},{"faixa":2,"producao":70000,"bonus":280,"percentual":0.004},{"faixa":3,"producao":80000,"bonus":400,"percentual":0.005}]},"55237":{"CNC":[{"faixa":1,"producao":40000,"bonus":300,"percentual":0.0075},{"faixa":2,"producao":50000,"bonus":500,"percentual":0.01},{"faixa":3,"producao":60000,"bonus":720,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":15000,"bonus":150,"percentual":0.01},{"faixa":2,"producao":20000,"bonus":240,"percentual":0.012},{"faixa":3,"producao":25000,"bonus":375,"percentual":0.015}],"FGTS":[{"faixa":1,"producao":15000,"bonus":75,"percentual":0.005},{"faixa":2,"producao":20000,"bonus":120,"percentual":0.006},{"faixa":3,"producao":25000,"bonus":200,"percentual":0.008}],"Consignado":[{"faixa":1,"producao":60000,"bonus":120,"percentual":0.003},{"faixa":2,"producao":70000,"bonus":240,"percentual":0.004},{"faixa":3,"producao":80000,"bonus":400,"percentual":0.005}]},"56097":{"CNC":[{"faixa":1,"producao":80000,"bonus":600,"percentual":0.0075},{"faixa":2,"producao":90000,"bonus":900,"percentual":0.01},{"faixa":3,"producao":100000,"bonus":1200,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":15000,"bonus":150,"percentual":0.01},{"faixa":2,"producao":20000,"bonus":240,"percentual":0.012},{"faixa":3,"producao":25000,"bonus":375,"percentual":0.015}],"FGTS":[{"faixa":1,"producao":15000,"bonus":75,"percentual":0.005},{"faixa":2,"producao":20000,"bonus":120,"percentual":0.006},{"faixa":3,"producao":25000,"bonus":200,"percentual":0.008}],"Consignado":[{"faixa":1,"producao":60000,"bonus":120,"percentual":0.003},{"faixa":2,"producao":70000,"bonus":240,"percentual":0.004},{"faixa":3,"producao":80000,"bonus":400,"percentual":0.005}]},"57035":{"CNC":[{"faixa":1,"producao":70000,"bonus":525,"percentual":0.0075},{"faixa":2,"producao":80000,"bonus":800,"percentual":0.01},{"faixa":3,"producao":90000,"bonus":1080,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":20000,"bonus":200,"percentual":0.01},{"faixa":2,"producao":25000,"bonus":300,"percentual":0.012},{"faixa":3,"producao":30000,"bonus":450,"percentual":0.015}],"FGTS":[{"faixa":1,"producao":10000,"bonus":50,"percentual":0.005},{"faixa":2,"producao":20000,"bonus":120,"percentual":0.006},{"faixa":3,"producao":25000,"bonus":200,"percentual":0.008}],"Consignado":[{"faixa":1,"producao":60000,"bonus":120,"percentual":0.003},{"faixa":2,"producao":70000,"bonus":240,"percentual":0.004},{"faixa":3,"producao":80000,"bonus":400,"percentual":0.005}]},"57036":{"CNC":[{"faixa":1,"producao":35000,"bonus":262.5,"percentual":0.0075},{"faixa":2,"producao":45000,"bonus":450,"percentual":0.01},{"faixa":3,"producao":55000,"bonus":660,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":15000,"bonus":150,"percentual":0.01},{"faixa":2,"producao":20000,"bonus":240,"percentual":0.012},{"faixa":3,"producao":25000,"bonus":375,"percentual":0.015}],"FGTS":[{"faixa":1,"producao":10000,"bonus":50,"percentual":0.005},{"faixa":2,"producao":20000,"bonus":120,"percentual":0.006},{"faixa":3,"producao":25000,"bonus":200,"percentual":0.008}],"Consignado":[{"faixa":1,"producao":60000,"bonus":120,"percentual":0.003},{"faixa":2,"producao":70000,"bonus":240,"percentual":0.004},{"faixa":3,"producao":80000,"bonus":400,"percentual":0.005}]},"57037":{"CNC":[{"faixa":1,"producao":35000,"bonus":262.5,"percentual":0.0075},{"faixa":2,"producao":45000,"bonus":450,"percentual":0.01},{"faixa":3,"producao":55000,"bonus":660,"percentual":0.012}],"Cartao":[{"faixa":1,"producao":15000,"bonus":150,"percentual":0.01},{"faixa":2,"producao":20000,"bonus":240,"percentual":0.012},{"faixa":3,"producao":25000,"bonus":375,"percentual":0.015}],"FGTS":[{"faixa":1,"producao":10000,"bonus":50,"percentual":0.005},{"faixa":2,"producao":20000,"bonus":120,"percentual":0.006},{"faixa":3,"producao":25000,"bonus":200,"percentual":0.008}],"Consignado":[{"faixa":1,"producao":60000,"bonus":120,"percentual":0.003},{"faixa":2,"producao":70000,"bonus":240,"percentual":0.004},{"faixa":3,"producao":80000,"bonus":400,"percentual":0.005}]}};
 const SEGUROS_CONSULTOR_SEED = [
   {nome:'GIRLENE ANDRESSA PINTO RODRIGUES', data:'2026-07-03', qtd:4},
   {nome:'LINDAMIRES SILVA DOS SANTOS', data:'2026-07-03', qtd:1},
@@ -314,6 +328,36 @@ function nivel(pct){
   return {n:1,label:'Largada',emoji:'🚀',color:'var(--muted)'};
 }
 
+const RV_LABELS = {CNC:'CNC', Cartao:'Cartão (Bmg Card + Benefício)', FGTS:'FGTS', Consignado:'Consignado (Empréstimo)'};
+
+function faixaInfo(valor, faixas){
+  let atual=null, proxima=null;
+  for(const f of faixas){ if(valor>=f.producao) atual=f; else { if(!proxima) proxima=f; } }
+  return {atual, proxima};
+}
+
+function renderFaixaRV(valor, faixas, label){
+  if(!faixas || !faixas.length) return '';
+  const max = faixas[faixas.length-1].producao * 1.15;
+  const pct = Math.min(valor/max*100, 100);
+  const {atual, proxima} = faixaInfo(valor, faixas);
+  const marks = faixas.map(f=>`<div class="rv-mark${valor>=f.producao?' hit':''}" style="left:${Math.min(f.producao/max*100,100)}%" title="Faixa ${f.faixa} 4F: ${fmtBRL(f.producao)} → bônus ${fmtBRL(f.bonus)}"></div>`).join('');
+  const status = atual
+    ? (proxima ? `Faixa ${atual.faixa} 4F atingida — bônus <b>${fmtBRL(atual.bonus)}</b>. Faltam ${fmtBRL(proxima.producao-valor)} pra Faixa ${proxima.faixa} (${fmtBRL(proxima.bonus)}).`
+               : `🏆 Faixa ${atual.faixa} 4F (máxima) atingida — bônus <b>${fmtBRL(atual.bonus)}</b>!`)
+    : `Faltam ${fmtBRL(faixas[0].producao-valor)} pra Faixa 1 4F (${fmtBRL(faixas[0].bonus)}).`;
+  return `<div class="rv-item">
+    <div class="rv-item-head"><span>${label}</span><b>${fmtBRL(valor)}</b></div>
+    <div class="rv-bar"><div class="rv-bar-fill" style="width:${pct}%"></div>${marks}</div>
+    <div class="rv-status">${status}</div>
+  </div>`;
+}
+
+function renderRVPanel(rvFaixas, getValor){
+  if(!rvFaixas) return '';
+  return Object.keys(RV_LABELS).map(key=>renderFaixaRV(getValor(key), rvFaixas[key], RV_LABELS[key])).join('');
+}
+
 function mentorTip(codigo,mes){
   const meta=getMeta(mes), atual=valorAtual(codigo,mes);
   const pct = meta? atual/meta*100:0;
@@ -395,6 +439,14 @@ function render(){
       const metaTxt = !v.meta ? 'sem meta importada' : contagem ? `mín. ${v.meta.toLocaleString('pt-BR',{maximumFractionDigits:1})} contrato(s)` : 'meta '+fmtBRL(v.meta)+' • '+fmtPct(pctP);
       return `<div class="mix-row"><span>${PRODUCT_LABELS[k]}</span><b>${fmtBRL(v.atual)}</b><small>${metaTxt}</small></div>`;
     }).join('');
+    const rvSup = RV_SUPERVISOR[l.codigo];
+    const rvSupHtml = rvSup ? renderRVPanel(rvSup, (key)=>{
+      if(key==='CNC') return l.atual;
+      if(key==='Cartao') return valorProduto(l.codigo,mes,'CartaoBeneficio').atual + valorProduto(l.codigo,mes,'BmgCard').atual;
+      if(key==='FGTS') return valorProduto(l.codigo,mes,'FGTS').atual;
+      if(key==='Consignado') return valorProduto(l.codigo,mes,'EmprestimoConsignado').atual;
+      return 0;
+    }) : '';
     return `<div class="loja-card rank-${rank<=3?rank:'x'}">
       <div class="rank-num">${rank}</div>
       <div class="loja-info">
@@ -409,6 +461,7 @@ function render(){
         <div class="mentor"><div class="princ">${principal}</div><div class="ritmo">${ritmo}</div></div>
         ${st>0?`<div class="streak">🔥 ${st} dia(s) seguidos alimentando dados</div>`:''}
         <details class="mix-details"><summary>Ver mix completo (todos os produtos)</summary>${outros}</details>
+        ${rvSupHtml? `<details class="mix-details"><summary>🎯 Ver Meta 4F da loja (Supervisor)</summary><div class="rv-panel">${rvSupHtml}</div></details>` : ''}
       </div>
       <div class="side-stats">${sparklineSVG(l.codigo,mes)}</div>
     </div>`;
@@ -420,19 +473,28 @@ function render(){
 
   const consultores = Object.keys(state.consultorLoja).map(nome=>{
     const cnc = valorProdutoConsultor(nome, mes, 'CNC');
-    const loja = state.lojas.find(l=>l.codigo===state.consultorLoja[nome]);
+    const codigoLoja = state.consultorLoja[nome];
+    const loja = state.lojas.find(l=>l.codigo===codigoLoja);
     const pctC = cnc.meta? cnc.atual/cnc.meta*100 : 0;
-    return {nome, lojaNome: loja? loja.nome : 'loja não identificada', atual:cnc.atual, meta:cnc.meta, pct:pctC};
+    return {nome, codigoLoja, lojaNome: loja? loja.nome : 'loja não identificada', atual:cnc.atual, meta:cnc.meta, pct:pctC};
   }).sort((a,b)=>b.atual-a.atual);
 
   document.getElementById('rankingConsultores').innerHTML = !consultores.length
     ? '<div class="hist-empty">Nenhum consultor cadastrado ainda.</div>'
     : `<table class="cons-table">
-        <thead><tr><th>#</th><th>Consultor</th><th>Loja</th><th>CNC atual</th><th>Meta individual</th><th>% atingido</th></tr></thead>
+        <thead><tr><th>#</th><th>Consultor</th><th>Loja</th><th>CNC atual</th><th>Meta individual</th><th>% atingido</th><th>🎯 Meta 4F (CNC)</th></tr></thead>
         <tbody>
         ${consultores.map((c,i)=>{
           const lvl = nivel(c.pct);
           const medalha = i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':'';
+          const rvCons = c.codigoLoja ? RV_CONSULTOR[c.codigoLoja] : null;
+          let rv4fCell = '<span style="color:var(--muted)">—</span>';
+          if(rvCons && rvCons.CNC){
+            const {atual:rvAtual, proxima:rvProxima} = faixaInfo(c.atual, rvCons.CNC);
+            rv4fCell = rvAtual
+              ? `<span class="rv-badge" style="background:var(--success)22;color:var(--success)" title="Bônus 4F: ${fmtBRL(rvAtual.bonus)}${rvProxima? ' • Faltam '+fmtBRL(rvProxima.producao-c.atual)+' pra Faixa '+rvProxima.faixa : ' (faixa máxima)'}">F${rvAtual.faixa} · ${fmtBRL(rvAtual.bonus)}</span>`
+              : `<span class="rv-badge" style="background:var(--card2);color:var(--muted)" title="Faixa 1 4F: ${fmtBRL(rvCons.CNC[0].producao)}">Faltam ${fmtBRL(rvCons.CNC[0].producao-c.atual)}</span>`;
+          }
           return `<tr class="${i<3?'top'+(i+1):''}">
             <td class="rank-cell">${i+1}</td>
             <td>${c.nome}${medalha}</td>
@@ -440,6 +502,7 @@ function render(){
             <td>${fmtBRL(c.atual)}</td>
             <td>${c.meta? fmtBRL(c.meta) : '—'}</td>
             <td><span class="badge" style="background:${lvl.color}22;color:${lvl.color}">${lvl.emoji} ${fmtPct(c.pct)}</span></td>
+            <td>${rv4fCell}</td>
           </tr>`;
         }).join('')}
         </tbody>
