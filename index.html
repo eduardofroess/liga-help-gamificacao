@@ -81,6 +81,7 @@ header .sub{color:var(--muted);font-size:13px}
 .mix-row b{white-space:nowrap}
 .mix-row small{color:var(--muted);white-space:nowrap}
 .import-note{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5}
+#rankingConsultores{overflow-x:auto}
 .cons-table{width:100%;border-collapse:collapse;font-size:13px}
 .cons-table th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em;padding:8px 10px;border-bottom:1px solid var(--border)}
 .cons-table td{padding:8px 10px;border-bottom:1px solid var(--border)}
@@ -99,6 +100,7 @@ header .sub{color:var(--muted);font-size:13px}
 .rv-mark.hit{background:var(--gold)}
 .rv-status{font-size:11.5px;color:var(--muted);line-height:1.5}
 .rv-status b{color:var(--gold)}
+.rv-status .rv-pct{color:var(--blue)}
 .rv-badge{display:inline-flex;align-items:center;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
 
 #confetti-container{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:999}
@@ -414,26 +416,40 @@ function faixaInfo(valor, faixas){
   return {atual, proxima};
 }
 
-function renderFaixaRV(valor, faixas, label){
+function renderFaixaRV(valor, faixas, label, diasRest){
   if(!faixas || !faixas.length) return '';
   const max = faixas[faixas.length-1].producao * 1.15;
-  const pct = Math.min(valor/max*100, 100);
+  const barPct = Math.min(valor/max*100, 100);
   const {atual, proxima} = faixaInfo(valor, faixas);
   const marks = faixas.map(f=>`<div class="rv-mark${valor>=f.producao?' hit':''}" style="left:${Math.min(f.producao/max*100,100)}%" title="Faixa ${f.faixa} 4F: ${fmtBRL(f.producao)} → bônus ${fmtBRL(f.bonus)}"></div>`).join('');
-  const status = atual
-    ? (proxima ? `Faixa ${atual.faixa} 4F atingida — bônus <b>${fmtBRL(atual.bonus)}</b>. Faltam ${fmtBRL(proxima.producao-valor)} pra Faixa ${proxima.faixa} (${fmtBRL(proxima.bonus)}).`
-               : `🏆 Faixa ${atual.faixa} 4F (máxima) atingida — bônus <b>${fmtBRL(atual.bonus)}</b>!`)
-    : `Faltam ${fmtBRL(faixas[0].producao-valor)} pra Faixa 1 4F (${fmtBRL(faixas[0].bonus)}).`;
+
+  let pctAlvo, status, plano;
+  if(atual && !proxima){
+    pctAlvo = valor/atual.producao*100;
+    status = `🏆 Faixa ${atual.faixa} 4F (máxima) atingida — bônus <b>${fmtBRL(atual.bonus)}</b>!`;
+    plano = `📌 Plano de ação: faixa máxima já batida — continue vendendo ${label} pra aumentar ainda mais o resultado (sem teto).`;
+  } else {
+    const alvo = proxima || faixas[0];
+    const falta = Math.max(alvo.producao - valor, 0);
+    pctAlvo = valor/alvo.producao*100;
+    status = atual
+      ? `Faixa ${atual.faixa} 4F atingida — bônus <b>${fmtBRL(atual.bonus)}</b>. Faltam ${fmtBRL(falta)} pra Faixa ${proxima.faixa} (${fmtBRL(proxima.bonus)}).`
+      : `Faltam ${fmtBRL(falta)} pra Faixa 1 4F (${fmtBRL(faixas[0].bonus)}).`;
+    plano = diasRest > 0
+      ? `📌 Plano de ação: vender <b>${fmtBRL(falta/diasRest)}/dia</b> de ${label} nos próximos ${diasRest} dia(s) pra bater a Faixa ${alvo.faixa}.`
+      : `📌 Plano de ação: mês fechando — foque em concluir propostas de ${label} em andamento.`;
+  }
   return `<div class="rv-item">
     <div class="rv-item-head"><span>${label}</span><b>${fmtBRL(valor)}</b></div>
-    <div class="rv-bar"><div class="rv-bar-fill" style="width:${pct}%"></div>${marks}</div>
-    <div class="rv-status">${status}</div>
+    <div class="rv-bar"><div class="rv-bar-fill" style="width:${barPct}%"></div>${marks}</div>
+    <div class="rv-status">${status} <span class="rv-pct">(${fmtPct(pctAlvo)} da faixa)</span></div>
+    <div class="rv-status">${plano}</div>
   </div>`;
 }
 
-function renderRVPanel(rvFaixas, getValor){
+function renderRVPanel(rvFaixas, getValor, diasRest){
   if(!rvFaixas) return '';
-  return Object.keys(RV_LABELS).map(key=>renderFaixaRV(getValor(key), rvFaixas[key], RV_LABELS[key])).join('');
+  return Object.keys(RV_LABELS).map(key=>renderFaixaRV(getValor(key), rvFaixas[key], RV_LABELS[key], diasRest)).join('');
 }
 
 function mentorTip(codigo,mes){
@@ -543,7 +559,7 @@ function render(){
       if(key==='FGTS') return valorProduto(l.codigo,mes,'FGTS').atual;
       if(key==='Consignado') return valorProduto(l.codigo,mes,'EmprestimoConsignado').atual;
       return 0;
-    }) : '';
+    }, dRest) : '';
     return `<div class="loja-card rank-${rank<=3?rank:'x'}">
       <div class="rank-num">${rank}</div>
       <div class="loja-info">
@@ -582,18 +598,31 @@ function render(){
   document.getElementById('rankingConsultores').innerHTML = !consultores.length
     ? '<div class="hist-empty">Nenhum consultor cadastrado ainda.</div>'
     : `<table class="cons-table">
-        <thead><tr><th>#</th><th>Consultor</th><th>Loja</th><th>CNC atual</th><th>Meta individual</th><th>% atingido</th><th>🎯 Meta 4F (CNC)</th></tr></thead>
+        <thead><tr><th>#</th><th>Consultor</th><th>Loja</th><th>CNC atual</th><th>Meta individual</th><th>% atingido</th><th>🎯 Meta 4F (CNC)</th><th>% Meta 4F</th><th>Plano de ação</th></tr></thead>
         <tbody>
         ${consultores.map((c,i)=>{
           const lvl = nivel(c.pct);
           const medalha = i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':'';
           const rvCons = c.codigoLoja ? RV_CONSULTOR[c.codigoLoja] : null;
           let rv4fCell = '<span style="color:var(--muted)">—</span>';
+          let rvPctCell = '<span style="color:var(--muted)">—</span>';
+          let rvPlanoCell = '<span style="color:var(--muted)">—</span>';
           if(rvCons && rvCons.CNC){
             const {atual:rvAtual, proxima:rvProxima} = faixaInfo(c.atual, rvCons.CNC);
             rv4fCell = rvAtual
               ? `<span class="rv-badge" style="background:var(--success)22;color:var(--success)" title="Bônus 4F: ${fmtBRL(rvAtual.bonus)}${rvProxima? ' • Faltam '+fmtBRL(rvProxima.producao-c.atual)+' pra Faixa '+rvProxima.faixa : ' (faixa máxima)'}">F${rvAtual.faixa} · ${fmtBRL(rvAtual.bonus)}</span>`
               : `<span class="rv-badge" style="background:var(--card2);color:var(--muted)" title="Faixa 1 4F: ${fmtBRL(rvCons.CNC[0].producao)}">Faltam ${fmtBRL(rvCons.CNC[0].producao-c.atual)}</span>`;
+            if(rvAtual && !rvProxima){
+              rvPctCell = fmtPct(c.atual/rvAtual.producao*100);
+              rvPlanoCell = '🏆 Faixa máxima batida — siga vendendo CNC pra aumentar ainda mais o bônus.';
+            } else {
+              const alvo = rvProxima || rvCons.CNC[0];
+              const falta = Math.max(alvo.producao - c.atual, 0);
+              rvPctCell = fmtPct(c.atual/alvo.producao*100);
+              rvPlanoCell = dRest>0
+                ? `Vender ${fmtBRL(falta/dRest)}/dia nos próximos ${dRest} dia(s) pra bater a Faixa ${alvo.faixa}.`
+                : `Mês fechando — foque em concluir propostas de CNC em andamento.`;
+            }
           }
           return `<tr class="${i<3?'top'+(i+1):''}">
             <td class="rank-cell">${i+1}</td>
@@ -603,6 +632,8 @@ function render(){
             <td>${c.meta? fmtBRL(c.meta) : '—'}</td>
             <td><span class="badge" style="background:${lvl.color}22;color:${lvl.color}">${lvl.emoji} ${fmtPct(c.pct)}</span></td>
             <td>${rv4fCell}</td>
+            <td>${rvPctCell}</td>
+            <td style="max-width:220px;font-size:12px;color:var(--muted)">${rvPlanoCell}</td>
           </tr>`;
         }).join('')}
         </tbody>
