@@ -86,6 +86,10 @@ header .sub{color:var(--muted);font-size:13px;margin-top:4px}
 .rv-status b{color:var(--gold)}
 .rv-status .rv-pct{color:var(--blue)}
 .rv-badge{display:inline-flex;align-items:center;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
+.rv-links-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.rv-link-btn{display:inline-flex;align-items:center;gap:6px;background:var(--orange);color:#1a1200;font-weight:700;padding:10px 16px;border-radius:8px;text-decoration:none;font-size:13.5px}
+.rv-link-btn:hover{filter:brightness(1.08)}
+.rv-link-btn.secondary{background:var(--purple);color:#fff}
 
 #confetti-container{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:999}
 .confetti-piece{position:absolute;top:-10px;width:8px;height:14px;opacity:.9;animation:fall linear forwards}
@@ -101,6 +105,11 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
   </header>
 
   <div class="panel" id="dicaDia" style="margin-bottom:18px"></div>
+
+  <div class="rv-links-row">
+    <a class="rv-link-btn" href="meta4f-consultor.html">🎯 Ver Meta 4F — Consultores →</a>
+    <a class="rv-link-btn secondary" href="meta4f-supervisor.html">🎯 Ver Meta 4F — Supervisores →</a>
+  </div>
 
   <section class="team-summary" id="teamSummary"></section>
 
@@ -455,14 +464,6 @@ function render(){
       const metaTxt = !v.meta ? 'sem meta importada' : contagem ? `mín. ${v.meta.toLocaleString('pt-BR',{maximumFractionDigits:1})} contrato(s)` : 'meta '+fmtBRL(v.meta)+' • '+fmtPct(pctP);
       return `<div class="mix-row"><span>${PRODUCT_LABELS[k]}</span><b>${fmtBRL(v.atual)}</b><small>${metaTxt}</small></div>`;
     }).join('');
-    const rvSup = RV_SUPERVISOR[l.codigo];
-    const rvSupHtml = rvSup ? renderRVPanel(rvSup, (key)=>{
-      if(key==='CNC') return l.atual;
-      if(key==='Cartao') return valorProduto(l.codigo,mes,'CartaoBeneficio').atual + valorProduto(l.codigo,mes,'BmgCard').atual;
-      if(key==='FGTS') return valorProduto(l.codigo,mes,'FGTS').atual;
-      if(key==='Consignado') return valorProduto(l.codigo,mes,'EmprestimoConsignado').atual;
-      return 0;
-    }, dRest) : '';
     return `<div class="loja-card rank-${rank<=3?rank:'x'}">
       <div class="rank-num">${rank}</div>
       <div class="loja-info">
@@ -477,7 +478,6 @@ function render(){
         <div class="mentor"><div class="princ">${principal}</div><div class="ritmo">${ritmo}</div></div>
         ${st>0?`<div class="streak">🔥 ${st} dia(s) seguidos alimentando dados</div>`:''}
         <details class="mix-details"><summary>Ver mix completo (todos os produtos)</summary>${outros}</details>
-        ${rvSupHtml? `<details class="mix-details"><summary>🎯 Ver Meta 4F da loja (Supervisor)</summary><div class="rv-panel">${rvSupHtml}</div></details>` : ''}
       </div>
       <div class="side-stats">${sparklineSVG(l.codigo,mes)}</div>
     </div>`;
@@ -526,7 +526,7 @@ function render(){
           }
           return `<tr class="${i<3?'top'+(i+1):''}">
             <td class="rank-cell">${i+1}</td>
-            <td>${c.nome}${medalha}</td>
+            <td><a href="consultor.html?nome=${encodeURIComponent(c.nome)}" style="color:var(--text);font-weight:600;text-decoration:underline dotted">${c.nome}</a>${medalha}</td>
             <td>${c.lojaNome}</td>
             <td>${fmtBRL(c.atual)}</td>
             <td>${c.meta? fmtBRL(c.meta) : '—'}</td>
@@ -559,7 +559,7 @@ function render(){
             : `<span class="badge" style="background:var(--danger)22;color:var(--danger)">Faltam ${MIN_SEGUROS_ELEGIVEL - c.qtd}</span>`;
           return `<tr class="${i<3?'top'+(i+1):''}">
             <td class="rank-cell">${i+1}</td>
-            <td>${c.nome}${medalha}</td>
+            <td><a href="consultor.html?nome=${encodeURIComponent(c.nome)}" style="color:var(--text);font-weight:600;text-decoration:underline dotted">${c.nome}</a>${medalha}</td>
             <td>${c.lojaNome}</td>
             <td>${c.qtd}</td>
             <td>${elegTxt}</td>

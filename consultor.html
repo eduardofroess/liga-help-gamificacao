@@ -6,7 +6,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Liga Lojas Help! — Gamificação CNC</title>
+<title>Meu Plano de Ação — Liga Help!</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏆</text></svg>">
 <style>
 :root{
@@ -16,14 +16,11 @@
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-.app{max-width:1400px;margin:0 auto;padding:20px}
-header{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px}
+.app{max-width:1000px;margin:0 auto;padding:20px}
+header{margin-bottom:20px}
 header h1{margin:0;font-size:22px}
 header h1 span{color:var(--orange)}
-header .sub{color:var(--muted);font-size:13px}
-.meta-edit{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);padding:8px 12px;border-radius:10px}
-.meta-edit input{width:100px;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:6px 8px}
-.meta-edit label{font-size:12px;color:var(--muted)}
+header .sub{color:var(--muted);font-size:13px;margin-top:4px}
 
 .team-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:22px}
 .tcard{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px}
@@ -34,10 +31,7 @@ header .sub{color:var(--muted);font-size:13px}
 .progress{height:8px;border-radius:6px;background:var(--card2);overflow:hidden;margin-top:10px}
 .progress > div{height:100%;background:linear-gradient(90deg,var(--orange),var(--gold))}
 
-.layout{display:grid;grid-template-columns:1fr 340px;gap:20px}
-@media(max-width:980px){.layout{grid-template-columns:1fr}}
-
-.ranking{display:flex;flex-direction:column;gap:12px}
+.ranking{display:flex;flex-direction:column;gap:12px;margin-bottom:24px}
 .loja-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;display:grid;grid-template-columns:44px 1fr auto;gap:14px;align-items:center;position:relative;overflow:hidden}
 .loja-card.rank-1{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset}
 .loja-card.rank-2{border-color:#c0c5ce}
@@ -58,29 +52,18 @@ header .sub{color:var(--muted);font-size:13px}
 .side-stats{text-align:right;min-width:100px}
 .spark{width:110px;height:30px;color:var(--orange);display:block;margin-left:auto}
 .streak{font-size:11px;color:var(--warning);margin-top:4px}
-
-.panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:18px}
-.panel h3{margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
-.panel label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;margin-top:10px}
-.panel select, .panel input{width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 10px;font-size:14px}
-.panel button{width:100%;margin-top:14px;background:var(--orange);border:none;color:#1a1200;font-weight:700;padding:10px;border-radius:8px;cursor:pointer;font-size:14px}
-.panel button:hover{filter:brightness(1.08)}
-.panel button.secondary{background:var(--card2);color:var(--text);border:1px solid var(--border)}
-.faixas-table{width:100%;border-collapse:collapse;font-size:12px}
-.faixas-table td{padding:4px 2px;border-bottom:1px solid var(--border)}
-.faixas-note{font-size:11px;color:var(--muted);margin-top:8px}
-.hist-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)}
-.hist-row button{width:auto;margin:0;background:transparent;color:var(--danger);padding:2px 6px;font-size:14px}
-.hist-empty{color:var(--muted);font-size:12px;text-align:center;padding:10px 0}
-.backup-row{display:flex;gap:8px}
-.backup-row button{margin-top:0}
 .mix-details{margin-top:10px;font-size:12px}
 .mix-details summary{cursor:pointer;color:var(--muted);outline:none;user-select:none}
 .mix-row{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)}
 .mix-row span{color:var(--muted)}
 .mix-row b{white-space:nowrap}
 .mix-row small{color:var(--muted);white-space:nowrap}
-.import-note{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5}
+
+.panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:18px}
+.panel h3{margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.faixas-table{width:100%;border-collapse:collapse;font-size:12px}
+.faixas-table td{padding:4px 2px;border-bottom:1px solid var(--border)}
+.faixas-note{font-size:11px;color:var(--muted);margin-top:8px}
 #rankingConsultores{overflow-x:auto}
 .cons-table{width:100%;border-collapse:collapse;font-size:13px}
 .cons-table th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em;padding:8px 10px;border-bottom:1px solid var(--border)}
@@ -89,6 +72,7 @@ header .sub{color:var(--muted);font-size:13px}
 .cons-table tr.top2{background:rgba(192,197,206,.06)}
 .cons-table tr.top3{background:rgba(205,127,50,.06)}
 .cons-table .rank-cell{color:var(--muted);font-weight:700}
+.hist-empty{color:var(--muted);font-size:12px;text-align:center;padding:10px 0}
 .rv-panel{margin-top:8px}
 .rv-item{margin-bottom:14px}
 .rv-item:last-child{margin-bottom:0}
@@ -102,10 +86,6 @@ header .sub{color:var(--muted);font-size:13px}
 .rv-status b{color:var(--gold)}
 .rv-status .rv-pct{color:var(--blue)}
 .rv-badge{display:inline-flex;align-items:center;font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
-.rv-links-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
-.rv-link-btn{display:inline-flex;align-items:center;gap:6px;background:var(--orange);color:#1a1200;font-weight:700;padding:10px 16px;border-radius:8px;text-decoration:none;font-size:13.5px}
-.rv-link-btn:hover{filter:brightness(1.08)}
-.rv-link-btn.secondary{background:var(--purple);color:#fff}
 
 #confetti-container{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:999}
 .confetti-piece{position:absolute;top:-10px;width:8px;height:14px;opacity:.9;animation:fall linear forwards}
@@ -116,103 +96,17 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
 <body>
 <div class="app">
   <header>
-    <div>
-      <h1>🏆 Liga Lojas <span>Help!</span> — Gamificação CNC</h1>
-      <div class="sub" id="subMes"></div>
-    </div>
-    <div class="meta-edit">
-      <div>
-        <label>Meta de CNC por loja no mês</label>
-        <input type="number" id="metaInput" step="100">
-      </div>
-    </div>
+    <h1 id="tituloConsultor">🎯 Plano de Ação</h1>
+    <div class="sub" id="subMes"></div>
+    <div class="faixas-note" style="margin-top:6px"><a href="meta4f-consultor.html" style="color:var(--blue)">← Voltar pro ranking de consultores</a></div>
   </header>
 
-  <div class="panel" id="dicaDia" style="margin-bottom:18px"></div>
+  <div id="conteudo"></div>
 
-  <div class="rv-links-row">
-    <a class="rv-link-btn" href="meta4f-consultor.html">🎯 Ver Meta 4F — Consultores →</a>
-    <a class="rv-link-btn secondary" href="meta4f-supervisor.html">🎯 Ver Meta 4F — Supervisores →</a>
-  </div>
-
-  <section class="team-summary" id="teamSummary"></section>
-
-  <div class="layout">
-    <section class="ranking" id="ranking"></section>
-
-    <aside>
-      <div class="panel">
-        <h3>📤 Importar planilha do BI (todos os produtos)</h3>
-        <label>Data de referência da planilha</label>
-        <input type="date" id="xlsxData">
-        <button id="btnImportXlsx">Escolher arquivo .xlsx</button>
-        <input type="file" id="xlsxFile" accept=".xlsx" style="display:none">
-        <div class="import-note">Aceita planilha do Portal LIGA/BI exportada com <b>Parâmetro = Franquia</b> (atualiza direto por loja) OU <b>Parâmetro = Consultor</b> (ele agrupa por loja automaticamente e também alimenta o ranking de consultores). Lê CNC, Cartão Benefício, Bmg Card, FGTS, CP pra Todos, Antecipação, Consignado Privado, Empréstimo Consignado e Produção Mix de uma vez. Precisa de internet na primeira vez que abrir a página.</div>
-      </div>
-
-      <div class="panel">
-        <h3>✍️ Atualizar CNC manualmente</h3>
-        <div class="import-note" style="margin-top:0">Use só se não tiver o arquivo do BI à mão — atualiza apenas o CNC dessa loja/data.</div>
-        <label>Loja</label>
-        <select id="fLoja"></select>
-        <label>Data</label>
-        <input type="date" id="fData">
-        <label>CNC acumulado no mês (R$)</label>
-        <input type="number" id="fValor" step="0.01" min="0" placeholder="Ex: 32500.00">
-        <button id="btnSalvar">Salvar produção</button>
-        <button class="secondary" id="btnAddLoja" style="margin-top:8px">+ Cadastrar nova loja</button>
-      </div>
-
-      <div class="panel">
-        <h3>📊 Faixas individuais de CNC (referência)</h3>
-        <table class="faixas-table" id="faixasTable"></table>
-        <div class="faixas-note">Valores da Cartilha LIGA (julho/26) para consultores. Referência para orientar o time — o cálculo oficial de premiação é sempre feito pelo BI / Portal LIGA.</div>
-      </div>
-
-      <div class="panel">
-        <h3>✅ Elegibilidade ao prêmio (além do CNC)</h3>
-        <div class="faixas-note" style="margin-top:0">Exceto Consultor Novo. Sem isso, o consultor pode bater a meta de CNC e ainda assim não receber:</div>
-        <ul style="margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.7;color:var(--text)">
-          <li>Certificação <b>teddi</b>: Trilha Obrigatória + Trilha Soluções e Sistemas help!</li>
-          <li><b>Cartões:</b> mínimo 2 emitidos (3+ pra não ter desconto no prêmio)</li>
-          <li><b>Seguros independentes:</b> mínimo 2 formalizações (3+ pra não ter desconto)</li>
-          <li><b>Super Conta:</b> mínimo 4 contratos (exceto lojas PDV)</li>
-          <li><b>Reclamações:</b> 0 no mês (1 já tira 10% do prêmio, 2+ tiram 20%)</li>
-        </ul>
-      </div>
-
-      <div class="panel">
-        <h3>🗒️ Histórico do mês</h3>
-        <div id="historyLog"></div>
-      </div>
-
-      <div class="panel">
-        <h3>💾 Backup dos dados</h3>
-        <div class="backup-row">
-          <button id="btnExport">Exportar (.json)</button>
-          <button class="secondary" id="btnImportBtn">Importar</button>
-        </div>
-        <input type="file" id="btnImport" accept="application/json" style="display:none">
-      </div>
-    </aside>
-  </div>
-
-  <div class="panel" style="margin-top:4px">
-    <h3>🏅 Ranking Geral de Consultores (CNC)</h3>
-    <div id="rankingConsultores"></div>
-  </div>
-
-  <div class="panel">
-    <h3>🛡️ Ranking de Seguros (individual)</h3>
-    <div class="faixas-note" style="margin-top:0">Prêmio: R$ 5,00 por seguro, após confirmação do desconto da 1ª parcela, + R$ 50,00 de bônus para o 1º lugar. Elegibilidade: mínimo de 10 seguros vendidos no mês pra concorrer.</div>
-    <div id="rankingSeguros" style="margin-top:10px"></div>
-  </div>
-
-  <footer>Dados de produção alimentados manualmente a partir do Portal LIGA / BI. Uso interno para acompanhamento e motivação do time.</footer>
+  <footer>Painel de acompanhamento — só leitura. Prêmio oficial da LIGA é estimado com base na tabela de CNC da cartilha; o valor definitivo é sempre o do BI / Portal LIGA.</footer>
 </div>
 <div id="confetti-container"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 const STORAGE_KEY = 'ligaHelpGamificacao_v1';
 const LOJAS_SEED = [
@@ -315,6 +209,25 @@ const FAIXAS_CNC = [
   {v:45000,p:1.50},{v:50000,p:1.80},{v:55000,p:2.10},{v:60000,p:2.40},
   {v:65000,p:2.70},{v:75000,p:3.00},{v:85000,p:4.00},{v:100000,p:5.00},
 ];
+function faixaCNCAtingida(producao){
+  let atual = null;
+  for(const f of FAIXAS_CNC){ if(producao >= f.v) atual = f; }
+  return atual;
+}
+function premioOficialCNC(producao){
+  const f = faixaCNCAtingida(producao);
+  return f ? producao * f.p / 100 : 0;
+}
+function producaoParaPremioCNC(alvoPremio){
+  for(let i=0;i<FAIXAS_CNC.length;i++){
+    const {v,p} = FAIXAS_CNC[i];
+    const nextV = FAIXAS_CNC[i+1] ? FAIXAS_CNC[i+1].v : Infinity;
+    const needed = alvoPremio / (p/100);
+    if(needed >= v && needed < nextV) return needed;
+  }
+  const last = FAIXAS_CNC[FAIXAS_CNC.length-1];
+  return alvoPremio / (last.p/100);
+}
 const TIPS = {
   1:'🚀 Início de mês, foco total! Priorize CNC pros clientes ativos que ainda não digitaram — cada contrato já acelera a faixa. E lembre: Super Conta vale +20% pro atingimento das faixas de CNC.',
   2:'🔥 Já saiu do zero! Aproveite os mesmos clientes de CNC pra ofertar Cartão Benefício e FGTS e girar o mix sem gastar leads novos.',
@@ -337,16 +250,6 @@ const DICAS_LIGA = [
 ];
 
 function loadState(){
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if(raw){
-    try{
-      const parsed = JSON.parse(raw);
-      if(!parsed.consultorLoja) parsed.consultorLoja = {...CONSULTOR_LOJA_SEED};
-      if(!parsed.historicoConsultor) parsed.historicoConsultor = HISTORICO_CONSULTOR_SEED.map(h=>({...h}));
-      if(!parsed.segurosConsultor) parsed.segurosConsultor = SEGUROS_CONSULTOR_SEED.map(h=>({...h}));
-      return parsed;
-    }catch(e){}
-  }
   return {
     metaPorMes:{}, lojas:LOJAS_SEED.map(l=>({...l})), historico:HISTORICO_SEED.map(h=>({...h})),
     consultorLoja:{...CONSULTOR_LOJA_SEED}, historicoConsultor:HISTORICO_CONSULTOR_SEED.map(h=>({...h})),
@@ -354,15 +257,12 @@ function loadState(){
   };
 }
 let state = loadState();
-function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
 
 function MES(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
-function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function diasNoMes(mes){ const [y,m]=mes.split('-').map(Number); return new Date(y,m,0).getDate(); }
 function diaDoMes(){ return new Date().getDate(); }
 function diasRestantes(mes){ if(mes!==MES()) return 0; return Math.max(diasNoMes(mes)-diaDoMes(),0); }
 function getMeta(mes){ return state.metaPorMes[mes] || 60000; }
-function setMeta(mes,val){ state.metaPorMes[mes]=val; saveState(); render(); }
 function fmtBRL(v){ return (v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
 function fmtPct(v){ return (v||0).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%'; }
 
@@ -498,414 +398,97 @@ function sparklineSVG(codigo,mes){
   return `<svg viewBox="0 0 ${w} ${h}" class="spark"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
 }
 
-function confetti(){
-  const colors=['#ff7a1a','#ffd23f','#22c55e','#60a5fa','#a78bfa'];
-  const box=document.getElementById('confetti-container');
-  for(let i=0;i<50;i++){
-    const el=document.createElement('div');
-    el.className='confetti-piece';
-    el.style.left=Math.random()*100+'vw';
-    el.style.background=colors[Math.floor(Math.random()*colors.length)];
-    el.style.animationDuration=(2+Math.random()*1.5)+'s';
-    el.style.transform=`rotate(${Math.random()*360}deg)`;
-    box.appendChild(el);
-    setTimeout(()=>el.remove(),4000);
-  }
-}
+const ALVO_PREMIO_MIN = 2000;
 
 function render(){
   const mes = MES();
+  const dRest = diasRestantes(mes);
   document.getElementById('subMes').textContent =
     'Apuração de ' + new Date(mes+'-02').toLocaleDateString('pt-BR',{month:'long',year:'numeric'}) +
-    ' • dia ' + diaDoMes() + ' de ' + diasNoMes(mes) + ' • ' + diasRestantes(mes) + ' dia(s) restante(s)';
+    ' • dia ' + diaDoMes() + ' de ' + diasNoMes(mes) + ' • ' + dRest + ' dia(s) restante(s)';
 
-  const diaAno = Math.floor((new Date() - new Date(new Date().getFullYear(),0,0)) / 86400000);
-  document.getElementById('dicaDia').innerHTML =
-    `<h3 style="margin-bottom:6px">📖 Dica da LIGA de hoje</h3><div style="font-size:13.5px;line-height:1.5">${DICAS_LIGA[diaAno % DICAS_LIGA.length]}</div>`;
+  const params = new URLSearchParams(location.search);
+  const nome = params.get('nome');
+  const conteudo = document.getElementById('conteudo');
 
-  const metaInput = document.getElementById('metaInput');
-  metaInput.value = getMeta(mes);
-  metaInput.onchange = ()=> setMeta(mes, Number(metaInput.value)||60000);
+  if(!nome || !(nome in state.consultorLoja)){
+    document.getElementById('tituloConsultor').textContent = '🎯 Plano de Ação';
+    conteudo.innerHTML = `<div class="panel"><div class="hist-empty">Consultor não encontrado. Volte pro <a href="meta4f-consultor.html" style="color:var(--blue)">ranking</a> e clique no nome de novo.</div></div>`;
+    return;
+  }
 
-  const meta = getMeta(mes);
-  const lojas = state.lojas.map(l=>{
-    const atual = valorAtual(l.codigo,mes);
-    return {...l, atual, pct: meta? atual/meta*100:0};
-  }).sort((a,b)=>b.atual-a.atual);
+  document.getElementById('tituloConsultor').textContent = '🎯 Plano de Ação — ' + nome;
 
-  const totalMeta = meta*state.lojas.length;
-  const totalAtual = lojas.reduce((s,l)=>s+l.atual,0);
-  const pctColetivo = totalMeta? totalAtual/totalMeta*100:0;
-  const dRest = diasRestantes(mes);
-  const faltaColetivo = Math.max(totalMeta-totalAtual,0);
-  const ritmoColetivo = dRest>0? faltaColetivo/dRest : 0;
-  const lojasNaMeta = lojas.filter(l=>l.pct>=100).length;
+  const codigoLoja = state.consultorLoja[nome];
+  const loja = state.lojas.find(l=>l.codigo===codigoLoja);
+  const cnc = valorProdutoConsultor(nome, mes, 'CNC').atual;
 
-  document.getElementById('teamSummary').innerHTML = `
-    <div class="tcard"><div class="label">Meta coletiva (10 lojas)</div><div class="value">${fmtBRL(totalMeta)}</div></div>
-    <div class="tcard"><div class="label">CNC acumulado no mês</div><div class="value orange">${fmtBRL(totalAtual)}</div>
-      <div class="progress"><div style="width:${Math.min(pctColetivo,100)}%"></div></div></div>
-    <div class="tcard"><div class="label">% da meta coletiva</div><div class="value gold">${fmtPct(pctColetivo)}</div></div>
-    <div class="tcard"><div class="label">Lojas com meta batida</div><div class="value">${lojasNaMeta} / ${state.lojas.length}</div></div>
-    <div class="tcard"><div class="label">Ritmo necessário (equipe)</div><div class="value">${dRest>0? fmtBRL(ritmoColetivo)+'/dia':'—'}</div></div>
-  `;
+  const premioAtual = premioOficialCNC(cnc);
+  const faixaAtual = faixaCNCAtingida(cnc);
+  const bateuAlvo = premioAtual >= ALVO_PREMIO_MIN;
+  const producaoAlvo = producaoParaPremioCNC(ALVO_PREMIO_MIN);
+  const faltaCNC = Math.max(producaoAlvo - cnc, 0);
+  const planoAlvo = bateuAlvo
+    ? `🏆 Você já passou de ${fmtBRL(ALVO_PREMIO_MIN)} de prêmio estimado (CNC)! Continue vendendo pra aumentar ainda mais — cada faixa nova de CNC aumenta o percentual sobre toda a produção.`
+    : dRest>0
+      ? `📌 Faltam ${fmtBRL(faltaCNC)} de CNC pra chegar em ${fmtBRL(ALVO_PREMIO_MIN)} de prêmio estimado. Isso dá <b>${fmtBRL(faltaCNC/dRest)}/dia</b> nos próximos ${dRest} dia(s).`
+      : `⏰ Mês fechando — faltam ${fmtBRL(faltaCNC)} de CNC pra chegar em ${fmtBRL(ALVO_PREMIO_MIN)}. Corra atrás das propostas em análise.`;
 
-  document.getElementById('ranking').innerHTML = lojas.map((l,i)=>{
-    const rank=i+1;
-    const {principal,ritmo,lvl,pct} = mentorTip(l.codigo,mes);
-    const st = streak(l.codigo);
-    const outros = PRODUCT_KEYS_ALL.filter(k=>k!=='CNC').map(k=>{
-      const v = valorProduto(l.codigo, mes, k);
-      const pctP = v.meta? v.atual/v.meta*100 : null;
-      const contagem = COUNT_META_PRODUCTS.has(k);
-      const metaTxt = !v.meta ? 'sem meta importada' : contagem ? `mín. ${v.meta.toLocaleString('pt-BR',{maximumFractionDigits:1})} contrato(s)` : 'meta '+fmtBRL(v.meta)+' • '+fmtPct(pctP);
-      return `<div class="mix-row"><span>${PRODUCT_LABELS[k]}</span><b>${fmtBRL(v.atual)}</b><small>${metaTxt}</small></div>`;
-    }).join('');
-    return `<div class="loja-card rank-${rank<=3?rank:'x'}">
-      <div class="rank-num">${rank}</div>
-      <div class="loja-info">
-        <div class="nome">${l.nome} <span class="badge" style="background:${lvl.color}22;color:${lvl.color}">${lvl.emoji} ${lvl.label}</span></div>
-        <div class="codigo">Loja ${l.codigo}</div>
-        <div class="valores">
-          <div class="item">CNC atual<b>${fmtBRL(l.atual)}</b></div>
-          <div class="item">Meta<b>${fmtBRL(meta)}</b></div>
-          <div class="item">% atingido<b>${fmtPct(pct)}</b></div>
-        </div>
-        <div class="progress"><div style="width:${Math.min(pct,100)}%"></div></div>
-        <div class="mentor"><div class="princ">${principal}</div><div class="ritmo">${ritmo}</div></div>
-        ${st>0?`<div class="streak">🔥 ${st} dia(s) seguidos alimentando dados</div>`:''}
-        <details class="mix-details"><summary>Ver mix completo (todos os produtos)</summary>${outros}</details>
-      </div>
-      <div class="side-stats">${sparklineSVG(l.codigo,mes)}</div>
-    </div>`;
+  const mix = PRODUCT_KEYS_ALL.map(k=>{
+    const v = valorProdutoConsultor(nome, mes, k);
+    return `<div class="mix-row"><span>${PRODUCT_LABELS[k]}</span><b>${fmtBRL(v.atual)}</b></div>`;
   }).join('');
 
-  const fLoja = document.getElementById('fLoja');
-  fLoja.innerHTML = state.lojas.map(l=>`<option value="${l.codigo}">${l.codigo} - ${l.nome}</option>`).join('');
+  const rvCons = codigoLoja ? RV_CONSULTOR[codigoLoja] : null;
+  const rvHtml = rvCons ? renderRVPanel(rvCons, (key)=>{
+    if(key==='CNC') return cnc;
+    if(key==='Cartao') return valorProdutoConsultor(nome,mes,'CartaoBeneficio').atual + valorProdutoConsultor(nome,mes,'BmgCard').atual;
+    if(key==='FGTS') return valorProdutoConsultor(nome,mes,'FGTS').atual;
+    if(key==='Consignado') return valorProdutoConsultor(nome,mes,'EmprestimoConsignado').atual;
+    return 0;
+  }, dRest) : '<div class="hist-empty">Sem tabela 4F pra essa loja.</div>';
 
-  document.getElementById('faixasTable').innerHTML = FAIXAS_CNC.map(f=>
-    `<tr><td>${fmtBRL(f.v)}</td><td style="text-align:right;color:var(--orange)">${f.p.toLocaleString('pt-BR',{minimumFractionDigits:2})}%</td></tr>`
-  ).join('');
+  const qtdSeguros = qtdSegurosAtual(nome, mes);
+  const elegivelSeguro = qtdSeguros >= MIN_SEGUROS_ELEGIVEL;
+  const premioSeguro = elegivelSeguro ? qtdSeguros*PREMIO_SEGURO_UNITARIO : 0;
 
-  const consultores = Object.keys(state.consultorLoja).map(nome=>{
-    const cnc = valorProdutoConsultor(nome, mes, 'CNC');
-    const codigoLoja = state.consultorLoja[nome];
-    const loja = state.lojas.find(l=>l.codigo===codigoLoja);
-    const pctC = cnc.meta? cnc.atual/cnc.meta*100 : 0;
-    return {nome, codigoLoja, lojaNome: loja? loja.nome : 'loja não identificada', atual:cnc.atual, meta:cnc.meta, pct:pctC};
-  }).sort((a,b)=>b.atual-a.atual);
+  conteudo.innerHTML = `
+    <div class="panel">
+      <div style="font-size:13px;color:var(--muted)">Loja</div>
+      <div style="font-size:16px;font-weight:700">${loja? loja.nome : 'não identificada'} <span style="color:var(--muted);font-weight:400;font-size:13px">(${codigoLoja||'—'})</span></div>
+    </div>
 
-  document.getElementById('rankingConsultores').innerHTML = !consultores.length
-    ? '<div class="hist-empty">Nenhum consultor cadastrado ainda.</div>'
-    : `<table class="cons-table">
-        <thead><tr><th>#</th><th>Consultor</th><th>Loja</th><th>CNC atual</th><th>Meta individual</th><th>% atingido</th><th>🎯 Meta 4F (CNC)</th><th>% Meta 4F</th><th>Plano de ação</th></tr></thead>
-        <tbody>
-        ${consultores.map((c,i)=>{
-          const lvl = nivel(c.pct);
-          const medalha = i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':'';
-          const rvCons = c.codigoLoja ? RV_CONSULTOR[c.codigoLoja] : null;
-          let rv4fCell = '<span style="color:var(--muted)">—</span>';
-          let rvPctCell = '<span style="color:var(--muted)">—</span>';
-          let rvPlanoCell = '<span style="color:var(--muted)">—</span>';
-          if(rvCons && rvCons.CNC){
-            const {atual:rvAtual, proxima:rvProxima} = faixaInfo(c.atual, rvCons.CNC);
-            rv4fCell = rvAtual
-              ? `<span class="rv-badge" style="background:var(--success)22;color:var(--success)" title="Bônus 4F: ${fmtBRL(rvAtual.bonus)}${rvProxima? ' • Faltam '+fmtBRL(rvProxima.producao-c.atual)+' pra Faixa '+rvProxima.faixa : ' (faixa máxima)'}">F${rvAtual.faixa} · ${fmtBRL(rvAtual.bonus)}</span>`
-              : `<span class="rv-badge" style="background:var(--card2);color:var(--muted)" title="Faixa 1 4F: ${fmtBRL(rvCons.CNC[0].producao)}">Faltam ${fmtBRL(rvCons.CNC[0].producao-c.atual)}</span>`;
-            if(rvAtual && !rvProxima){
-              rvPctCell = fmtPct(c.atual/rvAtual.producao*100);
-              rvPlanoCell = '🏆 Faixa máxima batida — siga vendendo CNC pra aumentar ainda mais o bônus.';
-            } else {
-              const alvo = rvProxima || rvCons.CNC[0];
-              const falta = Math.max(alvo.producao - c.atual, 0);
-              rvPctCell = fmtPct(c.atual/alvo.producao*100);
-              rvPlanoCell = dRest>0
-                ? `Vender ${fmtBRL(falta/dRest)}/dia nos próximos ${dRest} dia(s) pra bater a Faixa ${alvo.faixa}.`
-                : `Mês fechando — foque em concluir propostas de CNC em andamento.`;
-            }
-          }
-          return `<tr class="${i<3?'top'+(i+1):''}">
-            <td class="rank-cell">${i+1}</td>
-            <td><a href="consultor.html?nome=${encodeURIComponent(c.nome)}" style="color:var(--text);font-weight:600;text-decoration:underline dotted">${c.nome}</a>${medalha}</td>
-            <td>${c.lojaNome}</td>
-            <td>${fmtBRL(c.atual)}</td>
-            <td>${c.meta? fmtBRL(c.meta) : '—'}</td>
-            <td><span class="badge" style="background:${lvl.color}22;color:${lvl.color}">${lvl.emoji} ${fmtPct(c.pct)}</span></td>
-            <td>${rv4fCell}</td>
-            <td>${rvPctCell}</td>
-            <td style="max-width:220px;font-size:12px;color:var(--muted)">${rvPlanoCell}</td>
-          </tr>`;
-        }).join('')}
-        </tbody>
-      </table>`;
+    <div class="panel">
+      <h3>💰 Prêmio LIGA oficial estimado (via CNC)</h3>
+      <div class="faixas-note" style="margin-top:0">Estimativa usando a tabela oficial de faixas de CNC da cartilha (1 ponto = R$ 1,00). Cartões, FGTS, Consignado e seguros somam pontos à parte — o valor definitivo é sempre o do BI / Portal LIGA.</div>
+      <div class="rv-item" style="margin-top:12px">
+        <div class="rv-item-head"><span>CNC atual</span><b>${fmtBRL(cnc)}</b></div>
+        <div class="rv-status">${faixaAtual? `Faixa oficial atingida: <b>${faixaAtual.p.toLocaleString('pt-BR',{minimumFractionDigits:2})}%</b> sobre a produção` : 'Ainda não atingiu a Faixa 1 (R$ 15.000)'} → prêmio estimado <b>${fmtBRL(premioAtual)}</b></div>
+      </div>
+      <div class="rv-status" style="margin-top:10px;font-size:13px">${planoAlvo}</div>
+    </div>
 
-  const seguros = Object.keys(state.consultorLoja).map(nome=>{
-    const qtd = qtdSegurosAtual(nome, mes);
-    const loja = state.lojas.find(l=>l.codigo===state.consultorLoja[nome]);
-    return {nome, lojaNome: loja? loja.nome : 'loja não identificada', qtd};
-  }).sort((a,b)=>b.qtd-a.qtd);
+    <div class="panel">
+      <h3>📦 Mix completo atualizado</h3>
+      ${mix}
+    </div>
 
-  document.getElementById('rankingSeguros').innerHTML = !seguros.length
-    ? '<div class="hist-empty">Nenhum consultor cadastrado ainda.</div>'
-    : `<table class="cons-table">
-        <thead><tr><th>#</th><th>Consultor</th><th>Loja</th><th>Qtd. Seguros</th><th>Elegibilidade</th><th>Prêmio</th></tr></thead>
-        <tbody>
-        ${seguros.map((c,i)=>{
-          const medalha = i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':'';
-          const elegivel = c.qtd >= MIN_SEGUROS_ELEGIVEL;
-          const premio = elegivel ? c.qtd*PREMIO_SEGURO_UNITARIO + (i===0? PREMIO_SEGURO_PRIMEIRO : 0) : 0;
-          const elegTxt = elegivel
-            ? `<span class="badge" style="background:var(--success)22;color:var(--success)">✅ Elegível</span>`
-            : `<span class="badge" style="background:var(--danger)22;color:var(--danger)">Faltam ${MIN_SEGUROS_ELEGIVEL - c.qtd}</span>`;
-          return `<tr class="${i<3?'top'+(i+1):''}">
-            <td class="rank-cell">${i+1}</td>
-            <td><a href="consultor.html?nome=${encodeURIComponent(c.nome)}" style="color:var(--text);font-weight:600;text-decoration:underline dotted">${c.nome}</a>${medalha}</td>
-            <td>${c.lojaNome}</td>
-            <td>${c.qtd}</td>
-            <td>${elegTxt}</td>
-            <td>${elegivel? fmtBRL(premio) : '—'}</td>
-          </tr>`;
-        }).join('')}
-        </tbody>
-      </table>`;
+    <div class="panel">
+      <h3>🎯 Meta 4F (bônus interno da rede)</h3>
+      <div class="rv-panel">${rvHtml}</div>
+    </div>
 
-  const hist = state.historico.filter(h=>h.data.startsWith(mes)).sort((a,b)=>b.data.localeCompare(a.data));
-  const historyLog = document.getElementById('historyLog');
-  if(!hist.length){
-    historyLog.innerHTML = '<div class="hist-empty">Nenhum lançamento este mês ainda.</div>';
-  } else {
-    historyLog.innerHTML = hist.map(h=>{
-      const entry = normalizeEntry(h);
-      const loja = state.lojas.find(l=>l.codigo===entry.codigo);
-      const cnc = entry.valores.CNC? entry.valores.CNC.atual : 0;
-      const extras = Object.keys(entry.valores).filter(k=>k!=='CNC').length;
-      return `<div class="hist-row">
-        <span>${entry.data.split('-').reverse().join('/')} — ${loja? loja.nome : entry.codigo} — <b>${fmtBRL(cnc)}</b>${extras?` <small style="color:var(--muted)">+${extras} produtos</small>`:''}</span>
-        <button data-del="${entry.codigo}|${entry.data}" title="Remover">✕</button>
-      </div>`;
-    }).join('');
-    historyLog.querySelectorAll('button[data-del]').forEach(btn=>{
-      btn.onclick = ()=>{
-        const [codigo,data] = btn.dataset.del.split('|');
-        state.historico = state.historico.filter(h=>!(h.codigo===codigo && h.data===data));
-        saveState(); render();
-      };
-    });
-  }
+    <div class="panel">
+      <h3>🛡️ Seguros</h3>
+      <div class="rv-item">
+        <div class="rv-item-head"><span>Qtd. vendida no mês</span><b>${qtdSeguros}</b></div>
+        <div class="rv-status">${elegivelSeguro
+          ? `✅ Elegível ao prêmio de seguros — estimado <b>${fmtBRL(premioSeguro)}</b> (+ R$ 50 se ficar em 1º lugar geral).`
+          : `Faltam ${MIN_SEGUROS_ELEGIVEL - qtdSeguros} seguro(s) pra ficar elegível ao prêmio (mínimo ${MIN_SEGUROS_ELEGIVEL}).`}</div>
+      </div>
+    </div>
+  `;
 }
-
-document.getElementById('fData').value = todayISO();
-
-document.getElementById('btnSalvar').onclick = ()=>{
-  const codigo = document.getElementById('fLoja').value;
-  const data = document.getElementById('fData').value;
-  const valor = Number(document.getElementById('fValor').value);
-  if(!codigo || !data || isNaN(valor) || valor<0){ alert('Preencha loja, data e um valor válido.'); return; }
-  const mes = data.slice(0,7);
-  const meta = getMeta(mes);
-  const antesDaMeta = valorAtual(codigo,mes) < meta;
-
-  const idx = state.historico.findIndex(h=>h.codigo===codigo && h.data===data);
-  if(idx>=0){
-    const entry = normalizeEntry(state.historico[idx]);
-    entry.valores.CNC = {atual:valor, meta:(entry.valores.CNC && entry.valores.CNC.meta) || 0};
-    state.historico[idx] = entry;
-  } else {
-    state.historico.push({codigo, data, valores:{CNC:{atual:valor, meta:0}}});
-  }
-  saveState();
-
-  if(antesDaMeta && valor>=meta) confetti();
-  document.getElementById('fValor').value = '';
-  render();
-};
-
-function detectHeaderRow(aoa){
-  for(let i=0;i<Math.min(aoa.length,5);i++){
-    const row = aoa[i]||[];
-    const c0 = String(row[0]||'').trim();
-    if(row.some(c=>String(c||'').trim()==='Qtd Seguro')) return {type:'seguros', row:i};
-    if(c0==='Franquia') return {type:'franquia', row:i};
-    if(c0==='Consultor') return {type:'consultor', row:i};
-  }
-  return null;
-}
-function parseSegurosRows(aoa, headerRow){
-  const header = (aoa[headerRow]||[]).map(h=>String(h||'').trim());
-  const idxConsultor = header.indexOf('Consultor');
-  const idxFranquia = header.indexOf('Franquia');
-  const idxQtdSeguro = header.indexOf('Qtd Seguro');
-  const rows = [];
-  for(let r=headerRow+1; r<aoa.length; r++){
-    const row = aoa[r] || [];
-    const nome = String(row[idxConsultor]||'').trim();
-    if(!nome || nome==='Total' || nome.startsWith('Filtros')) continue;
-    const franquiaLabel = String(row[idxFranquia]||'').trim();
-    const m = franquiaLabel.match(/^(\d+)/);
-    rows.push({nome, codigo: m? m[1] : null, qtd: Number(row[idxQtdSeguro])||0});
-  }
-  return rows;
-}
-function parseValores(row){
-  const valores = {};
-  PRODUCT_KEYS_ALL.forEach((key,gi)=>{
-    const off = 1 + gi*5;
-    valores[key] = {atual:Number(row[off])||0, meta:Number(row[off+3])||0};
-  });
-  return valores;
-}
-function parseFranquiaRows(aoa, headerRow){
-  const rows = [];
-  for(let r=headerRow+1; r<aoa.length; r++){
-    const row = aoa[r] || [];
-    const label = String(row[0]||'').trim();
-    if(!label) continue;
-    const m = label.match(/^(\d+)/);
-    if(!m) continue;
-    const codigo = m[1];
-    const nome = label.replace(/^\d+\s*-\s*HELP!\s*-\s*\w+\s*-\s*/i,'').trim() || label;
-    rows.push({codigo, nome, valores:parseValores(row)});
-  }
-  return rows;
-}
-function parseConsultorRows(aoa, headerRow){
-  const rows = [];
-  for(let r=headerRow+1; r<aoa.length; r++){
-    const row = aoa[r] || [];
-    const nome = String(row[0]||'').trim();
-    if(!nome || nome==='Total' || nome.startsWith('Filtros')) continue;
-    rows.push({nome, valores:parseValores(row)});
-  }
-  return rows;
-}
-
-document.getElementById('xlsxData').value = todayISO();
-document.getElementById('btnImportXlsx').onclick = ()=> document.getElementById('xlsxFile').click();
-document.getElementById('xlsxFile').onchange = (e)=>{
-  const file = e.target.files[0];
-  if(!file) return;
-  if(typeof XLSX === 'undefined'){
-    alert('O leitor de planilhas não carregou (precisa de internet na primeira vez que você abre a página). Conecte e recarregue a página.');
-    e.target.value=''; return;
-  }
-  const data = document.getElementById('xlsxData').value || todayISO();
-  const mes = data.slice(0,7);
-  const reader = new FileReader();
-  reader.onload = (ev)=>{
-    try{
-      const wb = XLSX.read(new Uint8Array(ev.target.result), {type:'array'});
-      const sheet = wb.Sheets[wb.SheetNames[0]];
-      const aoa = XLSX.utils.sheet_to_json(sheet, {header:1, defval:0});
-      const head = detectHeaderRow(aoa);
-      if(!head){ alert('Não reconheço o formato dessa planilha (esperava cabeçalho "Franquia", "Consultor" ou uma coluna "Qtd Seguro").'); e.target.value=''; return; }
-
-      if(head.type==='franquia'){
-        const parsed = parseFranquiaRows(aoa, head.row);
-        if(!parsed.length){ alert('Não encontrei nenhuma loja nessa planilha.'); e.target.value=''; return; }
-        const metaCNC = getMeta(mes);
-        let novas=0, bateuMeta=false;
-        parsed.forEach(p=>{
-          if(!state.lojas.find(l=>l.codigo===p.codigo)){ state.lojas.push({codigo:p.codigo, nome:p.nome}); novas++; }
-          const antesDaMeta = valorAtual(p.codigo, mes) < metaCNC;
-          const idx = state.historico.findIndex(h=>h.codigo===p.codigo && h.data===data);
-          if(idx>=0) state.historico[idx] = {codigo:p.codigo, data, valores:p.valores};
-          else state.historico.push({codigo:p.codigo, data, valores:p.valores});
-          if(antesDaMeta && p.valores.CNC.atual>=metaCNC) bateuMeta=true;
-        });
-        saveState();
-        if(bateuMeta) confetti();
-        alert(`Importado! ${parsed.length} loja(s) atualizada(s) para ${data.split('-').reverse().join('/')}.${novas? ' ('+novas+' loja(s) nova(s) cadastrada(s))':''}`);
-      } else if(head.type==='seguros'){
-        const parsed = parseSegurosRows(aoa, head.row);
-        if(!parsed.length){ alert('Não encontrei nenhum consultor nessa planilha.'); e.target.value=''; return; }
-        parsed.forEach(p=>{
-          const idxS = state.segurosConsultor.findIndex(h=>h.nome===p.nome && h.data===data);
-          if(idxS>=0) state.segurosConsultor[idxS] = {nome:p.nome, data, qtd:p.qtd};
-          else state.segurosConsultor.push({nome:p.nome, data, qtd:p.qtd});
-          if(p.codigo) state.consultorLoja[p.nome] = p.codigo;
-          else if(!(p.nome in state.consultorLoja)) state.consultorLoja[p.nome] = null;
-        });
-        saveState();
-        alert(`Importado! ${parsed.length} consultor(es) com dados de seguros atualizados para ${data.split('-').reverse().join('/')}.`);
-      } else {
-        const parsed = parseConsultorRows(aoa, head.row);
-        if(!parsed.length){ alert('Não encontrei nenhum consultor nessa planilha.'); e.target.value=''; return; }
-
-        const porLoja = {};
-        const naoMapeados = [];
-        parsed.forEach(p=>{
-          const idxC = state.historicoConsultor.findIndex(h=>h.nome===p.nome && h.data===data);
-          if(idxC>=0) state.historicoConsultor[idxC] = {nome:p.nome, data, valores:p.valores};
-          else state.historicoConsultor.push({nome:p.nome, data, valores:p.valores});
-
-          if(!(p.nome in state.consultorLoja)) state.consultorLoja[p.nome] = null;
-          const codigo = state.consultorLoja[p.nome];
-          if(!codigo){ naoMapeados.push(p.nome); return; }
-          if(!porLoja[codigo]) porLoja[codigo] = {};
-          PRODUCT_KEYS_ALL.forEach(key=>{
-            if(!porLoja[codigo][key]) porLoja[codigo][key] = {atual:0, meta:0};
-            porLoja[codigo][key].atual += p.valores[key].atual;
-            porLoja[codigo][key].meta += p.valores[key].meta;
-          });
-        });
-
-        const metaCNC = getMeta(mes);
-        let bateuMeta = false;
-        Object.keys(porLoja).forEach(codigo=>{
-          const antesDaMeta = valorAtual(codigo,mes) < metaCNC;
-          const idx = state.historico.findIndex(h=>h.codigo===codigo && h.data===data);
-          if(idx>=0) state.historico[idx] = {codigo, data, valores:porLoja[codigo]};
-          else state.historico.push({codigo, data, valores:porLoja[codigo]});
-          if(antesDaMeta && porLoja[codigo].CNC.atual>=metaCNC) bateuMeta=true;
-        });
-        saveState();
-        if(bateuMeta) confetti();
-        let msg = `Importado! ${parsed.length} consultor(es) e ${Object.keys(porLoja).length} loja(s) atualizados para ${data.split('-').reverse().join('/')}.`;
-        if(naoMapeados.length) msg += `\n\nNão sei a qual loja pertence(m): ${naoMapeados.join(', ')}. A produção deles entrou no ranking de consultores mas não no total da loja — me diga a loja de cada um pra eu corrigir.`;
-        alert(msg);
-      }
-      e.target.value='';
-      render();
-    }catch(err){
-      alert('Não consegui ler essa planilha: '+err.message);
-      e.target.value='';
-    }
-  };
-  reader.readAsArrayBuffer(file);
-};
-
-document.getElementById('btnAddLoja').onclick = ()=>{
-  const codigo = prompt('Código da loja:');
-  if(!codigo) return;
-  const nome = prompt('Nome da loja:');
-  if(!nome) return;
-  state.lojas.push({codigo:codigo.trim(), nome:nome.trim()});
-  saveState(); render();
-};
-
-document.getElementById('btnExport').onclick = ()=>{
-  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href=url; a.download=`liga-help-backup-${todayISO()}.json`; a.click();
-  URL.revokeObjectURL(url);
-};
-document.getElementById('btnImportBtn').onclick = ()=> document.getElementById('btnImport').click();
-document.getElementById('btnImport').onchange = (e)=>{
-  const file = e.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ()=>{
-    try{
-      const parsed = JSON.parse(reader.result);
-      if(!parsed.lojas || !parsed.historico) throw new Error('formato inválido');
-      if(confirm('Importar este backup vai substituir os dados atuais. Continuar?')){
-        state = parsed; saveState(); render();
-      }
-    }catch(err){ alert('Arquivo inválido: '+err.message); }
-  };
-  reader.readAsText(file);
-};
 
 render();
 </script>
