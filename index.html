@@ -182,6 +182,13 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
       </div>
 
       <div class="panel">
+        <h3>🔑 Códigos de acesso (só você vê isso)</h3>
+        <div class="faixas-note" style="margin-top:0">Repasse individualmente pra cada pessoa entrar no próprio plano de ação. Não é senha de verdade, só afasta curiosos.</div>
+        <details class="mix-details" style="margin-top:10px"><summary>Ver códigos dos consultores</summary><div id="codigosConsultores" style="margin-top:8px"></div></details>
+        <details class="mix-details" style="margin-top:10px"><summary>Ver códigos das lojas (supervisor)</summary><div id="codigosLojas" style="margin-top:8px"></div></details>
+      </div>
+
+      <div class="panel">
         <h3>🗒️ Histórico do mês</h3>
         <div id="historyLog"></div>
       </div>
@@ -415,6 +422,12 @@ function nivel(pct){
   if(pct>=50)  return {n:3,label:'Embalado',emoji:'💪',color:'var(--purple)'};
   if(pct>=25)  return {n:2,label:'Aquecendo',emoji:'🔥',color:'var(--warning)'};
   return {n:1,label:'Largada',emoji:'🚀',color:'var(--muted)'};
+}
+
+function codigoAcesso(id){
+  let h = 0;
+  for(let i=0;i<id.length;i++){ h = (h*31 + id.charCodeAt(i)) >>> 0; }
+  return String(h % 10000).padStart(4,'0');
 }
 
 const RV_LABELS = {CNC:'CNC', Cartao:'Cartão (Bmg Card + Benefício)', FGTS:'FGTS', Consignado:'Consignado (Empréstimo)'};
@@ -668,6 +681,13 @@ function render(){
         }).join('')}
         </tbody>
       </table>`;
+
+  document.getElementById('codigosConsultores').innerHTML = Object.keys(state.consultorLoja).sort().map(n=>
+    `<div class="hist-row"><span>${n}</span><b style="color:var(--gold);letter-spacing:2px">${codigoAcesso(n)}</b></div>`
+  ).join('');
+  document.getElementById('codigosLojas').innerHTML = state.lojas.map(l=>
+    `<div class="hist-row"><span>${l.nome} (${l.codigo})</span><b style="color:var(--gold);letter-spacing:2px">${codigoAcesso(l.codigo)}</b></div>`
+  ).join('');
 
   const hist = state.historico.filter(h=>h.data.startsWith(mes)).sort((a,b)=>b.data.localeCompare(a.data));
   const historyLog = document.getElementById('historyLog');

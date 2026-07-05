@@ -400,6 +400,38 @@ function sparklineSVG(codigo,mes){
 
 const ALVO_PREMIO_MIN = 2000;
 
+function codigoAcesso(id){
+  let h = 0;
+  for(let i=0;i<id.length;i++){ h = (h*31 + id.charCodeAt(i)) >>> 0; }
+  return String(h % 10000).padStart(4,'0');
+}
+
+function pinGate(id, conteudo, onOk){
+  const key = 'pin_ok_' + id;
+  if(sessionStorage.getItem(key) === '1'){ onOk(); return; }
+  conteudo.innerHTML = `
+    <div class="panel">
+      <h3>🔒 Acesso restrito</h3>
+      <div class="faixas-note" style="margin-top:0">Esse código foi combinado com sua gestão. Ele só serve pra afastar curiosos — não é uma senha de verdade nem uma proteção de dados sensíveis.</div>
+      <label style="display:block;margin-top:12px;font-size:12px;color:var(--muted)">Código de acesso (4 dígitos)</label>
+      <input id="pinInput" type="text" inputmode="numeric" maxlength="4" style="width:100%;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:10px;font-size:18px;letter-spacing:6px;text-align:center">
+      <button id="btnEntrar" style="width:100%;margin-top:10px;background:var(--orange);border:none;color:#1a1200;font-weight:700;padding:10px;border-radius:8px;cursor:pointer;font-size:14px">Entrar</button>
+      <div id="erroPin" style="color:var(--danger);font-size:12px;margin-top:8px;display:none">Código incorreto. Confira com sua gestão.</div>
+    </div>`;
+  const tentar = ()=>{
+    const val = document.getElementById('pinInput').value.trim();
+    if(val === codigoAcesso(id)){
+      sessionStorage.setItem(key, '1');
+      onOk();
+    } else {
+      document.getElementById('erroPin').style.display = 'block';
+    }
+  };
+  document.getElementById('btnEntrar').onclick = tentar;
+  document.getElementById('pinInput').addEventListener('keydown', e=>{ if(e.key==='Enter') tentar(); });
+  document.getElementById('pinInput').focus();
+}
+
 function render(){
   const mes = MES();
   const dRest = diasRestantes(mes);
@@ -417,6 +449,11 @@ function render(){
     return;
   }
 
+  document.getElementById('tituloConsultor').textContent = '🔒 Plano de Ação — ' + nome;
+  pinGate(nome, conteudo, ()=>renderConteudo(nome, mes, dRest, conteudo));
+}
+
+function renderConteudo(nome, mes, dRest, conteudo){
   document.getElementById('tituloConsultor').textContent = '🎯 Plano de Ação — ' + nome;
 
   const codigoLoja = state.consultorLoja[nome];
