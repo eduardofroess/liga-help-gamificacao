@@ -467,7 +467,7 @@ function render(){
     return `<div class="loja-card rank-${rank<=3?rank:'x'}">
       <div class="rank-num">${rank}</div>
       <div class="loja-info">
-        <div class="nome">${l.nome} <span class="badge" style="background:${lvl.color}22;color:${lvl.color}">${lvl.emoji} ${lvl.label}</span></div>
+        <div class="nome"><a href="supervisor.html?codigo=${l.codigo}" style="color:var(--text);text-decoration:underline dotted">${l.nome}</a> <span class="badge" style="background:${lvl.color}22;color:${lvl.color}">${lvl.emoji} ${lvl.label}</span></div>
         <div class="codigo">Loja ${l.codigo}</div>
         <div class="valores">
           <div class="item">CNC atual<b>${fmtBRL(l.atual)}</b></div>

@@ -401,8 +401,8 @@ function render(){
     return `<div class="loja-card rank-${rank<=3?rank:'x'}" style="grid-template-columns:44px 1fr">
       <div class="rank-num">${rank}</div>
       <div class="loja-info">
-        <div class="nome">${l.nome}</div>
-        <div class="codigo">Loja ${l.codigo} • CNC atual: ${fmtBRL(l.atual)}</div>
+        <div class="nome"><a href="supervisor.html?codigo=${l.codigo}" style="color:var(--text);text-decoration:underline dotted">${l.nome}</a></div>
+        <div class="codigo">Loja ${l.codigo} • CNC atual: ${fmtBRL(l.atual)} • <a href="supervisor.html?codigo=${l.codigo}" style="color:var(--blue)">Ver plano de ação completo →</a></div>
         <div class="rv-panel" style="margin-top:12px">${rvSupHtml}</div>
       </div>
     </div>`;
