@@ -419,7 +419,24 @@ function sparklineSVG(codigo,mes){
   return `<svg viewBox="0 0 ${w} ${h}" class="spark"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
 }
 
+const ACESSO_OVERRIDE = {
+  'ROSEANE ARAUJO DE LIMA': '9337',
+  'LINDAMIRES SILVA DOS SANTOS': '3344',
+  'GABRIELLA FERNANDA DE LIMA SANTOS': '8387',
+  'JULIA GRACIELA LIRA OLIVEIRA': '0304',
+  'GEOVANA CAMELO CARDOSO': '7301',
+  'STEPHANI CRISTINY COSTA SILVA': '5328',
+  'MARIA HELOISA DIAS FAGUNDES': '1366',
+  'GRACIONE DE JESUS VIEGAS CORREA': '4352',
+  'THAYANA DOS SANTOS SOARES': '3389',
+  '53631': '0391',
+  '54123': '8343',
+  '54245': '3212',
+  '54275': '7315',
+};
+
 function codigoAcesso(id){
+  if(ACESSO_OVERRIDE[id]) return ACESSO_OVERRIDE[id];
   let h = 0;
   for(let i=0;i<id.length;i++){ h = (h*31 + id.charCodeAt(i)) >>> 0; }
   return String(h % 10000).padStart(4,'0');

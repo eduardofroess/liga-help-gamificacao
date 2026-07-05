@@ -183,7 +183,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
 
       <div class="panel">
         <h3>🔑 Códigos de acesso (só você vê isso)</h3>
-        <div class="faixas-note" style="margin-top:0">Repasse individualmente pra cada pessoa entrar no próprio plano de ação. Não é senha de verdade, só afasta curiosos.</div>
+        <div class="faixas-note" style="margin-top:0">Repasse individualmente pra cada pessoa entrar no próprio plano de ação. Pra quem já mapeamos, o código é os últimos 4 dígitos do usuário/CPF (mais fácil de lembrar); pra o resto, é um código gerado automaticamente até termos o dado real. Não é senha de verdade, só afasta curiosos.</div>
         <details class="mix-details" style="margin-top:10px"><summary>Ver códigos dos consultores</summary><div id="codigosConsultores" style="margin-top:8px"></div></details>
         <details class="mix-details" style="margin-top:10px"><summary>Ver códigos das lojas (supervisor)</summary><div id="codigosLojas" style="margin-top:8px"></div></details>
       </div>
@@ -424,7 +424,24 @@ function nivel(pct){
   return {n:1,label:'Largada',emoji:'🚀',color:'var(--muted)'};
 }
 
+const ACESSO_OVERRIDE = {
+  'ROSEANE ARAUJO DE LIMA': '9337',
+  'LINDAMIRES SILVA DOS SANTOS': '3344',
+  'GABRIELLA FERNANDA DE LIMA SANTOS': '8387',
+  'JULIA GRACIELA LIRA OLIVEIRA': '0304',
+  'GEOVANA CAMELO CARDOSO': '7301',
+  'STEPHANI CRISTINY COSTA SILVA': '5328',
+  'MARIA HELOISA DIAS FAGUNDES': '1366',
+  'GRACIONE DE JESUS VIEGAS CORREA': '4352',
+  'THAYANA DOS SANTOS SOARES': '3389',
+  '53631': '0391',
+  '54123': '8343',
+  '54245': '3212',
+  '54275': '7315',
+};
+
 function codigoAcesso(id){
+  if(ACESSO_OVERRIDE[id]) return ACESSO_OVERRIDE[id];
   let h = 0;
   for(let i=0;i<id.length;i++){ h = (h*31 + id.charCodeAt(i)) >>> 0; }
   return String(h % 10000).padStart(4,'0');
