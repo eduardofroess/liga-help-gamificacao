@@ -636,6 +636,11 @@ function renderConteudo(codigo, loja, mes, dRest, conteudo){
     </div>
 
     <div class="panel">
+      <h3>✅ Não perca produção: confirmação no Meu INSS</h3>
+      <div class="rv-status" style="font-size:13px">Desde a nova regra do INSS, o consignado só é efetivado depois que o cliente confirma por reconhecimento facial no app <b>Meu INSS</b>, em até 5 dias corridos — sem confirmar, o contrato cancela sozinho. Reforce com o time ligar pro cliente lembrando de confirmar: cancelamento nos primeiros 90 dias desconta da produção da loja.</div>
+    </div>
+
+    <div class="panel">
       <h3>📈 Evolução diária de CNC da loja</h3>
       ${evolucaoChartSVG([{label:loja.nome, color:'#ff7a1a', points: entriesFor(codigo, mes).filter(e=>e.valores.CNC).map(e=>({data:e.data, valor:e.valores.CNC.atual}))}])}
     </div>
