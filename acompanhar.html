@@ -113,6 +113,11 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
 
   <section class="team-summary" id="teamSummary"></section>
 
+  <div class="panel" style="margin-bottom:18px">
+    <h3>📈 Evolução diária de CNC por loja</h3>
+    <div id="evolucaoChart"></div>
+  </div>
+
   <section class="ranking" id="ranking"></section>
 
   <div class="panel">
@@ -453,6 +458,49 @@ function sparklineSVG(codigo,mes){
   return `<svg viewBox="0 0 ${w} ${h}" class="spark"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
 }
 
+const CORES_CHART = ['#ff7a1a','#ffd23f','#60a5fa','#a78bfa','#22c55e','#ef4444','#f59e0b','#38bdf8','#f472b6','#84cc16'];
+function fmtBRLShort(v){
+  if(v>=1000) return 'R$ '+(v/1000).toLocaleString('pt-BR',{maximumFractionDigits:0})+'k';
+  return fmtBRL(v);
+}
+function evolucaoChartSVG(series){
+  const allDatas = [...new Set(series.flatMap(s=>s.points.map(p=>p.data)))].sort();
+  if(allDatas.length<2) return '<div class="hist-empty">Ainda não há dias suficientes de histórico pra montar o gráfico (precisa de pelo menos 2 datas com dados importados).</div>';
+  const w=680,h=280,padL=58,padR=16,padT=16,padB=34;
+  const innerW=w-padL-padR, innerH=h-padT-padB;
+  const allVals = series.flatMap(s=>s.points.map(p=>p.valor));
+  const maxV = Math.max(...allVals,1);
+  const x = i => padL + (allDatas.length>1 ? (i/(allDatas.length-1))*innerW : innerW/2);
+  const y = v => padT + innerH - (v/maxV)*innerH;
+  const gridLines = [0,0.25,0.5,0.75,1].map(f=>{
+    const yy = padT + innerH - f*innerH;
+    const val = f*maxV;
+    return `<line x1="${padL}" y1="${yy.toFixed(1)}" x2="${w-padR}" y2="${yy.toFixed(1)}" stroke="#2a2f3a" stroke-width="1"/><text x="${padL-8}" y="${(yy+4).toFixed(1)}" font-size="10" fill="#9aa0a8" text-anchor="end">${fmtBRLShort(val)}</text>`;
+  }).join('');
+  const step = allDatas.length>8 ? Math.ceil(allDatas.length/8) : 1;
+  const xLabels = allDatas.map((d,i)=> i%step!==0 ? '' : `<text x="${x(i).toFixed(1)}" y="${(h-padB+16).toFixed(1)}" font-size="10" fill="#9aa0a8" text-anchor="middle">${d.slice(8,10)}/${d.slice(5,7)}</text>`).join('');
+  const lines = series.map(s=>{
+    const byData = {}; s.points.forEach(p=>{ byData[p.data]=p.valor; });
+    let d='', started=false;
+    allDatas.forEach((dt,i)=>{
+      if(byData[dt]===undefined) return;
+      d += `${started?'L':'M'}${x(i).toFixed(1)},${y(byData[dt]).toFixed(1)} `;
+      started = true;
+    });
+    const dots = allDatas.map((dt,i)=> byData[dt]===undefined ? '' : `<circle cx="${x(i).toFixed(1)}" cy="${y(byData[dt]).toFixed(1)}" r="3" fill="${s.color}"/>`).join('');
+    return `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.2"/>${dots}`;
+  }).join('');
+  const legend = series.map(s=>`<span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px;margin-bottom:4px"><span style="width:10px;height:10px;border-radius:2px;background:${s.color};display:inline-block"></span>${s.label}</span>`).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto">${gridLines}${xLabels}${lines}</svg><div style="margin-top:8px;font-size:11.5px;color:var(--text);line-height:1.6;display:flex;flex-wrap:wrap">${legend}</div>`;
+}
+function seriesEvolucaoLojas(mes){
+  return state.lojas.map((l,i)=>({
+    label: l.nome,
+    color: CORES_CHART[i % CORES_CHART.length],
+    points: entriesFor(l.codigo, mes).filter(e=>e.valores.CNC).map(e=>({data:e.data, valor:e.valores.CNC.atual})),
+  }));
+}
+
 function render(){
   const mes = MES();
   document.getElementById('subMes').textContent =
@@ -476,6 +524,8 @@ function render(){
   const faltaColetivo = Math.max(totalMeta-totalAtual,0);
   const ritmoColetivo = dRest>0? faltaColetivo/dRest : 0;
   const lojasNaMeta = lojas.filter(l=>l.pct>=100).length;
+
+  document.getElementById('evolucaoChart').innerHTML = evolucaoChartSVG(seriesEvolucaoLojas(mes));
 
   document.getElementById('teamSummary').innerHTML = `
     <div class="tcard"><div class="label">Meta coletiva (10 lojas)</div><div class="value">${fmtBRL(totalMeta)}</div></div>
