@@ -236,9 +236,15 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
   </div>
 
   <div class="panel">
-    <h3>🛡️ Ranking de Seguros (individual)</h3>
-    <div class="faixas-note" style="margin-top:0">Prêmio: R$ 5,00 por seguro, após confirmação do desconto da 1ª parcela, + R$ 50,00 de bônus para o 1º lugar. Elegibilidade: mínimo de 10 seguros vendidos no mês pra concorrer.</div>
+    <h3>🛡️ Top 5 — Ranking de Seguros (individual)</h3>
+    <div class="faixas-note" style="margin-top:0">Mostra só os 5 melhores em quantidade de seguros no mês. Prêmio de até R$ 300 pra quem ficar no Top 5 <b>e</b> também vender o mínimo de 10 seguros no mês.</div>
     <div id="rankingSeguros" style="margin-top:10px"></div>
+  </div>
+
+  <div class="panel">
+    <h3>🏦 Top 5 — Ranking de Consignado (individual)</h3>
+    <div class="faixas-note" style="margin-top:0">Mostra só os 5 melhores em produção de Empréstimo Consignado no mês. Prêmio de até R$ 300 pra quem ficar no Top 5 <b>e</b> também bater 90%+ da própria meta individual de consignado.</div>
+    <div id="rankingConsignado" style="margin-top:10px"></div>
   </div>
 
   <footer>Dados de produção alimentados manualmente a partir do Portal LIGA / BI. Uso interno para acompanhamento e motivação do time.</footer>
@@ -798,7 +804,7 @@ function render(){
     const qtd = qtdSegurosAtual(nome, mes);
     const loja = state.lojas.find(l=>l.codigo===state.consultorLoja[nome]);
     return {nome, lojaNome: loja? loja.nome : 'loja não identificada', qtd};
-  }).sort((a,b)=>b.qtd-a.qtd);
+  }).sort((a,b)=>b.qtd-a.qtd).slice(0,5);
 
   document.getElementById('rankingSeguros').innerHTML = !seguros.length
     ? '<div class="hist-empty">Nenhum consultor cadastrado ainda.</div>'
@@ -808,7 +814,7 @@ function render(){
         ${seguros.map((c,i)=>{
           const medalha = i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':'';
           const elegivel = c.qtd >= MIN_SEGUROS_ELEGIVEL;
-          const premio = elegivel ? c.qtd*PREMIO_SEGURO_UNITARIO + (i===0? PREMIO_SEGURO_PRIMEIRO : 0) : 0;
+          const prizeTiersSeg=[300,200,150,100,50]; const premio = elegivel ? prizeTiersSeg[i] : 0;
           const elegTxt = elegivel
             ? `<span class="badge" style="background:var(--success)22;color:var(--success)">✅ Elegível</span>`
             : `<span class="badge" style="background:var(--danger)22;color:var(--danger)">Faltam ${MIN_SEGUROS_ELEGIVEL - c.qtd}</span>`;
@@ -818,11 +824,19 @@ function render(){
             <td>${c.lojaNome}</td>
             <td>${c.qtd}</td>
             <td>${elegTxt}</td>
-            <td>${elegivel? fmtBRL(premio) : '—'}</td>
+            <td>${elegivel? `<span class="badge" style="background:var(--gold)22;color:var(--gold)">🏆 ${fmtBRL(premio)}</span>` : `<span style="color:var(--muted)">sem prêmio (min. 10 seguros)</span>`}</td>
           </tr>`;
         }).join('')}
         </tbody>
       </table>`;
+
+  const consignado = Object.keys(state.consultorLoja).map(nome=>{
+    const cs = valorProdutoConsultor(nome, mes, 'EmprestimoConsignado');
+    const loja2 = state.lojas.find(l=>l.codigo===state.consultorLoja[nome]);
+    const pctCs = cs.meta? cs.atual/cs.meta*100 : 0;
+    return {nome, lojaNome: loja2? loja2.nome : 'loja não identificada', atual:cs.atual, meta:cs.meta, pct:pctCs};
+  }).sort((a,b)=>b.atual-a.atual).slice(0,5);
+  document.getElementById('rankingConsignado').innerHTML = !consignado.length ? '<div class="hist-empty">Nenhum consultor cadastrado ainda.</div>' : `<table class="cons-table"> <thead><tr><th>#</th><th>Consultor</th><th>Loja</th><th>Consignado atual</th><th>Meta individual</th><th>% atingido</th><th>🏆 Prêmio</th></tr></thead> <tbody> ${consignado.map((c,i)=>{ const prizeTiersCs=[300,200,150,100,50]; const elegivelCs = c.pct>=90; const medalha = i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':''; const premioCell = elegivelCs ? `<span class="badge" style="background:var(--gold)22;color:var(--gold)">🏆 R$ ${prizeTiersCs[i]}</span>` : `<span style="color:var(--muted)">sem prêmio (min. 90%)</span>`; return `<tr class="${i<3?'top'+(i+1):''}"> <td class="rank-cell">${i+1}</td> <td><a href="consultor.html?nome=${encodeURIComponent(c.nome)}" style="color:var(--text);font-weight:600;text-decoration:underline dotted">${c.nome}</a>${medalha}</td> <td>${c.lojaNome}</td> <td>${fmtBRL(c.atual)}</td> <td>${c.meta? fmtBRL(c.meta) : '—'}</td> <td>${fmtPct(c.pct)}</td> <td>${premioCell}</td> </tr>`; }).join('')} </tbody> </table>`;
 
   document.getElementById('codigosConsultores').innerHTML = Object.keys(state.consultorLoja).sort().map(n=>
     `<div class="hist-row"><span>${n}</span><b style="color:var(--gold);letter-spacing:2px">${codigoAcesso(n)}</b></div>`
