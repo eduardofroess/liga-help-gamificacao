@@ -558,7 +558,7 @@ function renderRVPanel(rvFaixas, getValor, diasRest){
 }
 
 function mentorTip(codigo,mes){
-  const meta=getMeta(mes), atual=valorAtual(codigo,mes);
+  const meta=(valorProduto(codigo,mes,'CNC').meta)||getMeta(mes), atual=valorAtual(codigo,mes);
   const pct = meta? atual/meta*100:0;
   const dRest=diasRestantes(mes), dPassed=diaDoMes();
   const mediaDia = dPassed? atual/dPassed:0;
@@ -668,11 +668,10 @@ function render(){
 
   const meta = getMeta(mes);
   const lojas = state.lojas.map(l=>{
-    const atual = valorAtual(l.codigo,mes);
-    return {...l, atual, pct: meta? atual/meta*100:0};
+    const atual = valorAtual(l.codigo,mes); const metaLoja = valorProduto(l.codigo,mes,'CNC').meta || meta; return {...l, atual, meta:metaLoja, pct: metaLoja? atual/metaLoja*100:0};
   }).sort((a,b)=>b.atual-a.atual);
 
-  const totalMeta = meta*state.lojas.length;
+  const totalMeta = lojas.reduce((s,l)=>s+l.meta,0);
   const totalAtual = lojas.reduce((s,l)=>s+l.atual,0);
   const pctColetivo = totalMeta? totalAtual/totalMeta*100:0;
   const dRest = diasRestantes(mes);
@@ -709,7 +708,7 @@ function render(){
         <div class="codigo">Loja ${l.codigo}</div>
         <div class="valores">
           <div class="item">CNC atual<b>${fmtBRL(l.atual)}</b></div>
-          <div class="item">Meta<b>${fmtBRL(meta)}</b></div>
+          <div class="item">Meta<b>${fmtBRL(l.meta)}</b></div>
           <div class="item">% atingido<b>${fmtPct(pct)}</b></div>
         </div>
         <div class="progress"><div style="width:${Math.min(pct,100)}%"></div></div>
