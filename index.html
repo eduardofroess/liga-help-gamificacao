@@ -222,8 +222,17 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
   </div>
 
   <div class="panel" style="margin-top:4px">
-    <h3>🏅 Ranking Geral de Consultores (CNC)</h3>
+    <h3>🏆 Top 5 — Ranking Geral de Consultores (CNC)</h3>
+    <div class="faixas-note" style="margin-top:0">Mostra só os 5 melhores em produção de CNC no mês. Prêmio de até R$ 300 pra quem ficar no Top 5 <b>e</b> também bater 90%+ da própria meta individual.</div>
     <div id="rankingConsultores"></div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+      <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px">Não apareceu no Top 5? Veja seu resultado individual:</label>
+      <div style="display:flex;gap:8px">
+        <select id="buscarConsultorSelect" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 10px;font-size:14px"></select>
+        <button id="btnVerMeuResultado" style="width:auto;margin:0;background:var(--orange);border:none;color:#1a1200;font-weight:700;padding:9px 16px;border-radius:8px;cursor:pointer;font-size:14px">Ver</button>
+      </div>
+      <div class="import-note">Escolha seu nome e confirme com os últimos 4 dígitos do seu login/CPF na página seguinte.</div>
+    </div>
   </div>
 
   <div class="panel">
@@ -733,12 +742,12 @@ function render(){
     const loja = state.lojas.find(l=>l.codigo===codigoLoja);
     const pctC = cnc.meta? cnc.atual/cnc.meta*100 : 0;
     return {nome, codigoLoja, lojaNome: loja? loja.nome : 'loja não identificada', atual:cnc.atual, meta:cnc.meta, pct:pctC};
-  }).sort((a,b)=>b.atual-a.atual);
+  }).sort((a,b)=>b.atual-a.atual).slice(0,5);
 
   document.getElementById('rankingConsultores').innerHTML = !consultores.length
     ? '<div class="hist-empty">Nenhum consultor cadastrado ainda.</div>'
     : `<table class="cons-table">
-        <thead><tr><th>#</th><th>Consultor</th><th>Loja</th><th>CNC atual</th><th>Meta individual</th><th>% atingido</th><th>🎯 Meta 4F (CNC)</th><th>% Meta 4F</th><th>Plano de ação</th></tr></thead>
+        <thead><tr><th>#</th><th>Consultor</th><th>Loja</th><th>CNC atual</th><th>Meta individual</th><th>% atingido</th><th>🎯 Meta 4F (CNC)</th><th>% Meta 4F</th><th>Plano de ação</th><th>🏆 Prêmio</th></tr></thead>
         <tbody>
         ${consultores.map((c,i)=>{
           const lvl = nivel(c.pct);
@@ -763,8 +772,7 @@ function render(){
                 ? `Vender ${fmtBRL(falta/dRest)}/dia nos próximos ${dRest} dia(s) pra bater a Faixa ${alvo.faixa}.`
                 : `Mês fechando — foque em concluir propostas de CNC em andamento.`;
             }
-          }
-          return `<tr class="${i<3?'top'+(i+1):''}">
+          } const prizeTiers=[300,200,150,100,50]; const prizeCell = c.pct>=90 ? `<span class="badge" style="background:var(--gold)22;color:var(--gold)">🏆 R$ ${prizeTiers[i].toLocaleString('pt-BR')}</span>` : `<span style="color:var(--muted)" title="Precisa de 90%+ da meta individual pra premiar">sem premio (min. 90%)</span>`; return `<tr class="${i<3?'top'+(i+1):''}">
             <td class="rank-cell">${i+1}</td>
             <td><a href="consultor.html?nome=${encodeURIComponent(c.nome)}" style="color:var(--text);font-weight:600;text-decoration:underline dotted">${c.nome}</a>${medalha}</td>
             <td>${c.lojaNome}</td>
@@ -773,11 +781,18 @@ function render(){
             <td><span class="badge" style="background:${lvl.color}22;color:${lvl.color}">${lvl.emoji} ${fmtPct(c.pct)}</span></td>
             <td>${rv4fCell}</td>
             <td>${rvPctCell}</td>
-            <td style="max-width:220px;font-size:12px;color:var(--muted)">${rvPlanoCell}</td>
-          </tr>`;
+            <td style="max-width:220px;font-size:12px;color:var(--muted)">${rvPlanoCell}</td> <td>${prizeCell}</td> </tr>`;
         }).join('')}
         </tbody>
       </table>`;
+  const allConsultorNames = Object.keys(state.consultorLoja).sort();
+  const buscarSel = document.getElementById('buscarConsultorSelect');
+  if(buscarSel){
+    buscarSel.innerHTML = allConsultorNames.map(n=>`<option value="${n}">${n}</option>`).join('');
+    const btnVer = document.getElementById('btnVerMeuResultado');
+    if(btnVer) btnVer.onclick = ()=>{ window.location.href = 'consultor.html?nome=' + encodeURIComponent(buscarSel.value); };
+  }
+
 
   const seguros = Object.keys(state.consultorLoja).map(nome=>{
     const qtd = qtdSegurosAtual(nome, mes);
