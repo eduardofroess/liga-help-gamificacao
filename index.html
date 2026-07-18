@@ -221,18 +221,19 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
     </aside>
   </div>
 
+  <div class="panel" style="margin-top:4px;border:1px solid var(--orange)">
+    <h3>🔍 Acompanhamento Individual</h3>
+    <div class="faixas-note" style="margin-top:0">Todo consultor pode ver o próprio resultado de CNC, Seguro e Consignado, mesmo quem não ficou no Top 5. Escolha seu nome e confirme com os últimos 4 dígitos do seu login/CPF na página seguinte.</div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <select id="buscarConsultorSelect" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 10px;font-size:14px"></select>
+      <button id="btnVerMeuResultado" style="width:auto;margin:0;background:var(--orange);border:none;color:#1a1200;font-weight:700;padding:9px 16px;border-radius:8px;cursor:pointer;font-size:14px">Ver</button>
+    </div>
+  </div>
+
   <div class="panel" style="margin-top:4px">
     <h3>🏆 Top 5 — Ranking Geral de Consultores (CNC)</h3>
     <div class="faixas-note" style="margin-top:0">Mostra só os 5 melhores em produção de CNC no mês. Prêmio de até R$ 300 pra quem ficar no Top 5 <b>e</b> também bater 90%+ da própria meta individual.</div>
     <div id="rankingConsultores"></div>
-    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-      <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px">Não apareceu no Top 5? Veja seu resultado individual:</label>
-      <div style="display:flex;gap:8px">
-        <select id="buscarConsultorSelect" style="flex:1;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 10px;font-size:14px"></select>
-        <button id="btnVerMeuResultado" style="width:auto;margin:0;background:var(--orange);border:none;color:#1a1200;font-weight:700;padding:9px 16px;border-radius:8px;cursor:pointer;font-size:14px">Ver</button>
-      </div>
-      <div class="import-note">Escolha seu nome e confirme com os últimos 4 dígitos do seu login/CPF na página seguinte.</div>
-    </div>
   </div>
 
   <div class="panel">
