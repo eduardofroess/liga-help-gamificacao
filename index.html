@@ -260,7 +260,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
 const ADMIN_KEY = 'froes30k';
 (function(){
   const isAdmin = new URLSearchParams(location.search).get('admin') === ADMIN_KEY;
-  document.querySelectorAll('.admin-only').forEach(function(el){ el.style.display = isAdmin ? '' : 'none'; });
+  if(isAdmin){ document.querySelectorAll('.admin-only').forEach(function(el){ el.classList.remove('admin-only'); }); }
 })();
 const STORAGE_KEY = 'ligaHelpGamificacao_v1';
 const LOJAS_SEED = [
