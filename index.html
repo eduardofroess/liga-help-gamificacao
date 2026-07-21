@@ -12,7 +12,7 @@
 :root{
   --bg:#0f1115; --card:#181b22; --card2:#1f232c; --border:#2a2f3a;
   --text:#eef0f3; --muted:#9aa0a8; --orange:#ff7a1a; --gold:#ffd23f;
-  --success:#22c55e; --warning:#f59e0b; --danger:#ef4444; --blue:#60a5fa; --purple:#a78bfa;
+  --success:#22c55e; --warning:#f59e0b; --danger:#ef4444; --blue:#60a5fa; --purple:#8b5cf6;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -95,7 +95,7 @@ header .sub{color:var(--muted);font-size:13px}
 .rv-item-head{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:5px}
 .rv-item-head b{color:var(--text)}
 .rv-bar{position:relative;height:8px;background:var(--card2);border-radius:4px;margin:0 1px 5px}
-.rv-bar-fill{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,#a78bfa,#60a5fa);border-radius:4px}
+.rv-bar-fill{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,#8b5cf6,#60a5fa);border-radius:4px}
 .rv-mark{position:absolute;top:-3px;width:2px;height:14px;background:var(--muted)}
 .rv-mark.hit{background:var(--gold)}
 .rv-status{font-size:11.5px;color:var(--muted);line-height:1.5}
@@ -535,7 +535,7 @@ function sparklineSVG(codigo,mes){
   return `<svg viewBox="0 0 ${w} ${h}" class="spark"><polyline points="${pts}" fill="none" stroke="currentColor" stroke-width="2"/></svg>`;
 }
 
-const CORES_CHART = ['#ff7a1a','#ffd23f','#60a5fa','#a78bfa','#22c55e','#ef4444','#f59e0b','#38bdf8','#f472b6','#84cc16'];
+const CORES_CHART = ['#ff7a1a','#ffd23f','#60a5fa','#8b5cf6','#22c55e','#ef4444','#f59e0b','#38bdf8','#f472b6','#84cc16'];
 function fmtBRLShort(v){
   if(v>=1000) return 'R$ '+(v/1000).toLocaleString('pt-BR',{maximumFractionDigits:0})+'k';
   return fmtBRL(v);
@@ -579,7 +579,7 @@ function seriesEvolucaoLojas(mes){
 }
 
 function confetti(){
-  const colors=['#ff7a1a','#ffd23f','#22c55e','#60a5fa','#a78bfa'];
+  const colors=['#ff7a1a','#ffd23f','#22c55e','#60a5fa','#8b5cf6'];
   const box=document.getElementById('confetti-container');
   for(let i=0;i<50;i++){
     const el=document.createElement('div');
