@@ -258,7 +258,9 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 const ADMIN_KEY = 'froes30k';
-const IS_ADMIN = new URLSearchParams(location.search).get('admin') === ADMIN_KEY;
+const __urlAdmin = new URLSearchParams(location.search).get('admin') === ADMIN_KEY;
+if(__urlAdmin){ try{ localStorage.setItem('liga_admin','1'); }catch(e){} }
+const IS_ADMIN = __urlAdmin || (function(){ try{ return localStorage.getItem('liga_admin')==='1'; }catch(e){ return false; } })();
 const CONSULTOR_PAGE = IS_ADMIN ? 'consultor-admin.html' : 'consultor.html';
 const SUPERVISOR_PAGE = IS_ADMIN ? 'supervisor-admin.html' : 'supervisor.html';
 (function(){
