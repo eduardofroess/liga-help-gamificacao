@@ -488,15 +488,26 @@ function renderConteudo(nome, mes, dRest, conteudo){
 
   const premioAtual = premioOficialCNC(cnc);
   const faixaAtual = faixaCNCAtingida(cnc);
-  const bateuAlvo = premioAtual >= ALVO_PREMIO_MIN;
+  const qtdSegurosIndep = qtdSegurosAtual(nome, mes);
+  const deflatorSeguroIndep = qtdSegurosIndep <= 1 ? 0 : (qtdSegurosIndep === 2 ? 0.90 : 1);
+  const premioReal = premioAtual * deflatorSeguroIndep;
+  const bateuAlvo = premioReal >= ALVO_PREMIO_MIN;
   if(bateuAlvo){ setTimeout(confetti, 500); }
-  const producaoAlvo = producaoParaPremioCNC(ALVO_PREMIO_MIN);
+  const alvoBrutoNecessario = deflatorSeguroIndep > 0 ? (ALVO_PREMIO_MIN / deflatorSeguroIndep) : Infinity;
+  const producaoAlvo = producaoParaPremioCNC(alvoBrutoNecessario);
   const faltaCNC = Math.max(producaoAlvo - cnc, 0);
+  const statusDeflatorSeguro = qtdSegurosIndep <= 1
+    ? `🚨 Você tem só ${qtdSegurosIndep} seguro(s) independente(s) formalizado(s) este mês (Bmg Med / Vida Familiar). Com 0 ou 1, o prêmio de CNC fica ZERADO mesmo batendo a faixa — feche pelo menos 2 pra desbloquear o prêmio.`
+    : qtdSegurosIndep === 2
+      ? `⚠️ Você tem 2 seguros independentes — isso tira 10% do seu prêmio de CNC. Feche mais 1 (total 3) pra não perder esse desconto.`
+      : `✅ ${qtdSegurosIndep} seguros independentes formalizados — sem desconto no prêmio de CNC.`;
   const planoAlvo = bateuAlvo
-    ? `🏆 Você já passou de ${fmtBRL(ALVO_PREMIO_MIN)} de prêmio estimado (CNC)! Continue vendendo pra aumentar ainda mais — cada faixa nova de CNC aumenta o percentual sobre toda a produção.`
-    : dRest>0
-      ? `📌 Faltam ${fmtBRL(faltaCNC)} de CNC pra chegar em ${fmtBRL(ALVO_PREMIO_MIN)} de prêmio estimado. Isso dá <b>${fmtBRL(faltaCNC/dRest)}/dia</b> nos próximos ${dRest} dia(s).`
-      : `⏰ Mês fechando — faltam ${fmtBRL(faltaCNC)} de CNC pra chegar em ${fmtBRL(ALVO_PREMIO_MIN)}. Corra atrás das propostas em análise.`;
+    ? `🏆 Você já passou de ${fmtBRL(ALVO_PREMIO_MIN)} de prêmio real estimado (CNC já com deflator de seguros aplicado)! Continue vendendo pra aumentar ainda mais.`
+    : deflatorSeguroIndep === 0
+      ? `🚫 Mesmo vendendo mais CNC, seu prêmio fica em R$ 0,00 até você ter no mínimo 2 seguros independentes formalizados no mês.`
+      : dRest>0
+        ? `📌 Faltam ${fmtBRL(faltaCNC)} de CNC pra chegar em ${fmtBRL(ALVO_PREMIO_MIN)} de prêmio real (já considerando o desconto de seguros). Isso dá <b>${fmtBRL(faltaCNC/dRest)}/dia</b> nos próximos ${dRest} dia(s).`
+        : `⏰ Mês fechando — faltam ${fmtBRL(faltaCNC)} de CNC pra chegar em ${fmtBRL(ALVO_PREMIO_MIN)} de prêmio real. Corra atrás das propostas em análise.`;
 
   const mix = PRODUCT_KEYS_ALL.map(k=>{
     const v = valorProdutoConsultor(nome, mes, k);
@@ -527,7 +538,11 @@ function renderConteudo(nome, mes, dRest, conteudo){
       <div class="faixas-note" style="margin-top:0">Estimativa usando a tabela oficial de faixas de CNC da cartilha (1 ponto = R$ 1,00). Cartões, FGTS, Consignado e seguros somam pontos à parte — o valor definitivo é sempre o do BI / Portal LIGA.</div>
       <div class="rv-item" style="margin-top:12px">
         <div class="rv-item-head"><span>CNC atual</span><b>${fmtBRL(cnc)}</b></div>
-        <div class="rv-status">${faixaAtual? `Faixa oficial atingida: <b>${faixaAtual.p.toLocaleString('pt-BR',{minimumFractionDigits:2})}%</b> sobre a produção` : 'Ainda não atingiu a Faixa 1 (R$ 15.000)'} → prêmio estimado <b>${fmtBRL(premioAtual)}</b></div>
+        <div class="rv-status">${faixaAtual ? `Faixa oficial atingida: <b>${faixaAtual.p.toLocaleString('pt-BR',{minimumFractionDigits:2})}%</b> sobre a produção` : 'Ainda não atingiu a Faixa 1 (R$ 30.000)'} → prêmio bruto (só CNC) <b>${fmtBRL(premioAtual)}</b></div>
+      </div>
+      <div class="rv-item" style="margin-top:10px;border:1px solid ${deflatorSeguroIndep===1?'var(--success)':(deflatorSeguroIndep===0?'var(--danger)':'var(--warning)')}">
+        <div class="rv-item-head"><span>Prêmio real estimado (com deflator de seguros)</span><b style="font-size:18px">${fmtBRL(premioReal)}</b></div>
+        <div class="rv-status">${statusDeflatorSeguro}</div>
       </div>
       <div class="rv-status" style="margin-top:10px;font-size:13px">${planoAlvo}</div>
     </div>
