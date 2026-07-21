@@ -110,6 +110,12 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
 <div id="confetti-container"></div>
 
 <script>
+const ADMIN_KEY = 'froes30k';
+const __urlAdmin = new URLSearchParams(location.search).get('admin') === ADMIN_KEY;
+if(__urlAdmin){ try{ localStorage.setItem('liga_admin','1'); }catch(e){} }
+const IS_ADMIN = __urlAdmin || (function(){ try{ return localStorage.getItem('liga_admin')==='1'; }catch(e){ return false; } })();
+const CONSULTOR_PAGE = IS_ADMIN ? 'consultor-admin.html' : 'consultor.html';
+const SUPERVISOR_PAGE = IS_ADMIN ? 'supervisor-admin.html' : 'supervisor.html';
 const STORAGE_KEY = 'ligaHelpGamificacao_v1';
 const LOJAS_SEED = [
   {codigo:'53631', nome:'São Luís - São Francisco'},
@@ -371,7 +377,7 @@ function render(){
           }
           return `<tr class="${i<3?'top'+(i+1):''}">
             <td class="rank-cell">${i+1}</td>
-            <td><a href="consultor.html?nome=${encodeURIComponent(c.nome)}" style="color:var(--text);font-weight:600;text-decoration:underline dotted">${c.nome}</a>${medalha}</td>
+            <td><a href="${CONSULTOR_PAGE}?nome=${encodeURIComponent(c.nome)}" style="color:var(--text);font-weight:600;text-decoration:underline dotted">${c.nome}</a>${medalha}</td>
             <td>${c.lojaNome}</td>
             <td>${fmtBRL(c.atual)}</td>
             <td>${rv4fCell}</td>
