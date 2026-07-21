@@ -111,6 +111,7 @@ header .sub{color:var(--muted);font-size:13px}
 .confetti-piece{position:absolute;top:-10px;width:8px;height:14px;opacity:.9;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(105vh) rotate(360deg);opacity:0}}
 footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
+.admin-only{display:none}
 </style>
 </head>
 <body>
@@ -120,7 +121,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
       <h1>🏆 Liga Lojas <span>Help!</span> — Gamificação CNC</h1>
       <div class="sub" id="subMes"></div>
     </div>
-    <div class="meta-edit">
+    <div class="meta-edit admin-only">
       <div>
         <label>Meta de CNC por loja no mês</label>
         <input type="number" id="metaInput" step="100">
@@ -135,9 +136,9 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
     <a class="rv-link-btn secondary" href="meta4f-supervisor.html">🎯 Ver Meta 4F — Supervisores →</a>
   </div>
 
-  <section class="team-summary" id="teamSummary"></section>
+  <section class="team-summary admin-only" id="teamSummary"></section>
 
-  <div class="panel" style="margin-bottom:18px">
+  <div class="panel admin-only" style="margin-bottom:18px">
     <h3>📈 Evolução diária de CNC por loja</h3>
     <div id="evolucaoChart"></div>
   </div>
@@ -158,7 +159,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
     <section class="ranking" id="ranking"></section>
 
     <aside>
-      <div class="panel">
+      <div class="panel admin-only">
         <h3>📤 Importar planilha do BI (todos os produtos)</h3>
         <label>Data de referência da planilha</label>
         <input type="date" id="xlsxData">
@@ -191,6 +192,7 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
         <div class="faixas-note" style="margin-top:0">Exceto Consultor Novo. Sem isso, o consultor pode bater a meta de CNC e ainda assim não receber:</div>
         <ul style="margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.7;color:var(--text)">
           <li>Certificação <b>teddi</b>: Trilha Obrigatória + Trilha Soluções e Sistemas help!</li>
+          <li><b>CNC mínimo R$ 30.000</b> no mês pra começar a receber prêmio de CNC (abaixo disso, zero prêmio de CNC)</li>
           <li><b>Cartões:</b> mínimo 2 emitidos (3+ pra não ter desconto no prêmio)</li>
           <li><b>Seguros independentes:</b> mínimo 2 formalizações (3+ pra não ter desconto)</li>
           <li><b>Super Conta:</b> mínimo 4 contratos (exceto lojas PDV)</li>
@@ -198,19 +200,19 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
         </ul>
       </div>
 
-      <div class="panel">
+      <div class="panel admin-only">
         <h3>🔑 Códigos de acesso (só você vê isso)</h3>
         <div class="faixas-note" style="margin-top:0">Repasse individualmente pra cada pessoa entrar no próprio plano de ação. O código é os últimos 4 dígitos do usuário/CPF de cada um. Não é senha de verdade, só afasta curiosos.</div>
         <details class="mix-details" style="margin-top:10px"><summary>Ver códigos dos consultores</summary><div id="codigosConsultores" style="margin-top:8px"></div></details>
         <details class="mix-details" style="margin-top:10px"><summary>Ver códigos das lojas (supervisor)</summary><div id="codigosLojas" style="margin-top:8px"></div></details>
       </div>
 
-      <div class="panel">
+      <div class="panel admin-only">
         <h3>🗒️ Histórico do mês</h3>
         <div id="historyLog"></div>
       </div>
 
-      <div class="panel">
+      <div class="panel admin-only">
         <h3>💾 Backup dos dados</h3>
         <div class="backup-row">
           <button id="btnExport">Exportar (.json)</button>
@@ -255,6 +257,11 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
+const ADMIN_KEY = 'froes30k';
+(function(){
+  const isAdmin = new URLSearchParams(location.search).get('admin') === ADMIN_KEY;
+  document.querySelectorAll('.admin-only').forEach(function(el){ el.style.display = isAdmin ? '' : 'none'; });
+})();
 const STORAGE_KEY = 'ligaHelpGamificacao_v1';
 const LOJAS_SEED = [
   {codigo:'53631', nome:'São Luís - São Francisco'},
@@ -296,7 +303,7 @@ const PREMIO_SEGURO_UNITARIO = 5.00;
 const PREMIO_SEGURO_PRIMEIRO = 50.00;
 const MIN_SEGUROS_ELEGIVEL = 10;
 const FAIXAS_CNC = [
-  {v:15000,p:0.30},{v:30000,p:0.60},{v:35000,p:0.90},{v:40000,p:1.20},
+  {v:30000,p:0.60},{v:35000,p:0.90},{v:40000,p:1.20},
   {v:45000,p:1.50},{v:50000,p:1.80},{v:55000,p:2.10},{v:60000,p:2.40},
   {v:65000,p:2.70},{v:75000,p:3.00},{v:85000,p:4.00},{v:100000,p:5.00},
 ];
