@@ -436,7 +436,9 @@ function confetti(){
 
 function pinGate(id, conteudo, onOk){
   const key = 'pin_ok_' + id;
-  const isAdmin = new URLSearchParams(location.search).get('admin') === 'froes30k';
+  const urlAdmin = new URLSearchParams(location.search).get('admin') === 'froes30k';
+  if(urlAdmin){ try{ localStorage.setItem('liga_admin','1'); }catch(e){} }
+  const isAdmin = urlAdmin || (function(){ try{ return localStorage.getItem('liga_admin')==='1'; }catch(e){ return false; } })();
   if(isAdmin || sessionStorage.getItem(key) === '1'){ onOk(); return; }
   conteudo.innerHTML = `
     <div class="panel">
