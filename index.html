@@ -258,9 +258,11 @@ footer{text-align:center;color:var(--muted);font-size:11px;margin-top:30px}
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 const ADMIN_KEY = 'froes30k';
+const IS_ADMIN = new URLSearchParams(location.search).get('admin') === ADMIN_KEY;
+const CONSULTOR_PAGE = IS_ADMIN ? 'consultor-admin.html' : 'consultor.html';
+const SUPERVISOR_PAGE = IS_ADMIN ? 'supervisor-admin.html' : 'supervisor.html';
 (function(){
-  const isAdmin = new URLSearchParams(location.search).get('admin') === ADMIN_KEY;
-  if(isAdmin){ document.querySelectorAll('.admin-only').forEach(function(el){ el.classList.remove('admin-only'); }); }
+  if(IS_ADMIN){ document.querySelectorAll('.admin-only').forEach(function(el){ el.classList.remove('admin-only'); }); }
 })();
 const STORAGE_KEY = 'ligaHelpGamificacao_v1';
 const LOJAS_SEED = [
@@ -641,7 +643,7 @@ function render(){
     return `<div class="loja-card rank-${rank<=3?rank:'x'}">
       <div class="rank-num">${rank}</div>
       <div class="loja-info">
-        <div class="nome"><a href="supervisor-admin.html?codigo=${l.codigo}" style="color:var(--text);text-decoration:underline dotted">${l.nome}</a> <span class="badge" style="background:${lvl.color}22;color:${lvl.color}">${lvl.emoji} ${lvl.label}</span></div>
+        <div class="nome"><a href="${SUPERVISOR_PAGE}?codigo=${l.codigo}" style="color:var(--text);text-decoration:underline dotted">${l.nome}</a> <span class="badge" style="background:${lvl.color}22;color:${lvl.color}">${lvl.emoji} ${lvl.label}</span></div>
         <div class="codigo">Loja ${l.codigo}</div>
         <div class="valores">
           <div class="item">CNC atual<b>${fmtBRL(l.atual)}</b></div>
@@ -702,7 +704,7 @@ function render(){
             }
           } const prizeTiers=[300,200,150,100,50]; const prizeCell = c.pct>=90 ? `<span class="badge" style="background:var(--gold)22;color:var(--gold)">🏆 R$ ${prizeTiers[i].toLocaleString('pt-BR')}</span>` : `<span style="color:var(--muted)" title="Precisa de 90%+ da meta individual pra premiar">sem premio (min. 90%)</span>`; return `<tr class="${i<3?'top'+(i+1):''}">
             <td class="rank-cell">${i+1}</td>
-            <td><a href="consultor.html?nome=${encodeURIComponent(c.nome)}" style="color:var(--text);font-weight:600;text-decoration:underline dotted">${c.nome}</a>${medalha}</td>
+            <td><a href="${CONSULTOR_PAGE}?nome=${encodeURIComponent(c.nome)}" style="color:var(--text);font-weight:600;text-decoration:underline dotted">${c.nome}</a>${medalha}</td>
             <td>${c.lojaNome}</td>
             <td>${fmtBRL(c.atual)}</td>
             <td>${c.meta? fmtBRL(c.meta) : '—'}</td>
@@ -729,7 +731,7 @@ function render(){
     __popularBuscarSelect();
     if(buscarInput) buscarInput.oninput = __popularBuscarSelect;
     const btnVer = document.getElementById('btnVerMeuResultado');
-    if(btnVer) btnVer.onclick = ()=>{ if(buscarSel.value) window.location.href = 'consultor.html?nome=' + encodeURIComponent(buscarSel.value); };
+    if(btnVer) btnVer.onclick = ()=>{ if(buscarSel.value) window.location.href = CONSULTOR_PAGE + '?nome=' + encodeURIComponent(buscarSel.value); };
   }
 
 
@@ -753,7 +755,7 @@ function render(){
             : `<span class="badge" style="background:var(--danger)22;color:var(--danger)">Faltam ${MIN_SEGUROS_ELEGIVEL - c.qtd}</span>`;
           return `<tr class="${i<3?'top'+(i+1):''}">
             <td class="rank-cell">${i+1}</td>
-            <td><a href="consultor.html?nome=${encodeURIComponent(c.nome)}" style="color:var(--text);font-weight:600;text-decoration:underline dotted">${c.nome}</a>${medalha}</td>
+            <td><a href="${CONSULTOR_PAGE}?nome=${encodeURIComponent(c.nome)}" style="color:var(--text);font-weight:600;text-decoration:underline dotted">${c.nome}</a>${medalha}</td>
             <td>${c.lojaNome}</td>
             <td>${c.qtd}</td>
             <td>${elegTxt}</td>
@@ -769,7 +771,7 @@ function render(){
     const pctCs = cs.meta? cs.atual/cs.meta*100 : 0;
     return {nome, lojaNome: loja2? loja2.nome : 'loja não identificada', atual:cs.atual, meta:cs.meta, pct:pctCs};
   }).sort((a,b)=>b.atual-a.atual).slice(0,5);
-  document.getElementById('rankingConsignado').innerHTML = !consignado.length ? '<div class="hist-empty">Nenhum consultor cadastrado ainda.</div>' : `<table class="cons-table"> <thead><tr><th>#</th><th>Consultor</th><th>Loja</th><th>Consignado atual</th><th>Meta individual</th><th>% atingido</th><th>🏆 Prêmio</th></tr></thead> <tbody> ${consignado.map((c,i)=>{ const prizeTiersCs=[300,200,150,100,50]; const elegivelCs = c.pct>=90; const medalha = i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':''; const premioCell = elegivelCs ? `<span class="badge" style="background:var(--gold)22;color:var(--gold)">🏆 R$ ${prizeTiersCs[i]}</span>` : `<span style="color:var(--muted)">sem prêmio (min. 90%)</span>`; return `<tr class="${i<3?'top'+(i+1):''}"> <td class="rank-cell">${i+1}</td> <td><a href="consultor.html?nome=${encodeURIComponent(c.nome)}" style="color:var(--text);font-weight:600;text-decoration:underline dotted">${c.nome}</a>${medalha}</td> <td>${c.lojaNome}</td> <td>${fmtBRL(c.atual)}</td> <td>${c.meta? fmtBRL(c.meta) : '—'}</td> <td>${fmtPct(c.pct)}<div class="rv-bar" style="margin-top:4px"><div class="rv-bar-fill" style="width:${Math.min(c.pct,100)}%"></div></div></td> <td>${premioCell}</td> </tr>`; }).join('')} </tbody> </table>`;
+  document.getElementById('rankingConsignado').innerHTML = !consignado.length ? '<div class="hist-empty">Nenhum consultor cadastrado ainda.</div>' : `<table class="cons-table"> <thead><tr><th>#</th><th>Consultor</th><th>Loja</th><th>Consignado atual</th><th>Meta individual</th><th>% atingido</th><th>🏆 Prêmio</th></tr></thead> <tbody> ${consignado.map((c,i)=>{ const prizeTiersCs=[300,200,150,100,50]; const elegivelCs = c.pct>=90; const medalha = i===0?' 🥇':i===1?' 🥈':i===2?' 🥉':''; const premioCell = elegivelCs ? `<span class="badge" style="background:var(--gold)22;color:var(--gold)">🏆 R$ ${prizeTiersCs[i]}</span>` : `<span style="color:var(--muted)">sem prêmio (min. 90%)</span>`; return `<tr class="${i<3?'top'+(i+1):''}"> <td class="rank-cell">${i+1}</td> <td><a href="${CONSULTOR_PAGE}?nome=${encodeURIComponent(c.nome)}" style="color:var(--text);font-weight:600;text-decoration:underline dotted">${c.nome}</a>${medalha}</td> <td>${c.lojaNome}</td> <td>${fmtBRL(c.atual)}</td> <td>${c.meta? fmtBRL(c.meta) : '—'}</td> <td>${fmtPct(c.pct)}<div class="rv-bar" style="margin-top:4px"><div class="rv-bar-fill" style="width:${Math.min(c.pct,100)}%"></div></div></td> <td>${premioCell}</td> </tr>`; }).join('')} </tbody> </table>`;
 
   document.getElementById('codigosConsultores').innerHTML = Object.keys(state.consultorLoja).sort().map(n=>
     `<div class="hist-row"><span>${n}</span><b style="color:var(--gold);letter-spacing:2px">${codigoAcesso(n)}</b></div>`
