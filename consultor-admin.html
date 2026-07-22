@@ -11,8 +11,8 @@
 <style>
 :root{
   --bg:#0f1115; --card:#181b22; --card2:#1f232c; --border:#2a2f3a;
-  --text:#eef0f3; --muted:#9aa0a8; --orange:#ff7a1a; --gold:#ffd23f;
-  --success:#22c55e; --warning:#f59e0b; --danger:#ef4444; --blue:#60a5fa; --purple:#8b5cf6;
+  --text:#eef0f3; --muted:#9aa0a8; --orange:#f05a23; --gold:#ffd23f;
+  --success:#22c55e; --warning:#f59e0b; --danger:#ef4444; --blue:#60a5fa; --purple:#3d2c8d;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif}
@@ -79,7 +79,7 @@ header .sub{color:var(--muted);font-size:13px;margin-top:4px}
 .rv-item-head{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:5px}
 .rv-item-head b{color:var(--text)}
 .rv-bar{position:relative;height:8px;background:var(--card2);border-radius:4px;margin:0 1px 5px}
-.rv-bar-fill{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,#8b5cf6,#60a5fa);border-radius:4px}
+.rv-bar-fill{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,#3d2c8d,#60a5fa);border-radius:4px}
 .rv-mark{position:absolute;top:-3px;width:2px;height:14px;background:var(--muted)}
 .rv-mark.hit{background:var(--gold)}
 .rv-status{font-size:11.5px;color:var(--muted);line-height:1.5}
@@ -419,7 +419,7 @@ function codigoAcesso(id){
 }
 
 function confetti(){
-  const colors=['#ff7a1a','#ffd23f','#22c55e','#60a5fa','#8b5cf6'];
+  const colors=['#f05a23','#ffd23f','#22c55e','#60a5fa','#3d2c8d'];
   const box=document.getElementById('confetti-container');
   if(!box) return;
   for(let i=0;i<50;i++){
@@ -556,7 +556,7 @@ function renderConteudo(nome, mes, dRest, conteudo){
 
     <div class="panel">
       <h3>📈 Evolução diária de CNC</h3>
-      ${evolucaoChartSVG([{label:nome, color:'#ff7a1a', points: entriesForConsultor(nome, mes).filter(e=>e.valores.CNC).map(e=>({data:e.data, valor:e.valores.CNC.atual}))}])}
+      ${evolucaoChartSVG([{label:nome, color:'#f05a23', points: entriesForConsultor(nome, mes).filter(e=>e.valores.CNC).map(e=>({data:e.data, valor:e.valores.CNC.atual}))}])}
     </div>
 
     <div class="panel">
