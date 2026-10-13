@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel LIGA Help! — BI de Produção</title>
+<style>
+:root{--bg:#120a24;--card:#1c1236;--card2:#241846;--line:#34285c;--tx:#f3efff;--mut:#a79ccc;--or:#ff7a1a;--pu:#8b5cf6;--ok:#22c55e;--wn:#f5b301;--bad:#ef4444}
+*{box-sizing:border-box}
+body{margin:0;font-family:Segoe UI,system-ui,Arial,sans-serif;background:linear-gradient(135deg,#1a0b33 0%,#120a24 55%,#2a1203 140%);color:var(--tx);min-height:100vh}
+header{padding:16px 22px;background:linear-gradient(90deg,var(--or),var(--pu));display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+header h1{margin:0;font-size:20px}header small{opacity:.9;display:block;font-size:12px;margin-top:2px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;padding:12px 22px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.filters label{font-size:11px;color:var(--mut);display:flex;flex-direction:column;gap:3px}
+select,input{background:var(--card2);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;min-width:140px}
+.tabs{display:flex;gap:6px;padding:10px 22px 0;flex-wrap:wrap}
+.tab{padding:9px 16px;border-radius:10px 10px 0 0;background:var(--card);color:var(--mut);cursor:pointer;border:1px solid var(--line);border-bottom:none;font-size:14px}
+.tab.on{background:var(--card2);color:#fff;border-color:var(--or)}
+main{padding:16px 22px 40px}
+.grid{display:grid;gap:12px}.k6{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.kpi .l{font-size:12px;color:var(--mut)}.kpi .v{font-size:24px;font-weight:700;margin-top:4px}.kpi .s{font-size:12px;color:var(--mut);margin-top:3px}
+h3{margin:0 0 10px;font-size:15px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{position:sticky;top:0;background:var(--card2);text-align:left;color:var(--mut);font-weight:600;padding:8px;cursor:pointer;white-space:nowrap}
+td{padding:8px;border-top:1px solid var(--line);vertical-align:top}
+.tw{overflow:auto;max-height:620px;border-radius:10px}
+.bar{background:#2c2150;border-radius:99px;height:9px;overflow:hidden;min-width:80px}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--or),var(--pu))}
+.pill{padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;display:inline-block}
+.ok{background:#14532d;color:#86efac}.wn{background:#5b4400;color:#fde68a}.bad{background:#5f1414;color:#fca5a5}.nt{background:#2c2150;color:#c4b5fd}
+.act{color:#ddd6fe;font-size:12px;max-width:420px}
+button{background:var(--or);border:0;color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:600}
+a{color:#c4b5fd}.mut{color:var(--mut)}.right{text-align:right}
+svg text{fill:#c9bfe9;font-size:11px}
+@media(max-width:640px){main,.filters,.tabs{padding-left:10px;padding-right:10px}.kpi .v{font-size:20px}}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>🏆 Painel LIGA Help! — BI de Produção</h1><small id="sub">Carregando…</small></div>
+  <div><a href="classico.html" style="color:#fff">Versão clássica</a></div>
+</header>
+<div class="filters">
+  <label>Loja<select id="fLoja"></select></label>
+  <label>Consultor<select id="fCons"></select></label>
+  <label>Meta CNC por loja (R$)<input id="fMeta" type="number" step="1000" value="60000"></label>
+  <label>Buscar<input id="fBusca" placeholder="nome ou adesão"></label>
+  <label>&nbsp;<button id="btnCsv">⬇ Exportar tabela (CSV)</button></label>
+</div>
+<div class="tabs" id="tabs">
+  <div class="tab on" data-t="resumo">📊 Resumo</div>
+  <div class="tab" data-t="cons">👤 Consultores</div>
+  <div class="tab" data-t="lojas">🏬 Lojas (Supervisor)</div>
+  <div class="tab" data-t="reco">🔁 Reconquista</div>
+</div>
+<main id="main"><div class="card">Carregando dados…</div></main>
+<script src="reconquista-data.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const fmt=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt0=v=>'R$ '+Math.round(v||0).toLocaleString('pt-BR');
+const pct=v=>(isFinite(v)?v:0).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%';
+const tcase=s=>String(s||'').toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase());
+const short=n=>{const p=tcase(n).split(' ');return p.length>1?p[0]+' '+p[p.length-1]:p[0]};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let D={},S={},TAB='resumo',SORT={k:null,d:-1},LASTCSV=null;
+
+function extract(src,name){
+  const k=src.indexOf('const '+name+' ');if(k<0)return null;
+  let i=src.indexOf('=',k)+1;while(/\s/.test(src[i]))i++;
+  let end;
+  if(src[i]==='['||src[i]==='{'){
+    let d=0,q=null;
+    for(let j=i;j<src.length;j++){const c=src[j];
+      if(q){if(c==='\\')j++;else if(c===q)q=null;continue}
+      if(c==="'"||c==='"'||c==='`'){q=c;continue}
+      if(c==='['||c==='{')d++;else if(c===']'||c==='}'){d--;if(d===0){end=j+1;break}}
+    }
+  }else end=src.indexOf(';',i);
+  return new Function('return '+src.slice(i,end))();
+}
+async function load(){
+  const src=await (await fetch('consultor.html?v='+Date.now())).text();
+  for(const n of ['LOJAS_SEED','CONSULTOR_LOJA_SEED','HISTORICO_CONSULTOR_SEED','SEGUROS_CONSULTOR_SEED','FAIXAS_CNC','PREMIO_SEGURO_UNITARIO','MIN_SEGUROS_ELEGIVEL','RECONQUISTA_STATUS_LABEL'])D[n]=extract(src,n);
+  D.REC=(typeof RECONQUISTA_SEED!=='undefined')?RECONQUISTA_SEED:[];
+  D.RECDATA=(typeof RECONQUISTA_DATA_ATUALIZADA!=='undefined')?RECONQUISTA_DATA_ATUALIZADA:'';
+  D.STAT=D.RECONQUISTA_STATUS_LABEL||{EF:'Em Formalização',PR:'Proposta',SR:'Sem Reconquista'};
+  prepare();
+}
+function faixa(v){let a=null;for(const f of D.FAIXAS_CNC)if(v>=f.v)a=f;return a}
+function proxima(v){return D.FAIXAS_CNC.find(f=>v<f.v)||null}
+function premio(v){const f=faixa(v);return f?v*f.p/100:0}
+
+function prepare(){
+  const now=new Date(),ymNow=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const months=[...new Set(D.HISTORICO_CONSULTOR_SEED.map(e=>e.data.slice(0,7)))].sort();
+  S.ym=months.includes(ymNow)?ymNow:months[months.length-1];
+  const [y,m]=S.ym.split('-').map(Number);S.diasMes=new Date(y,m,0).getDate();
+  const ents=D.HISTORICO_CONSULTOR_SEED.filter(e=>e.data.startsWith(S.ym));
+  S.dates=[...new Set(ents.map(e=>e.data))].sort();S.ref=S.dates[S.dates.length-1];
+  S.diaRef=+S.ref.slice(8);S.restam=Math.max(S.diasMes-S.diaRef,0);
+  S.cons={};
+  ents.forEach(e=>{(S.cons[e.nome]=S.cons[e.nome]||[]).push(e)});
+  Object.values(S.cons).forEach(a=>a.sort((a,b)=>a.data<b.data?-1:1));
+  const sg=D.SEGUROS_CONSULTOR_SEED.filter(e=>e.data.startsWith(S.ym));S.seg={};
+  sg.forEach(e=>{(S.seg[e.nome]=S.seg[e.nome]||[]).push(e)});
+  Object.values(S.seg).forEach(a=>a.sort((a,b)=>a.data<b.data?-1:1));
+  S.lojaNome={};D.LOJAS_SEED.forEach(l=>S.lojaNome[l.codigo]=l.nome);
+  const [dd,mm,aa]=[S.ref.slice(8),S.ref.slice(5,7),S.ref.slice(0,4)];
+  $('#sub').textContent='Produção até '+dd+'/'+mm+'/'+aa+' · dia '+S.diaRef+' de '+S.diasMes+' · restam '+S.restam+' dias'+(D.RECDATA?' · Reconquista de '+D.RECDATA.split('-').reverse().join('/'):'');
+  $('#fLoja').innerHTML='<option value="">Todas as lojas</option>'+D.LOJAS_SEED.map(l=>`<option value="${l.codigo}">${esc(l.nome)}</option>`).join('');
+  fillCons();
+}
+function fillCons(){
+  const lj=$('#fLoja').value;
+  const names=Object.keys(S.cons).filter(n=>!lj||D.CONSULTOR_LOJA_SEED[n]===lj).sort();
+  $('#fCons').innerHTML='<option value="">Todos os consultores</option>'+names.map(n=>`<option value="${esc(n)}">${esc(short(n))}</option>`).join('');
+}
+function at(arr,date){let r=null;for(const e of arr||[]){if(e.data<=date)r=e;else break}return r}
+function rows(){
+  const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
+  const out=[];
+  for(const [nome,arr] of Object.entries(S.cons)){
+    const loja=D.CONSULTOR_LOJA_SEED[nome]||'';
+    if(lj&&loja!==lj)continue;if(cs&&nome!==cs)continue;
+    if(q&&tcase(nome).toLowerCase().indexOf(q)<0)continue;
+    const last=arr[arr.length-1];
+    const cnc=last.valores.CNC.atual||0,mix=(last.valores.ProducaoMix||{}).atual||0;
+    const sgs=S.seg[nome],sq=sgs?sgs[sgs.length-1].qtd:0;
+    const f=faixa(cnc),p=proxima(cnc),falta=p?p.v-cnc:0;
+    const ritmo=S.diaRef?cnc/S.diaRef:0,proj=ritmo*S.diasMes;
+    const nec=p&&S.restam?falta/S.restam:0;
+    out.push({nome,loja,lojaNome:S.lojaNome[loja]||'—',cnc,mix,sq,f,p,falta,ritmo,proj,nec,premioCnc:premio(cnc),
+      premioSeg:sq>=D.MIN_SEGUROS_ELEGIVEL?sq*D.PREMIO_SEGURO_UNITARIO:0,ativo:last.data>=S.dates[Math.max(S.dates.length-3,0)]});
+  }
+  out.forEach(r=>r.acao=acao(r));
+  return out;
+}
+function acao(r){
+  const a=[];const el=D.REC.filter(x=>x.codigo===r.loja&&x.elegivel).length;
+  if(r.cnc<=0)a.push('🚨 Sem CNC no mês: ative a base hoje (meta mínima R$ '+fmt0(D.FAIXAS_CNC[0].v)+').');
+  else if(!r.p)a.push('🏅 Faixa máxima atingida ('+r.f.p.toFixed(2)+'%). Mantenha e ajude a loja.');
+  else if(!r.f)a.push('Falta '+fmt0(r.falta)+' para a 1ª faixa de prêmio ('+fmt0(D.FAIXAS_CNC[0].v)+'): '+fmt0(r.nec)+'/dia.');
+  else if(r.nec<=r.ritmo*1.15)a.push('✅ No caminho: mantenha ~'+fmt0(r.ritmo)+'/dia e chega à faixa de '+fmt0(r.p.v)+'.');
+  else a.push('⚡ Acelerar: precisa '+fmt0(r.nec)+'/dia (hoje '+fmt0(r.ritmo)+'/dia) para a faixa de '+fmt0(r.p.v)+'.');
+  if(r.sq<D.MIN_SEGUROS_ELEGIVEL)a.push('🛡️ Faltam '+(D.MIN_SEGUROS_ELEGIVEL-r.sq)+' seguro(s) para o prêmio de seguros.');
+  if(el>0&&r.cnc>0)a.push('🔁 '+el+' leads elegíveis de Reconquista na loja.');
+  return a.join(' ');
+}
+function lojas(){
+  const lj=$('#fLoja').value,meta=+$('#fMeta').value||60000;const R=rows().filter(r=>true);
+  return D.LOJAS_SEED.filter(l=>!lj||l.codigo===lj).map(l=>{
+    const rs=R.filter(r=>r.loja===l.codigo),cnc=rs.reduce((s,r)=>s+r.cnc,0),mix=rs.reduce((s,r)=>s+r.mix,0);
+    const ritmo=S.diaRef?cnc/S.diaRef:0,proj=ritmo*S.diasMes,rec=D.REC.filter(x=>x.codigo===l.codigo);
+    return {codigo:l.codigo,nome:l.nome,cnc,mix,meta,pct:cnc/meta*100,ritmo,proj,projPct:proj/meta*100,
+      nec:S.restam?Math.max(meta-cnc,0)/S.restam:0,n:rs.length,semFaixa:rs.filter(r=>!r.f).length,
+      seg:rs.reduce((s,r)=>s+r.sq,0),recEl:rec.filter(x=>x.elegivel).length,recSaldo:rec.filter(x=>x.elegivel).reduce((s,x)=>s+(+x.saldo||0),0)};
+  });
+}
+function semaforo(l){return l.projPct>=100?['ok','No ritmo']:l.projPct>=80?['wn','Atenção']:['bad','Crítico']}
+const kpi=(l,v,s)=>`<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`;
+function bar(p){return `<div class="bar"><i style="width:${Math.min(Math.max(p,0),100)}%"></i></div>`}
+
+function lineChart(){
+  const lj=$('#fLoja').value,meta=(+$('#fMeta').value||60000)*(lj?1:D.LOJAS_SEED.length);
+  const pts=S.dates.map(d=>{let s=0;for(const [n,a] of Object.entries(S.cons)){if(lj&&D.CONSULTOR_LOJA_SEED[n]!==lj)continue;const e=at(a,d);if(e)s+=e.valores.CNC.atual||0}return [d,s]});
+  const W=640,H=230,P=44,max=Math.max(meta,...pts.map(p=>p[1]))*1.05||1;
+  const x=i=>P+(W-P-12)*(S.diasMes>1?(+pts[i][0].slice(8)-1)/(S.diasMes-1):0),y=v=>H-26-(H-44)*v/max;
+  const xs=d=>P+(W-P-12)*(d-1)/(S.diasMes-1);
+  let g=`<svg viewBox="0 0 ${W} ${H}" width="100%">`;
+  for(let k=0;k<=4;k++){const v=max*k/4;g+=`<line x1="${P}" x2="${W-12}" y1="${y(v)}" y2="${y(v)}" stroke="#34285c"/><text x="4" y="${y(v)+4}">${v>=1000?Math.round(v/1000)+'k':Math.round(v)}</text>`}
+  g+=`<line x1="${xs(1)}" y1="${y(0)}" x2="${xs(S.diasMes)}" y2="${y(meta)}" stroke="#f5b301" stroke-dasharray="5 4"/><text x="${W-120}" y="${y(meta)-6}">meta linear</text>`;
+  if(pts.length){const last=pts[pts.length-1],proj=last[1]/S.diaRef*S.diasMes;
+    g+=`<path d="M${pts.map((p,i)=>x(i)+','+y(p[1])).join(' L')}" fill="none" stroke="#ff7a1a" stroke-width="3"/>`;
+    g+=`<line x1="${x(pts.length-1)}" y1="${y(last[1])}" x2="${xs(S.diasMes)}" y2="${y(proj)}" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="4 4"/><text x="${xs(S.diasMes)-70}" y="${y(proj)-6}">proj. ${fmt0(proj)}</text>`;
+    pts.forEach((p,i)=>g+=`<circle cx="${x(i)}" cy="${y(p[1])}" r="3" fill="#ff7a1a"><title>${p[0].split('-').reverse().join('/')}: ${fmt(p[1])}</title></circle>`)}
+  return g+'</svg>';
+}
+function hbars(items,fmtv){
+  const max=Math.max(...items.map(i=>i.v),1);
+  return items.map(i=>`<div style="display:flex;align-items:center;gap:8px;margin:5px 0"><div style="width:130px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(i.l)}">${esc(i.l)}</div><div style="flex:1">${bar(i.v/max*100)}</div><div style="width:92px;text-align:right;font-size:12px">${fmtv(i.v)}</div></div>`).join('');
+}
+function table(cols,data,id){
+  if(SORT.id===id&&SORT.k){const c=cols.find(c=>c.k===SORT.k);if(c)data=[...data].sort((a,b)=>{const x=c.s?c.s(a):a[c.k],y=c.s?c.s(b):b[c.k];return (x>y?1:x<y?-1:0)*SORT.d})}
+  LASTCSV={cols,data};
+  return `<div class="tw"><table><thead><tr>${cols.map(c=>`<th data-id="${id}" data-k="${c.k}">${c.h}${SORT.id===id&&SORT.k===c.k?(SORT.d>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead><tbody>${data.map(r=>'<tr>'+cols.map(c=>`<td class="${c.cls||''}">${c.f?c.f(r):esc(r[c.k])}</td>`).join('')+'</tr>').join('')}</tbody></table></div>`;
+}
+function render(){
+  const R=rows(),L=lojas(),m=$('#main');
+  if(TAB==='resumo'){
+    const cnc=R.reduce((s,r)=>s+r.cnc,0),meta=(+$('#fMeta').value||60000)*($('#fLoja').value?1:D.LOJAS_SEED.length);
+    const ritmo=S.diaRef?cnc/S.diaRef:0,proj=ritmo*S.diasMes,nec=S.restam?Math.max(meta-cnc,0)/S.restam:0;
+    const seg=R.reduce((s,r)=>s+r.sq,0),pr=R.reduce((s,r)=>s+r.premioCnc+r.premioSeg,0);
+    const lj=$('#fLoja').value,rec=D.REC.filter(x=>!lj||x.codigo===lj),el=rec.filter(x=>x.elegivel);
+    const top=[...R].sort((a,b)=>b.cnc-a.cnc).slice(0,10).map(r=>({l:short(r.nome),v:r.cnc}));
+    const alert=R.filter(r=>r.cnc<D.FAIXAS_CNC[0].v&&r.cnc>0).sort((a,b)=>b.cnc-a.cnc).slice(0,8);
+    m.innerHTML=`<div class="grid k6">
+      ${kpi('CNC acumulado',fmt0(cnc),pct(cnc/meta*100)+' da meta de '+fmt0(meta))}
+      ${kpi('Projeção do mês',fmt0(proj),pct(proj/meta*100)+' da meta no ritmo atual')}
+      ${kpi('Ritmo atual / necessário',fmt0(ritmo)+' / '+fmt0(nec),'por dia · restam '+S.restam+' dias')}
+      ${kpi('Consultores na faixa de prêmio',R.filter(r=>r.f).length+' / '+R.length,'CNC ≥ '+fmt0(D.FAIXAS_CNC[0].v))}
+      ${kpi('Prêmios estimados',fmt(pr),'CNC + seguros (estimativa)')}
+      ${kpi('Seguros no mês',seg,R.filter(r=>r.sq>=D.MIN_SEGUROS_ELEGIVEL).length+' elegíveis (≥'+D.MIN_SEGUROS_ELEGIVEL+')')}
+      ${kpi('Reconquista elegível',el.length,fmt0(el.reduce((s,x)=>s+(+x.saldo||0),0))+' em saldo')}
+    </div>
+    <div class="grid g2" style="margin-top:12px">
+      <div class="card"><h3>Evolução do CNC acumulado vs meta</h3>${lineChart()}</div>
+      <div class="card"><h3>Top 10 consultores — CNC</h3>${hbars(top,fmt0)}</div>
+      <div class="card"><h3>Lojas — % da meta</h3>${hbars(L.map(l=>({l:l.nome.replace(' - Centro',''),v:l.pct})),pct)}</div>
+      <div class="card"><h3>🎯 Quase lá — foco de hoje</h3>${alert.length?alert.map(r=>`<p style="margin:6px 0"><b>${esc(short(r.nome))}</b> <span class="mut">(${esc(r.lojaNome)})</span><br><span class="act">${esc(r.acao)}</span></p>`).join(''):'<span class="mut">Sem consultores no intervalo.</span>'}</div>
+    </div>`;
+  }
+  if(TAB==='cons'){
+    m.innerHTML='<div class="card"><h3>Consultores — situação e o que fazer</h3>'+table([
+      {k:'nome',h:'Consultor',f:r=>'<b>'+esc(short(r.nome))+'</b><br><span class="mut">'+esc(r.lojaNome)+'</span>',s:r=>r.nome},
+      {k:'cnc',h:'CNC',f:r=>fmt0(r.cnc),cls:'right'},
+      {k:'pf',h:'Faixa / prêmio',f:r=>r.f?`<span class="pill ok">${r.f.p.toFixed(2)}%</span> ${fmt(r.premioCnc)}`:'<span class="pill nt">sem faixa</span>',s:r=>r.premioCnc},
+      {k:'falta',h:'Próx. faixa',f:r=>r.p?`${fmt0(r.p.v)}<br>${bar(r.cnc/r.p.v*100)}<span class="mut">falta ${fmt0(r.falta)}</span>`:'🏅 máx',s:r=>r.falta},
+      {k:'nec',h:'Precisa/dia',f:r=>r.p?fmt0(r.nec):'—',cls:'right'},
+      {k:'proj',h:'Projeção',f:r=>fmt0(r.proj),cls:'right'},
+      {k:'sq',h:'Seguros',f:r=>r.sq+(r.sq>=D.MIN_SEGUROS_ELEGIVEL?' ✅':'')},
+      {k:'mix',h:'Mix total',f:r=>fmt0(r.mix),cls:'right'},
+      {k:'acao',h:'O que fazer',f:r=>'<div class="act">'+esc(r.acao)+'</div>'}
+    ],R.sort((a,b)=>b.cnc-a.cnc),'cons')+'</div>';
+  }
+  if(TAB==='lojas'){
+    m.innerHTML='<div class="card"><h3>Lojas — visão do supervisor</h3>'+table([
+      {k:'nome',h:'Loja',f:l=>'<b>'+esc(l.nome)+'</b>'},
+      {k:'sit',h:'Situação',f:l=>{const s=semaforo(l);return `<span class="pill ${s[0]}">${s[1]}</span>`},s:l=>l.projPct},
+      {k:'cnc',h:'CNC',f:l=>fmt0(l.cnc),cls:'right'},
+      {k:'pct',h:'% meta',f:l=>pct(l.pct)+bar(l.pct)},
+      {k:'proj',h:'Projeção',f:l=>fmt0(l.proj)+'<br><span class="mut">'+pct(l.projPct)+'</span>',cls:'right',s:l=>l.proj},
+      {k:'nec',h:'Precisa/dia',f:l=>fmt0(l.nec),cls:'right'},
+      {k:'semFaixa',h:'Sem faixa',f:l=>l.semFaixa+' de '+l.n},
+      {k:'seg',h:'Seguros',f:l=>l.seg},
+      {k:'recEl',h:'Reconquista elegível',f:l=>l.recEl+'<br><span class="mut">'+fmt0(l.recSaldo)+'</span>'},
+      {k:'ac',h:'Ação do supervisor',f:l=>'<div class="act">'+esc(acaoLoja(l,R))+'</div>',s:l=>l.semFaixa}
+    ],L.sort((a,b)=>b.pct-a.pct),'lojas')+'</div>';
+  }
+  if(TAB==='reco'){
+    const lj=$('#fLoja').value,q=$('#fBusca').value.trim().toLowerCase();
+    let rec=D.REC.filter(x=>(!lj||x.codigo===lj)&&(!q||String(x.id).includes(q)||String(x.nome).toLowerCase().includes(q)));
+    const c=s=>rec.filter(x=>x.status===s).length;
+    rec=[...rec].sort((a,b)=>(b.elegivel-a.elegivel)||(b.saldo-a.saldo));
+    m.innerHTML=`<div class="grid k6">${kpi('Leads',rec.length,'')}${kpi('Elegíveis',rec.filter(x=>x.elegivel).length,fmt0(rec.filter(x=>x.elegivel).reduce((s,x)=>s+(+x.saldo||0),0))+' em saldo')}${kpi(D.STAT.EF||'EF',c('EF'),'')}${kpi(D.STAT.PR||'PR',c('PR'),'')}${kpi(D.STAT.SR||'SR',c('SR'),'')}</div>
+    <div class="card" style="margin-top:12px"><h3>Leads de Reconquista (por adesão)</h3>`+table([
+      {k:'id',h:'Adesão',f:x=>'<b>'+esc(x.id)+'</b>'},
+      {k:'nome',h:'Cliente',f:x=>{const p=String(x.nome||'').trim().split(/\s+/);return esc(tcase(p[0])+(p.length>1?' '+p[p.length-1][0]+'.':''))}},
+      {k:'loja',h:'Loja',f:x=>esc((S.lojaNome[x.codigo]||x.codigo)),s:x=>x.codigo},
+      {k:'banco',h:'Banco',f:x=>esc(String(x.banco||'').replace(/^\d+\s*-\s*/,''))},
+      {k:'status',h:'Situação',f:x=>`<span class="pill ${x.status==='EF'?'ok':x.status==='PR'?'wn':'nt'}">${esc(D.STAT[x.status]||x.status)}</span>`},
+      {k:'elegivel',h:'Elegível',f:x=>x.elegivel?'✅ sim':'não'},
+      {k:'saldo',h:'Saldo',f:x=>fmt(x.saldo),cls:'right',s:x=>+x.saldo||0},
+      {k:'atraso',h:'Atraso',f:x=>x.atraso?x.atraso+' d':'—'}
+    ],rec.slice(0,400),'reco')+(rec.length>400?'<p class="mut">Mostrando 400 de '+rec.length+'. Use os filtros.</p>':'')+'</div>';
+  }
+}
+function acaoLoja(l,R){
+  const a=[];const rs=R.filter(r=>r.loja===l.codigo);
+  if(l.projPct<80)a.push('Meta em risco: reunião rápida hoje; precisa '+fmt0(l.nec)+'/dia.');
+  else if(l.projPct<100)a.push('Perto da meta: precisa '+fmt0(l.nec)+'/dia para fechar.');
+  else a.push('No ritmo: manter e puxar quem está sem faixa.');
+  const z=rs.filter(r=>r.cnc<=0).map(r=>short(r.nome));if(z.length)a.push('Sem CNC: '+z.join(', ')+'.');
+  const q=rs.filter(r=>r.p&&r.f&&r.falta<=r.nec*2).slice(0,3).map(r=>short(r.nome));
+  const sf=rs.filter(r=>r.cnc>0&&!r.f).map(r=>short(r.nome));if(sf.length)a.push('Perto da 1ª faixa: '+sf.slice(0,4).join(', ')+'.');
+  if(l.recEl)a.push('Distribuir '+l.recEl+' leads de Reconquista.');
+  return a.join(' ');
+}
+function csv(){
+  if(!LASTCSV)return;const {cols,data}=LASTCSV;
+  const strip=h=>String(h).replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
+  const lines=[cols.map(c=>c.h)].concat(data.map(r=>cols.map(c=>strip(c.f?c.f(r):r[c.k]))));
+  const b=new Blob(['﻿'+lines.map(l=>l.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='painel-liga-'+TAB+'.csv';a.click();
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest('.tab');if(t){TAB=t.dataset.t;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));render();}
+  const th=e.target.closest('th[data-k]');if(th){const k=th.dataset.k,id=th.dataset.id;SORT={id,k,d:SORT.k===k&&SORT.id===id?-SORT.d:-1};render();}
+});
+$('#fLoja').onchange=()=>{fillCons();render()};$('#fCons').onchange=render;$('#fBusca').oninput=render;$('#btnCsv').onclick=csv;
+$('#fMeta').onchange=()=>{try{localStorage.setItem('liga_meta',$('#fMeta').value)}catch(e){};render()};
+try{const v=localStorage.getItem('liga_meta');if(v)$('#fMeta').value=v}catch(e){}
+load().then(render).catch(e=>{$('#main').innerHTML='<div class="card">Erro ao carregar dados: '+esc(e.message)+'</div>'});
+</script>
+</body>
+</html>
