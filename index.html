@@ -53,10 +53,12 @@ svg text{fill:#c9bfe9;font-size:11px}
   <div class="tab" data-t="lojas">🏬 Lojas (Supervisor)</div>
   <div class="tab" data-t="reco">🔁 Reconquista</div>
   <div class="tab" data-t="refin">💰 Refin</div>
+  <div class="tab" data-t="quit">🎉 Quitados</div>
 </div>
 <main id="main"><div class="card">Carregando dados…</div></main>
 <script src="reconquista-data.js"></script>
 <script src="refin-data.js"></script>
+<script src="quit-data.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 const fmt=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -206,6 +208,7 @@ function render(){
       ${kpi('Seguros no mês',seg,R.filter(r=>r.sq>=D.MIN_SEGUROS_ELEGIVEL).length+' elegíveis (≥'+D.MIN_SEGUROS_ELEGIVEL+')')}
       ${kpi('Reconquista elegível',el.length,fmt0(el.reduce((s,x)=>s+(+x.saldo||0),0))+' em saldo')}
       ${kpi('Oportunidades de Refin',refinList().length,fmt0(refinList().reduce((s,x)=>s+x.pmt,0))+' de PMT · aba 💰 Refin')}
+      ${kpi('Clientes quitados',quitList().length,fmt0(quitList().reduce((s,x)=>s+x.pmt,0))+' de margem liberada · aba 🎉')}
     </div>
     <div class="grid g2" style="margin-top:12px">
       <div class="card"><h3>Evolução do CNC acumulado vs meta</h3>${lineChart()}</div>
@@ -242,6 +245,7 @@ function render(){
     ],L.sort((a,b)=>b.pct-a.pct),'lojas')+'</div>';
   }
   if(TAB==='refin'){renderRefin(m);return;}
+  if(TAB==='quit'){renderQuit(m);return;}
   if(TAB==='reco'){
     const lj=$('#fLoja').value,q=$('#fBusca').value.trim().toLowerCase();
     let rec=D.REC.filter(x=>(!lj||x.codigo===lj)&&(!q||String(x.id).includes(q)||String(x.nome).toLowerCase().includes(q)));
@@ -298,6 +302,37 @@ function renderRefin(m){
       {k:'tab',h:'Último contato',f:x=>esc(x.tab||'—')+(x.ua?'<br><span class="mut">'+x.ua.split('-').reverse().join('/')+'</span>':'')},
       {k:'pr',h:'Ação',f:x=>{const p=refinPrio(x);return `<span class="pill ${p[0]}">${p[1]}</span>`},s:x=>refinPrio(x)[1]}
     ],[...L].sort((a,b)=>b.pmt-a.pmt).slice(0,500),'refin')+(L.length>500?'<p class="mut">Mostrando 500 de '+L.length+'. Use os filtros.</p>':'')+'</div>';
+}
+function quitList(){
+  const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
+  const all=(typeof QUIT_SEED!=='undefined')?QUIT_SEED:[];
+  return all.filter(x=>(!lj||x.loja===lj)&&(!cs||x.cons===cs)&&(!q||x.id.includes(q)||x.cid.toLowerCase().includes(q)||x.cons.toLowerCase().includes(q)||x.ades.some(a=>a.includes(q))));
+}
+function renderQuit(m){
+  const L=quitList(),nomes={};D.LOJAS_SEED.forEach(l=>nomes[l.codigo]=l.nome);
+  const porC=Object.entries(L.reduce((o,x)=>{const k=x.cons||'(sem consultor)';o[k]=(o[k]||0)+1;return o},{})).map(([k,v])=>({l:short(k),v})).sort((a,b)=>b.v-a.v).slice(0,10);
+  const porL=Object.entries(L.reduce((o,x)=>(o[x.loja]=(o[x.loja]||0)+1,o),{})).map(([k,v])=>({l:nomes[k]||k,v})).sort((a,b)=>b.v-a.v);
+  m.innerHTML=`<div class="grid k6">${kpi('Clientes com empréstimo quitado',L.length,'oportunidade de nova contratação')}
+    ${kpi('Contratos quitados',L.reduce((s,x)=>s+x.n,0),'')}
+    ${kpi('Margem (PMT) liberada',fmt0(L.reduce((s,x)=>s+x.pmt,0)),'parcelas que deixaram de ser pagas')}
+    ${kpi('Valor já contratado',fmt0(L.reduce((s,x)=>s+x.lib,0)),'histórico desses clientes')}
+    ${kpi('2+ contratos quitados',L.filter(x=>x.n>=2).length,'clientes fiéis — priorize')}
+    ${kpi('Com representante legal',L.filter(x=>x.rl).length,'exige atenção na abordagem')}</div>
+    <div class="grid g2" style="margin-top:12px"><div class="card"><h3>Por loja</h3>${hbars(porL,v=>v)}</div>
+    <div class="card"><h3>Top consultores (quem vendeu o contrato)</h3>${hbars(porC,v=>v)}
+    <p class="mut" style="font-size:12px">Dica: o consultor que vendeu tem o vínculo — ele deve ligar primeiro. Telefones e CPF ficam só na planilha dos supervisores.</p></div></div>
+    <div class="card" style="margin-top:12px"><h3>Clientes que terminaram de pagar (ordenados pela margem liberada)</h3>`+table([
+      {k:'id',h:'Cód. Cliente',f:x=>'<b>'+esc(x.id)+'</b><br><span class="mut">adesão '+esc(x.ades[0]||'')+(x.ades.length>1?' +'+(x.ades.length-1):'')+'</span>',s:x=>x.id},
+      {k:'cid',h:'Cidade',f:x=>esc(x.cid)},
+      {k:'loja',h:'Loja',f:x=>esc(nomes[x.loja]||x.loja),s:x=>x.loja},
+      {k:'cons',h:'Consultor',f:x=>esc(x.cons?short(x.cons):'—')},
+      {k:'n',h:'Quitados',f:x=>x.n>=2?'<span class="pill ok">'+x.n+' contratos</span>':'1',cls:'right'},
+      {k:'pmt',h:'PMT liberado',f:x=>fmt(x.pmt),cls:'right'},
+      {k:'lib',h:'Já contratou',f:x=>fmt(x.lib),cls:'right'},
+      {k:'ult',h:'Última produção',f:x=>x.ult?x.ult.split('-').reverse().join('/'):'—',s:x=>x.ult},
+      {k:'prod',h:'Produto',f:x=>esc(x.prod||'—')+(x.rl?' <span class="pill wn">rep. legal</span>':'')},
+      {k:'ac',h:'Ação',f:x=>'<div class="act">'+(x.n>=2?'⭐ Cliente fiel: ofereça CNC/novo crédito com a margem de '+fmt0(x.pmt)+'.':'Ofereça novo crédito (margem liberada de '+fmt0(x.pmt)+').')+(x.pp>=24?' Contrato longo, bom histórico.':'')+'</div>',s:x=>x.n}
+    ],[...L].sort((a,b)=>b.pmt-a.pmt).slice(0,500),'quit')+(L.length>500?'<p class="mut">Mostrando 500 de '+L.length+'. Use os filtros.</p>':'')+'</div>';
 }
 function acaoLoja(l,R){
   const a=[];const rs=R.filter(r=>r.loja===l.codigo);
