@@ -52,9 +52,11 @@ svg text{fill:#c9bfe9;font-size:11px}
   <div class="tab" data-t="cons">👤 Consultores</div>
   <div class="tab" data-t="lojas">🏬 Lojas (Supervisor)</div>
   <div class="tab" data-t="reco">🔁 Reconquista</div>
+  <div class="tab" data-t="refin">💰 Refin</div>
 </div>
 <main id="main"><div class="card">Carregando dados…</div></main>
 <script src="reconquista-data.js"></script>
+<script src="refin-data.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 const fmt=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -202,6 +204,7 @@ function render(){
       ${kpi('Prêmios estimados',fmt(pr),'CNC + seguros (estimativa)')}
       ${kpi('Seguros no mês',seg,R.filter(r=>r.sq>=D.MIN_SEGUROS_ELEGIVEL).length+' elegíveis (≥'+D.MIN_SEGUROS_ELEGIVEL+')')}
       ${kpi('Reconquista elegível',el.length,fmt0(el.reduce((s,x)=>s+(+x.saldo||0),0))+' em saldo')}
+      ${kpi('Oportunidades de Refin',refinList().length,fmt0(refinList().reduce((s,x)=>s+x.pmt,0))+' de PMT · aba 💰 Refin')}
     </div>
     <div class="grid g2" style="margin-top:12px">
       <div class="card"><h3>Evolução do CNC acumulado vs meta</h3>${lineChart()}</div>
@@ -237,6 +240,7 @@ function render(){
       {k:'ac',h:'Ação do supervisor',f:l=>'<div class="act">'+esc(acaoLoja(l,R))+'</div>',s:l=>l.semFaixa}
     ],L.sort((a,b)=>b.pct-a.pct),'lojas')+'</div>';
   }
+  if(TAB==='refin'){renderRefin(m);return;}
   if(TAB==='reco'){
     const lj=$('#fLoja').value,q=$('#fBusca').value.trim().toLowerCase();
     let rec=D.REC.filter(x=>(!lj||x.codigo===lj)&&(!q||String(x.id).includes(q)||String(x.nome).toLowerCase().includes(q)));
@@ -254,6 +258,45 @@ function render(){
       {k:'atraso',h:'Atraso',f:x=>x.atraso?x.atraso+' d':'—'}
     ],rec.slice(0,400),'reco')+(rec.length>400?'<p class="mut">Mostrando 400 de '+rec.length+'. Use os filtros.</p>':'')+'</div>';
   }
+}
+const REFIN_GRUPO={SLZ:['53631','56097'],FORA:[],'':[]};
+function refinList(){
+  const lj=$('#fLoja').value,q=$('#fBusca').value.trim().toLowerCase();
+  const all=(typeof REFIN_SEED!=='undefined')?REFIN_SEED:[];
+  return all.filter(x=>(!lj||x.loja===lj||(x.loja==='SLZ'&&REFIN_GRUPO.SLZ.includes(lj)))&&(!q||x.id.includes(q)||x.cid.toLowerCase().includes(q)));
+}
+function refinPrio(x){
+  // alta: sem desistência recente e com parcelas pagas; baixa: desistência
+  if(/venda|agenda|aberto/i.test(x.tab)&&!/sem venda/i.test(x.tab))return ['bad','Em andamento'];
+  if(/Não Contato/i.test(x.tab))return ['ok','Ligar agora'];
+  if(/Sem Oferta/i.test(x.tab))return ['wn','Reoferecer'];
+  if(/Desist/i.test(x.tab))return ['nt','Retomar (desistiu)'];
+  return ['wn','Avaliar'];
+}
+function renderRefin(m){
+  const L=refinList(),tab=t=>L.filter(x=>x.tab===t).length;
+  const nomes={SLZ:'São Luís (2 lojas)',FORA:'Fora da rede','':'Sem loja definida'};
+  D.LOJAS_SEED.forEach(l=>nomes[l.codigo]=l.nome);
+  m.innerHTML=`<div class="grid k6">${kpi('Oportunidades de Refin',L.length,'clientes aptos a refinanciar')}
+    ${kpi('Parcela (PMT) somada',fmt0(L.reduce((s,x)=>s+x.pmt,0)),'por mês')}
+    ${kpi('Saldo devedor somado',fmt0(L.reduce((s,x)=>s+x.sal,0)),'carteira apta')}
+    ${kpi('Ligar agora',tab('Não Contato'),'nunca contatados')}
+    ${kpi('Retomar',tab('Desistência')+tab('Sem Oferta'),'desistência / sem oferta')}
+    ${kpi('Parcelas pagas ≥ 12',L.filter(x=>x.pp>=12).length,'maior chance de aprovação')}</div>
+    <div class="grid g2" style="margin-top:12px"><div class="card"><h3>Oportunidades por loja/praça</h3>${hbars(Object.entries(L.reduce((o,x)=>(o[x.loja]=(o[x.loja]||0)+1,o),{})).map(([k,v])=>({l:nomes[k]||k,v})).sort((a,b)=>b.v-a.v),v=>v)}</div>
+    <div class="card"><h3>Situação do último contato</h3>${hbars(Object.entries(L.reduce((o,x)=>(o[x.tab||'—']=(o[x.tab||'—']||0)+1,o),{})).map(([k,v])=>({l:k,v})).sort((a,b)=>b.v-a.v),v=>v)}
+    <p class="mut" style="font-size:12px">A base não traz a loja do cliente: a loja é estimada pela cidade. Telefones e CPF ficam só na planilha dos supervisores.</p></div></div>
+    <div class="card" style="margin-top:12px"><h3>Lista de oportunidades (clique no cabeçalho para ordenar)</h3>`+table([
+      {k:'id',h:'Cód. Cliente',f:x=>'<b>'+esc(x.id)+'</b>'},
+      {k:'cid',h:'Cidade',f:x=>esc(x.cid)},
+      {k:'loja',h:'Loja',f:x=>esc(nomes[x.loja]||x.loja),s:x=>x.loja},
+      {k:'prod',h:'Produto atual',f:x=>esc(x.prod)},
+      {k:'pp',h:'Parc. pagas',f:x=>x.pp+(x.atr?' <span class="pill bad">'+x.atr+' atraso</span>':''),cls:'right'},
+      {k:'pmt',h:'PMT',f:x=>fmt(x.pmt),cls:'right'},
+      {k:'sal',h:'Saldo devedor',f:x=>fmt(x.sal),cls:'right'},
+      {k:'tab',h:'Último contato',f:x=>esc(x.tab||'—')+(x.ua?'<br><span class="mut">'+x.ua.split('-').reverse().join('/')+'</span>':'')},
+      {k:'pr',h:'Ação',f:x=>{const p=refinPrio(x);return `<span class="pill ${p[0]}">${p[1]}</span>`},s:x=>refinPrio(x)[1]}
+    ],[...L].sort((a,b)=>b.pmt-a.pmt).slice(0,500),'refin')+(L.length>500?'<p class="mut">Mostrando 500 de '+L.length+'. Use os filtros.</p>':'')+'</div>';
 }
 function acaoLoja(l,R){
   const a=[];const rs=R.filter(r=>r.loja===l.codigo);
