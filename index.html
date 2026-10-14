@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Painel LIGA Help! — BI de Produção</title>
+<script>/* Acesso: só libera após login + treinamento concluído (controle simples, não é segurança forte) */
+(function(){try{var a=JSON.parse(localStorage.getItem('liga_auth')||'null');if(!a||!a.done){location.replace('treinamento.html')}}catch(e){location.replace('treinamento.html')}})();
+</script>
 <style>
 :root{--bg:#120a24;--card:#1c1236;--card2:#241846;--line:#34285c;--tx:#f3efff;--mut:#a79ccc;--or:#ff7a1a;--pu:#8b5cf6;--ok:#22c55e;--wn:#f5b301;--bad:#ef4444}
 *{box-sizing:border-box}
@@ -38,7 +41,7 @@ svg text{fill:#c9bfe9;font-size:11px}
 <body>
 <header>
   <div><h1>🏆 Painel LIGA Help! — BI de Produção</h1><small id="sub">Carregando…</small></div>
-  <div><a href="treinamento.html" style="color:#fff;font-weight:700">🎓 Treinamento</a> &nbsp;·&nbsp; <a href="classico.html" style="color:#fff">Versão clássica</a></div>
+  <div><span id="hello" style="margin-right:10px"></span><a href="treinamento.html" style="color:#fff;font-weight:700">🎓 Treinamento</a> &nbsp;·&nbsp; <a href="#" id="lnkSair" style="color:#fff">Sair</a> &nbsp;·&nbsp;<a href="classico.html" style="color:#fff">Versão clássica</a></div>
 </header>
 <div class="filters">
   <label>Loja<select id="fLoja"></select></label>
@@ -116,7 +119,11 @@ function prepare(){
   const [dd,mm,aa]=[S.ref.slice(8),S.ref.slice(5,7),S.ref.slice(0,4)];
   $('#sub').textContent='Produção até '+dd+'/'+mm+'/'+aa+' · dia '+S.diaRef+' de '+S.diasMes+' · restam '+S.restam+' dias'+(D.RECDATA?' · Reconquista de '+D.RECDATA.split('-').reverse().join('/'):'');
   $('#fLoja').innerHTML='<option value="">Todas as lojas</option>'+D.LOJAS_SEED.map(l=>`<option value="${l.codigo}">${esc(l.nome)}</option>`).join('');
+  try{const a=JSON.parse(localStorage.getItem('liga_auth')||'null');
+    if(a){$('#hello').textContent='👤 '+a.nome;if(!$('#fUser').value)$('#fUser').value=a.nome;
+      if(!a.gestor&&a.loja&&D.LOJAS_SEED.some(l=>l.codigo===a.loja))$('#fLoja').value=a.loja}}catch(e){}
   fillCons();
+  try{const a=JSON.parse(localStorage.getItem('liga_auth')||'null');if(a&&!a.gestor){const k=Object.keys(S.cons).find(n=>n.toLowerCase()===a.nome.toLowerCase());if(k)$('#fCons').value=k}}catch(e){}
 }
 function fillCons(){
   const lj=$('#fLoja').value;
@@ -418,6 +425,7 @@ document.addEventListener('click',e=>{
 $('#fLoja').onchange=()=>{fillCons();render()};$('#fCons').onchange=render;$('#fBusca').oninput=render;$('#btnCsv').onclick=csv;
 $('#fMeta').onchange=()=>{try{localStorage.setItem('liga_meta',$('#fMeta').value)}catch(e){};render()};
 try{const v=localStorage.getItem('liga_meta');if(v)$('#fMeta').value=v;const u=localStorage.getItem('liga_user');if(u)$('#fUser').value=u}catch(e){}
+$('#lnkSair').onclick=e=>{e.preventDefault();try{localStorage.removeItem('liga_auth')}catch(x){}location.href='treinamento.html'};
 $('#fUser').onchange=()=>{try{localStorage.setItem('liga_user',$('#fUser').value)}catch(e){}};
 load().then(()=>{render();syncPull()}).catch(e=>{$('#main').innerHTML='<div class="card">Erro ao carregar dados: '+esc(e.message)+'</div>'});
 </script>
