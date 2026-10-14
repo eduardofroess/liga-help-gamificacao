@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Treinamento — Como transformar listas em vendas | LIGA Help!</title>
+<style>
+:root{--bg:#120a24;--card:#1c1236;--card2:#241846;--line:#34285c;--tx:#f3efff;--mut:#a79ccc;--or:#ff7a1a;--pu:#8b5cf6;--ok:#22c55e;--bad:#ef4444}
+*{box-sizing:border-box}
+body{margin:0;font-family:Segoe UI,system-ui,Arial,sans-serif;background:linear-gradient(135deg,#1a0b33,#120a24 60%,#2a1203 140%);color:var(--tx);line-height:1.55}
+header{padding:22px;background:linear-gradient(90deg,var(--or),var(--pu))}
+header h1{margin:0;font-size:24px}header p{margin:6px 0 0;opacity:.95}
+nav{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:8px 16px;display:flex;gap:6px;flex-wrap:wrap}
+nav a{color:#ddd6fe;text-decoration:none;font-size:13px;padding:6px 10px;border-radius:8px;background:var(--card2)}
+nav a:hover{background:var(--pu)}
+main{max-width:920px;margin:0 auto;padding:18px 16px 60px}
+section{margin:22px 0}
+h2{font-size:20px;margin:0 0 10px;border-left:5px solid var(--or);padding-left:10px}
+h3{font-size:16px;margin:14px 0 6px;color:#fdba74}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:10px 0}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.num{font-size:28px;font-weight:700;color:var(--or)}.mut{color:var(--mut);font-size:13px}
+.script{background:#0e0720;border:1px dashed var(--pu);border-radius:10px;padding:12px;margin:8px 0;font-size:14px;white-space:pre-wrap}
+button{background:var(--or);border:0;color:#fff;padding:7px 12px;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px}
+button.alt{background:var(--pu)}
+.tip{background:#1d3a24;border:1px solid #22c55e55;border-radius:10px;padding:10px 12px;margin:8px 0}
+.warn{background:#3a1d1d;border:1px solid #ef444455;border-radius:10px;padding:10px 12px;margin:8px 0}
+ol,ul{padding-left:22px}li{margin:4px 0}
+.q{margin:14px 0}.q label{display:block;padding:7px 10px;margin:4px 0;border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.q label:hover{background:var(--card2)}.q .ok{background:#14532d}.q .no{background:#5f1414}
+a{color:#c4b5fd}
+table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:8px;border-top:1px solid var(--line);text-align:left}th{color:var(--mut)}
+</style>
+</head>
+<body>
+<header>
+  <h1>🎓 Treinamento: Como transformar as listas em vendas</h1>
+  <p>Refin · Clientes Quitados · Reconquista — passo a passo para consultores e supervisores da rede Help!</p>
+</header>
+<nav>
+  <a href="#porque">Por que</a><a href="#painel">Painel</a><a href="#listas">As 3 listas</a><a href="#rotina">Rotina diária</a><a href="#registro">Registro</a><a href="#cuidados">Cuidados</a><a href="#super">Supervisores</a><a href="#quiz">Quiz</a>
+</nav>
+<main>
+
+<section id="porque">
+  <h2>1. Por que isso importa</h2>
+  <p>Cliente que já comprou de nós é o lead mais barato e mais fácil de converter. O painel reúne três listas de clientes que já estão na nossa base. Números de hoje:</p>
+  <div class="grid">
+    <div class="card"><div class="num" id="nRef">…</div><b>Oportunidades de Refin</b><div class="mut" id="sRef"></div></div>
+    <div class="card"><div class="num" id="nQui">…</div><b>Clientes que terminaram de pagar</b><div class="mut" id="sQui"></div></div>
+    <div class="card"><div class="num" id="nRec">…</div><b>Reconquista elegíveis</b><div class="mut" id="sRec"></div></div>
+  </div>
+  <div class="tip">💡 Lista parada não vende. O objetivo do time é <b>trabalhar 100% das listas</b> e registrar o resultado de cada contato no painel.</div>
+</section>
+
+<section id="painel">
+  <h2>2. Como usar o painel (5 passos)</h2>
+  <ol>
+    <li>Abra o painel: <a href="index.html">página inicial da LIGA</a> (salve nos favoritos / tela inicial do celular).</li>
+    <li>No topo, escolha a <b>sua loja</b> e o <b>seu nome</b> nos filtros.</li>
+    <li>Abra a aba da lista: <b>💰 Refin</b>, <b>🎉 Quitados</b> ou <b>🔁 Reconquista</b>.</li>
+    <li>Clique no cabeçalho para ordenar (ex.: <i>PMT liberado</i> do maior para o menor). Comece pelos maiores.</li>
+    <li>Pegue o <b>código do cliente</b> (ou adesão) e localize o contato na <b>planilha do seu supervisor</b>. Depois do contato, marque o status na coluna <b>Registro</b>.</li>
+  </ol>
+  <div class="warn">🔒 O painel público <b>não mostra CPF nem telefone</b> de propósito. Os contatos ficam só na planilha enviada ao supervisor da loja. Não repasse essa planilha para fora da empresa.</div>
+</section>
+
+<section id="listas">
+  <h2>3. As três listas e como abordar</h2>
+
+  <div class="card">
+    <h3>🎉 Clientes Quitados (comece por aqui)</h3>
+    <p><b>O que é:</b> cliente que terminou de pagar um ou mais empréstimos. A parcela que ele pagava ficou livre no benefício — ele tem <b>margem para um novo crédito</b>.</p>
+    <p><b>Quem abordar primeiro:</b> quem tem <b>2+ contratos quitados</b> (cliente fiel) e maior <b>PMT liberado</b>. Se você foi o consultor que vendeu, ligue você mesmo.</p>
+    <div class="script" id="s1">Olá, {nome}! Aqui é {seu nome} da Help!. Vi que você terminou de pagar seu empréstimo conosco, parabéns pelo compromisso! 🎉
+Como a parcela de R$ {valor} já saiu do seu benefício, você tem uma margem disponível. Posso simular rapidinho uma condição especial pra você, sem compromisso?</div>
+    <button onclick="cp('s1')">📋 Copiar script</button>
+    <p class="mut">Confirme a margem real na simulação antes de falar em valores.</p>
+  </div>
+
+  <div class="card">
+    <h3>💰 Oportunidades de Refin</h3>
+    <p><b>O que é:</b> cliente com contrato ativo que está apto a refinanciar (mais dinheiro ou parcela menor). Veja <b>Último contato</b>, <b>parcelas pagas</b> e <b>PMT</b>.</p>
+    <p><b>Prioridade:</b> 1) <b>Ligar agora</b> (nunca contatados); 2) <b>12+ parcelas pagas</b>; 3) <b>Reoferecer</b> (sem oferta); 4) <b>Retomar</b> quem desistiu, com abordagem nova (não repita a mesma oferta).</p>
+    <div class="script" id="s2">Olá, {nome}! Aqui é {seu nome} da Help!. Analisei seu contrato e você tem uma condição disponível para refinanciar: pode receber um valor na conta e/ou reduzir sua parcela. Posso te mostrar a simulação agora? Leva 2 minutinhos.</div>
+    <button onclick="cp('s2')">📋 Copiar script</button>
+    <div class="script" id="s2b">(Para quem desistiu antes)
+Olá, {nome}! {seu nome} da Help!. Da última vez não fechamos, e entendo. Mas as condições mudaram e conseguimos uma simulação melhor. Quer dar uma olhada, sem compromisso?</div>
+    <button onclick="cp('s2b')">📋 Copiar script</button>
+    <p class="mut">A loja do cliente é estimada pela cidade. Se o cliente for de outra loja, avise o supervisor para redirecionar.</p>
+  </div>
+
+  <div class="card">
+    <h3>🔁 Reconquista</h3>
+    <p><b>O que é:</b> clientes com contrato em aberto e saldo, que podem ser reconquistados. Marque <b>Elegível</b> como prioridade e ordene pelo <b>saldo</b>.</p>
+    <p><b>Situações:</b> ✅ Reconquistado (já resolvido) · 🤝 Promessa de pagamento (acompanhar a data) · ⏳ Em aberto (precisa de contato agora).</p>
+    <div class="script" id="s3">Olá, {nome}! Aqui é {seu nome} da Help!. Estou entrando em contato para te ajudar a regularizar e manter seus benefícios ativos. Podemos conversar rapidinho sobre sua situação?</div>
+    <button onclick="cp('s3')">📋 Copiar script</button>
+  </div>
+</section>
+
+<section id="rotina">
+  <h2>4. Rotina diária sugerida</h2>
+  <table>
+    <tr><th>Quando</th><th>O que fazer</th></tr>
+    <tr><td>Início do dia</td><td>Abrir o painel, filtrar seu nome, ver "O que fazer" na aba Consultores.</td></tr>
+    <tr><td>1º bloco (1h)</td><td>10 contatos na lista <b>Quitados</b> (maiores PMT primeiro).</td></tr>
+    <tr><td>2º bloco (1h)</td><td>10 contatos na lista <b>Refin</b> (Ligar agora e 12+ parcelas).</td></tr>
+    <tr><td>3º bloco (30min)</td><td>5 contatos de <b>Reconquista</b> elegíveis.</td></tr>
+    <tr><td>Fim do dia</td><td>Atualizar o <b>Registro</b> de todos os contatos e agendar retornos.</td></tr>
+  </table>
+  <p class="mut">Os números são uma sugestão de ritmo; cada loja pode ajustar com o supervisor.</p>
+  <h3>Respondendo objeções</h3>
+  <ul>
+    <li><b>"Não preciso agora"</b> → "Sem problema! Posso te deixar a simulação pronta e te chamo daqui a 15 dias?" (marque <i>Contatado</i> e agende retorno).</li>
+    <li><b>"Tenho medo de golpe"</b> → ofereça atendimento na loja ou videochamada; nunca peça senha ou código de segurança.</li>
+    <li><b>"A parcela vai ficar alta"</b> → mostre simulações com parcelas menores e prazo maior.</li>
+    <li><b>"Já desisti antes"</b> → reconheça, apresente o que mudou e peça só 2 minutos.</li>
+  </ul>
+</section>
+
+<section id="registro">
+  <h2>5. Registro de contatos (obrigatório)</h2>
+  <p>É o registro que mostra se estamos aproveitando as listas. Em cada lista há uma coluna <b>Registro</b>:</p>
+  <table>
+    <tr><th>Status</th><th>Quando marcar</th></tr>
+    <tr><td>📞 Contatado</td><td>Falou ou mandou mensagem, sem decisão ainda.</td></tr>
+    <tr><td>🔥 Interessado</td><td>Pediu simulação ou ficou de retornar.</td></tr>
+    <tr><td>💰 Vendido</td><td>Contrato digitado/formalizado.</td></tr>
+    <tr><td>🚫 Sem interesse</td><td>Recusou claramente. Não insistir sem novo motivo.</td></tr>
+  </table>
+  <p>Na aba <b>📈 Aproveitamento</b> o time vê: % de leads trabalhados, interessados, vendidos e conversão por lista, além de quem está registrando. Use <b>Exportar/Importar registro</b> e o botão <b>Copiar resumo p/ WhatsApp</b> para consolidar com o supervisor.</p>
+  <div class="tip">🎯 <b>Meta do time:</b> 100% das listas trabalhadas em 30 dias e acompanhar a conversão semanalmente.</div>
+</section>
+
+<section id="cuidados">
+  <h2>6. Cuidados importantes</h2>
+  <ul>
+    <li>Nunca prometa valor, taxa ou aprovação antes da simulação oficial.</li>
+    <li>Cliente com <b>representante legal</b> (aviso no painel): fale com o responsável e siga o procedimento da empresa.</li>
+    <li>Não compartilhe CPF, telefone ou a planilha em grupos abertos; use só para o atendimento.</li>
+    <li>Respeite quem pediu para não ser contatado.</li>
+    <li>Nunca peça senha, código SMS ou dados bancários por mensagem.</li>
+  </ul>
+</section>
+
+<section id="super">
+  <h2>7. Para supervisores</h2>
+  <ol>
+    <li>Distribua a planilha da loja por consultor (a coluna "Consultor que vendeu" ajuda nos Quitados).</li>
+    <li>Na aba <b>🏬 Lojas (Supervisor)</b> veja o semáforo e a "Ação do supervisor".</li>
+    <li>Na aba <b>📈 Aproveitamento</b> acompanhe % trabalhado e conversão por lista, e cobre diariamente.</li>
+    <li>Faça uma reunião de 10 minutos por semana: o que fechou, objeções recorrentes, quem precisa de ajuda.</li>
+    <li>Reconheça quem converte — e replique o script que funcionou.</li>
+  </ol>
+</section>
+
+<section id="quiz">
+  <h2>8. Quiz rápido</h2>
+  <div id="quiz"></div>
+  <button onclick="grade()">Ver meu resultado</button> <span id="res" style="margin-left:10px;font-weight:700"></span>
+</section>
+
+</main>
+<script src="reconquista-data.js"></script>
+<script src="refin-data.js"></script>
+<script src="quit-data.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const m0=v=>'R$ '+Math.round(v).toLocaleString('pt-BR');
+function cp(id){navigator.clipboard.writeText($('#'+id).innerText).then(()=>alert('Script copiado!'))}
+try{
+  $('#nRef').textContent=REFIN_SEED.length;$('#sRef').textContent=m0(REFIN_SEED.reduce((s,x)=>s+x.pmt,0))+' de parcela somada';
+  $('#nQui').textContent=QUIT_SEED.length;$('#sQui').textContent=m0(QUIT_SEED.reduce((s,x)=>s+x.pmt,0))+' de margem liberada';
+  const el=RECONQUISTA_SEED.filter(x=>x.elegivel);$('#nRec').textContent=el.length;$('#sRec').textContent=m0(el.reduce((s,x)=>s+(+x.saldo||0),0))+' em saldo';
+}catch(e){}
+const Q=[
+ ['Qual lista você deve trabalhar primeiro por ser a abordagem mais fácil?',['Reconquista de quem desistiu','Clientes Quitados com 2+ contratos','Qualquer uma, tanto faz'],1],
+ ['O que significa um cliente ter "terminado de pagar" um empréstimo?',['A parcela dele ficou livre e ele tem margem para novo crédito','O cliente não pode mais contratar','O contrato foi cancelado por atraso'],0],
+ ['Antes de falar valores ao cliente você deve:',['Prometer o maior valor possível','Fazer a simulação oficial','Pedir a senha do banco para conferir'],1],
+ ['Onde ficam CPF e telefone dos clientes?',['No painel público','Na planilha do supervisor, de uso restrito','No grupo geral do WhatsApp'],1],
+ ['Quando marcar "Vendido" no registro?',['Quando o cliente disse que vai pensar','Quando o contrato foi digitado/formalizado','Quando liguei e ninguém atendeu'],1],
+ ['Cliente que desistiu antes no Refin. O que fazer?',['Nunca mais contatar','Repetir exatamente a mesma oferta','Retomar com uma abordagem nova e simulação atualizada'],2],
+ ['Cliente tem representante legal. O que fazer?',['Ignorar o aviso','Falar com o responsável e seguir o procedimento da empresa','Pedir a senha do cliente'],1],
+ ['Para que serve a aba Aproveitamento?',['Ver quanto das listas estamos trabalhando e convertendo','Alterar a meta de CNC','Excluir clientes das listas'],0]
+];
+$('#quiz').innerHTML=Q.map((q,i)=>`<div class="q"><b>${i+1}. ${q[0]}</b>${q[1].map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}"> ${o}</label>`).join('')}</div>`).join('');
+function grade(){let ok=0;Q.forEach((q,i)=>{const s=document.querySelector(`input[name=q${i}]:checked`);document.querySelectorAll(`input[name=q${i}]`).forEach(r=>{const l=r.parentElement;l.classList.remove('ok','no');if(+r.value===q[2])l.classList.add('ok');else if(r.checked)l.classList.add('no')});if(s&&+s.value===q[2])ok++});
+ $('#res').textContent='Você acertou '+ok+' de '+Q.length+(ok>=7?' 🏆 Excelente!':ok>=5?' 👍 Bom, revise os erros em vermelho.':' 📚 Releia o treinamento e tente de novo.')}
+</script>
+</body>
+</html>
