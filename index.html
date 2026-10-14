@@ -38,7 +38,7 @@ svg text{fill:#c9bfe9;font-size:11px}
 <body>
 <header>
   <div><h1>🏆 Painel LIGA Help! — BI de Produção</h1><small id="sub">Carregando…</small></div>
-  <div><a href="classico.html" style="color:#fff">Versão clássica</a></div>
+  <div><a href="treinamento.html" style="color:#fff;font-weight:700">🎓 Treinamento</a> &nbsp;·&nbsp; <a href="classico.html" style="color:#fff">Versão clássica</a></div>
 </header>
 <div class="filters">
   <label>Loja<select id="fLoja"></select></label>
@@ -54,6 +54,7 @@ svg text{fill:#c9bfe9;font-size:11px}
   <div class="tab" data-t="reco">🔁 Reconquista</div>
   <div class="tab" data-t="refin">💰 Refin</div>
   <div class="tab" data-t="quit">🎉 Quitados</div>
+  <div class="tab" data-t="aprov">📈 Aproveitamento</div>
 </div>
 <main id="main"><div class="card">Carregando dados…</div></main>
 <script src="reconquista-data.js"></script>
@@ -246,6 +247,7 @@ function render(){
   }
   if(TAB==='refin'){renderRefin(m);return;}
   if(TAB==='quit'){renderQuit(m);return;}
+  if(TAB==='aprov'){renderAprov(m);return;}
   if(TAB==='reco'){
     const lj=$('#fLoja').value,q=$('#fBusca').value.trim().toLowerCase();
     let rec=D.REC.filter(x=>(!lj||x.codigo===lj)&&(!q||String(x.id).includes(q)||String(x.nome).toLowerCase().includes(q)));
@@ -260,7 +262,8 @@ function render(){
       {k:'status',h:'Situação',f:x=>`<span class="pill ${x.status==='EF'?'ok':x.status==='PR'?'wn':'nt'}">${esc(D.STAT[x.status]||x.status)}</span>`},
       {k:'elegivel',h:'Elegível',f:x=>x.elegivel?'✅ sim':'não'},
       {k:'saldo',h:'Saldo',f:x=>fmt(x.saldo),cls:'right',s:x=>+x.saldo||0},
-      {k:'atraso',h:'Atraso',f:x=>x.atraso?x.atraso+' d':'—'}
+      {k:'atraso',h:'Atraso',f:x=>x.atraso?x.atraso+' d':'—'},
+      {k:'reg',h:'Registro',f:x=>regSelect('C',x.id),s:x=>(REG['C:'+x.id]||{}).s||'',csv:x=>regCsv('C',x.id)}
     ],rec.slice(0,400),'reco')+(rec.length>400?'<p class="mut">Mostrando 400 de '+rec.length+'. Use os filtros.</p>':'')+'</div>';
   }
 }
@@ -300,8 +303,62 @@ function renderRefin(m){
       {k:'pmt',h:'PMT',f:x=>fmt(x.pmt),cls:'right'},
       {k:'sal',h:'Saldo devedor',f:x=>fmt(x.sal),cls:'right'},
       {k:'tab',h:'Último contato',f:x=>esc(x.tab||'—')+(x.ua?'<br><span class="mut">'+x.ua.split('-').reverse().join('/')+'</span>':'')},
-      {k:'pr',h:'Ação',f:x=>{const p=refinPrio(x);return `<span class="pill ${p[0]}">${p[1]}</span>`},s:x=>refinPrio(x)[1]}
+      {k:'pr',h:'Ação',f:x=>{const p=refinPrio(x);return `<span class="pill ${p[0]}">${p[1]}</span>`},s:x=>refinPrio(x)[1]},
+      {k:'reg',h:'Registro',f:x=>regSelect('R',x.id),s:x=>(REG['R:'+x.id]||{}).s||'',csv:x=>regCsv('R',x.id)}
     ],[...L].sort((a,b)=>b.pmt-a.pmt).slice(0,500),'refin')+(L.length>500?'<p class="mut">Mostrando 500 de '+L.length+'. Use os filtros.</p>':'')+'</div>';
+}
+/* ===== Registro de contato (aproveitamento das listas) ===== */
+const SYNC_URL='';/* opcional: URL do Apps Script (ver apps-script-registro.gs) para compartilhar o registro entre aparelhos */
+const ST={'':['— não trabalhado —','nt'],contatado:['📞 Contatado','wn'],interessado:['🔥 Interessado','ok'],vendido:['💰 Vendido','ok'],sem_interesse:['🚫 Sem interesse','bad']};
+let REG={};try{REG=JSON.parse(localStorage.getItem('liga_reg')||'{}')}catch(e){}
+function saveReg(){try{localStorage.setItem('liga_reg',JSON.stringify(REG))}catch(e){}}
+function who(){let u='';try{u=localStorage.getItem('liga_user')||''}catch(e){}if(!u){u=(prompt('Seu nome (para o registro dos contatos):')||'').trim();try{localStorage.setItem('liga_user',u)}catch(e){}}return u}
+function regSelect(list,id){const k=list+':'+id,v=(REG[k]||{}).s||'';return `<select class="regsel" data-k="${esc(k)}" style="min-width:130px;padding:4px">${Object.entries(ST).map(([a,b])=>`<option value="${a}"${a===v?' selected':''}>${b[0]}</option>`).join('')}</select>`}
+function regCsv(list,id){return ST[(REG[list+':'+id]||{}).s||''][0]}
+function setReg(k,s,remote){const cur=REG[k]||{};REG[k]={s,u:remote?remote.u:who(),t:remote?remote.t:Date.now()};saveReg();
+  if(!remote&&SYNC_URL){try{fetch(SYNC_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({key:k,s:s,u:REG[k].u,t:REG[k].t})})}catch(e){}}}
+async function syncPull(){if(!SYNC_URL)return;try{const a=await (await fetch(SYNC_URL)).json();let ch=0;for(const r of a){if(!REG[r.key]||REG[r.key].t<r.t){REG[r.key]={s:r.s,u:r.u,t:r.t};ch++}}if(ch){saveReg();if(TAB==='aprov')render()}}catch(e){}}
+document.addEventListener('change',e=>{const s=e.target.closest&&e.target.closest('.regsel');if(s){setReg(s.dataset.k,s.value);s.style.outline=s.value?'2px solid #22c55e':'none'}});
+function aprovData(){
+  const lj=$('#fLoja').value;
+  const lists=[
+    {n:'💰 Refin',p:'R',L:refinList(),loja:x=>x.loja},
+    {n:'🎉 Quitados',p:'Q',L:quitList(),loja:x=>x.loja},
+    {n:'🔁 Reconquista',p:'C',L:D.REC.filter(x=>!lj||x.codigo===lj),loja:x=>x.codigo,idf:x=>x.id}
+  ];
+  return lists.map(l=>{const c={'':0,contatado:0,interessado:0,vendido:0,sem_interesse:0};
+    l.L.forEach(x=>{const s=(REG[l.p+':'+(l.idf?l.idf(x):x.id)]||{}).s||'';c[s]++});
+    const tot=l.L.length,trab=tot-c[''];
+    return {...l,tot,c,trab,pt:tot?trab/tot*100:0,conv:trab?c.vendido/trab*100:0};});
+}
+function renderAprov(m){
+  const A=aprovData(),all=A.reduce((s,a)=>s+a.tot,0),trab=A.reduce((s,a)=>s+a.trab,0),ven=A.reduce((s,a)=>s+a.c.vendido,0),int=A.reduce((s,a)=>s+a.c.interessado,0);
+  const users={};Object.values(REG).forEach(r=>{if(r.s){const u=r.u||'(sem nome)';users[u]=users[u]||{n:0,v:0};users[u].n++;if(r.s==='vendido')users[u].v++}});
+  const ur=Object.entries(users).sort((a,b)=>b[1].n-a[1].n);
+  m.innerHTML=`<div class="grid k6">${kpi('Leads nas listas',all,'Refin + Quitados + Reconquista')}
+    ${kpi('Trabalhados',trab,pct(all?trab/all*100:0)+' do total')}
+    ${kpi('Interessados',int,'aguardando fechamento')}
+    ${kpi('Vendidos',ven,pct(trab?ven/trab*100:0)+' dos trabalhados')}
+    ${kpi('Sem registro',all-trab,'ainda não abordados')}</div>
+    <div class="card" style="margin-top:12px"><h3>Funil por lista</h3>`+table([
+      {k:'n',h:'Lista',f:a=>'<b>'+a.n+'</b>'},
+      {k:'tot',h:'Total',cls:'right'},
+      {k:'pt',h:'% trabalhado',f:a=>pct(a.pt)+bar(a.pt),s:a=>a.pt,csv:a=>a.pt.toFixed(1)},
+      {k:'ct',h:'Contatado',f:a=>a.c.contatado,s:a=>a.c.contatado},
+      {k:'ci',h:'Interessado',f:a=>a.c.interessado,s:a=>a.c.interessado},
+      {k:'cv',h:'Vendido',f:a=>'<b>'+a.c.vendido+'</b>',s:a=>a.c.vendido},
+      {k:'cs',h:'Sem interesse',f:a=>a.c.sem_interesse,s:a=>a.c.sem_interesse},
+      {k:'conv',h:'Conversão',f:a=>pct(a.conv),s:a=>a.conv,csv:a=>a.conv.toFixed(1)}
+    ],A,'aprov')+`</div>
+    <div class="grid g2" style="margin-top:12px"><div class="card"><h3>Quem está registrando</h3>${ur.length?hbars(ur.map(([u,v])=>({l:u,v:v.n})),v=>v):'<span class="mut">Nenhum registro ainda. Use a coluna "Registro" nas abas Refin, Quitados e Reconquista.</span>'}</div>
+    <div class="card"><h3>Registro de contatos</h3>
+      <p class="mut" style="font-size:13px">${SYNC_URL?'✅ Sincronizado com a planilha compartilhada.':'⚠️ Neste aparelho o registro fica salvo só aqui. Para somar o time todo: exporte e importe, ou ative a planilha compartilhada (apps-script-registro.gs).'}</p>
+      <button id="btnExp">⬇ Exportar registro</button> <button id="btnImp" style="background:#8b5cf6">⬆ Importar registro</button> <button id="btnWa" style="background:#22c55e">📋 Copiar resumo p/ WhatsApp</button>
+      <input type="file" id="fImp" accept=".json" style="display:none"></div></div>`;
+  $('#btnExp').onclick=()=>{const b=new Blob([JSON.stringify(Object.entries(REG).map(([key,r])=>({key,...r})))],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='registro-liga-'+(who()||'time')+'.json';a.click()};
+  $('#btnImp').onclick=()=>$('#fImp').click();
+  $('#fImp').onchange=async e=>{try{const arr=JSON.parse(await e.target.files[0].text());let n=0;for(const r of arr){if(!REG[r.key]||REG[r.key].t<r.t){REG[r.key]={s:r.s,u:r.u,t:r.t};n++}}saveReg();alert(n+' registros importados.');render()}catch(x){alert('Arquivo inválido')}};
+  $('#btnWa').onclick=()=>{const t='📊 *Aproveitamento das listas* ('+new Date().toLocaleDateString('pt-BR')+')\n'+A.map(a=>a.n+': '+a.trab+'/'+a.tot+' trabalhados ('+pct(a.pt)+') · '+a.c.interessado+' interessados · '+a.c.vendido+' vendidos').join('\n');navigator.clipboard.writeText(t).then(()=>alert('Resumo copiado!'))};
 }
 function quitList(){
   const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
@@ -331,7 +388,8 @@ function renderQuit(m){
       {k:'lib',h:'Já contratou',f:x=>fmt(x.lib),cls:'right'},
       {k:'ult',h:'Última produção',f:x=>x.ult?x.ult.split('-').reverse().join('/'):'—',s:x=>x.ult},
       {k:'prod',h:'Produto',f:x=>esc(x.prod||'—')+(x.rl?' <span class="pill wn">rep. legal</span>':'')},
-      {k:'ac',h:'Ação',f:x=>'<div class="act">'+(x.n>=2?'⭐ Cliente fiel: ofereça CNC/novo crédito com a margem de '+fmt0(x.pmt)+'.':'Ofereça novo crédito (margem liberada de '+fmt0(x.pmt)+').')+(x.pp>=24?' Contrato longo, bom histórico.':'')+'</div>',s:x=>x.n}
+      {k:'ac',h:'Ação',f:x=>'<div class="act">'+(x.n>=2?'⭐ Cliente fiel: ofereça CNC/novo crédito com a margem de '+fmt0(x.pmt)+'.':'Ofereça novo crédito (margem liberada de '+fmt0(x.pmt)+').')+(x.pp>=24?' Contrato longo, bom histórico.':'')+'</div>',s:x=>x.n},
+      {k:'reg',h:'Registro',f:x=>regSelect('Q',x.id),s:x=>(REG['Q:'+x.id]||{}).s||'',csv:x=>regCsv('Q',x.id)}
     ],[...L].sort((a,b)=>b.pmt-a.pmt).slice(0,500),'quit')+(L.length>500?'<p class="mut">Mostrando 500 de '+L.length+'. Use os filtros.</p>':'')+'</div>';
 }
 function acaoLoja(l,R){
@@ -348,7 +406,7 @@ function acaoLoja(l,R){
 function csv(){
   if(!LASTCSV)return;const {cols,data}=LASTCSV;
   const strip=h=>String(h).replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
-  const lines=[cols.map(c=>c.h)].concat(data.map(r=>cols.map(c=>strip(c.f?c.f(r):r[c.k]))));
+  const lines=[cols.map(c=>c.h)].concat(data.map(r=>cols.map(c=>c.csv?c.csv(r):strip(c.f?c.f(r):r[c.k]))));
   const b=new Blob(['﻿'+lines.map(l=>l.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n')],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='painel-liga-'+TAB+'.csv';a.click();
 }
@@ -359,7 +417,7 @@ document.addEventListener('click',e=>{
 $('#fLoja').onchange=()=>{fillCons();render()};$('#fCons').onchange=render;$('#fBusca').oninput=render;$('#btnCsv').onclick=csv;
 $('#fMeta').onchange=()=>{try{localStorage.setItem('liga_meta',$('#fMeta').value)}catch(e){};render()};
 try{const v=localStorage.getItem('liga_meta');if(v)$('#fMeta').value=v}catch(e){}
-load().then(render).catch(e=>{$('#main').innerHTML='<div class="card">Erro ao carregar dados: '+esc(e.message)+'</div>'});
+load().then(()=>{render();syncPull()}).catch(e=>{$('#main').innerHTML='<div class="card">Erro ao carregar dados: '+esc(e.message)+'</div>'});
 </script>
 </body>
 </html>
