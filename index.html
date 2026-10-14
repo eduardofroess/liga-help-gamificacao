@@ -45,6 +45,7 @@ svg text{fill:#c9bfe9;font-size:11px}
   <label>Consultor<select id="fCons"></select></label>
   <label>Meta CNC por loja (R$)<input id="fMeta" type="number" step="1000" value="60000"></label>
   <label>Buscar<input id="fBusca" placeholder="nome ou adesão"></label>
+  <label>Seu nome (registro)<input id="fUser" placeholder="quem está registrando"></label>
   <label>&nbsp;<button id="btnCsv">⬇ Exportar tabela (CSV)</button></label>
 </div>
 <div class="tabs" id="tabs">
@@ -312,7 +313,7 @@ const SYNC_URL='';/* opcional: URL do Apps Script (ver apps-script-registro.gs) 
 const ST={'':['— não trabalhado —','nt'],contatado:['📞 Contatado','wn'],interessado:['🔥 Interessado','ok'],vendido:['💰 Vendido','ok'],sem_interesse:['🚫 Sem interesse','bad']};
 let REG={};try{REG=JSON.parse(localStorage.getItem('liga_reg')||'{}')}catch(e){}
 function saveReg(){try{localStorage.setItem('liga_reg',JSON.stringify(REG))}catch(e){}}
-function who(){let u='';try{u=localStorage.getItem('liga_user')||''}catch(e){}if(!u){u=(prompt('Seu nome (para o registro dos contatos):')||'').trim();try{localStorage.setItem('liga_user',u)}catch(e){}}return u}
+function who(){return ($('#fUser').value||'').trim()||'(sem nome)'}
 function regSelect(list,id){const k=list+':'+id,v=(REG[k]||{}).s||'';return `<select class="regsel" data-k="${esc(k)}" style="min-width:130px;padding:4px">${Object.entries(ST).map(([a,b])=>`<option value="${a}"${a===v?' selected':''}>${b[0]}</option>`).join('')}</select>`}
 function regCsv(list,id){return ST[(REG[list+':'+id]||{}).s||''][0]}
 function setReg(k,s,remote){const cur=REG[k]||{};REG[k]={s,u:remote?remote.u:who(),t:remote?remote.t:Date.now()};saveReg();
@@ -416,7 +417,8 @@ document.addEventListener('click',e=>{
 });
 $('#fLoja').onchange=()=>{fillCons();render()};$('#fCons').onchange=render;$('#fBusca').oninput=render;$('#btnCsv').onclick=csv;
 $('#fMeta').onchange=()=>{try{localStorage.setItem('liga_meta',$('#fMeta').value)}catch(e){};render()};
-try{const v=localStorage.getItem('liga_meta');if(v)$('#fMeta').value=v}catch(e){}
+try{const v=localStorage.getItem('liga_meta');if(v)$('#fMeta').value=v;const u=localStorage.getItem('liga_user');if(u)$('#fUser').value=u}catch(e){}
+$('#fUser').onchange=()=>{try{localStorage.setItem('liga_user',$('#fUser').value)}catch(e){}};
 load().then(()=>{render();syncPull()}).catch(e=>{$('#main').innerHTML='<div class="card">Erro ao carregar dados: '+esc(e.message)+'</div>'});
 </script>
 </body>
