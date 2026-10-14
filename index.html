@@ -86,7 +86,8 @@ async function load(){
   for(const n of ['LOJAS_SEED','CONSULTOR_LOJA_SEED','HISTORICO_CONSULTOR_SEED','SEGUROS_CONSULTOR_SEED','FAIXAS_CNC','PREMIO_SEGURO_UNITARIO','MIN_SEGUROS_ELEGIVEL','RECONQUISTA_STATUS_LABEL'])D[n]=extract(src,n);
   D.REC=(typeof RECONQUISTA_SEED!=='undefined')?RECONQUISTA_SEED:[];
   D.RECDATA=(typeof RECONQUISTA_DATA_ATUALIZADA!=='undefined')?RECONQUISTA_DATA_ATUALIZADA:'';
-  D.STAT=D.RECONQUISTA_STATUS_LABEL||{EF:'Em Formalização',PR:'Proposta',SR:'Sem Reconquista'};
+  const st=D.RECONQUISTA_STATUS_LABEL||{};D.STAT={EF:'✅ Reconquistado',PR:'🤝 Promessa de pagamento',SR:'⏳ Em aberto — precisa contato'};
+  for(const k of Object.keys(st))D.STAT[k]=(typeof st[k]==='object'&&st[k])?st[k].label:st[k];
   prepare();
 }
 function faixa(v){let a=null;for(const f of D.FAIXAS_CNC)if(v>=f.v)a=f;return a}
