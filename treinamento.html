@@ -121,7 +121,7 @@ function show(){
   const first=MODS.findIndex((m,i)=>!AUTH.gestor&&!PROG['m'+i]);CUR=first<0?0:first;
   renderMods();renderMod();
 }
-(function auto(){try{const a=JSON.parse(localStorage.getItem('liga_auth')||'null');if(a&&a.t){AUTH=a;loadProg();if(PROG.concluido){AUTH.done=true}show()}}catch(e){}})();
+function autoLogin(){try{const a=JSON.parse(localStorage.getItem('liga_auth')||'null');if(a&&a.t){AUTH=a;loadProg();if(PROG.concluido){AUTH.done=true}show()}}catch(e){console.error(e)}}
 
 /* ---------- MÓDULOS ---------- */
 const FAIXAS=[[30000,'0,60%'],[35000,'0,90%'],[40000,'1,20%'],[45000,'1,50%'],[50000,'1,80%'],[55000,'2,10%'],[60000,'2,40%'],[65000,'2,70%'],[75000,'3,00%'],[85000,'4,00%'],[100000,'5,00%']];
@@ -242,6 +242,7 @@ Média: ${p.nota}%
 Código: ${p.cod}</div><p><button class="alt" onclick="cp('comp')">📋 Copiar comprovante (enviar ao supervisor)</button> <a href="index.html"><button>Acessar o painel agora →</button></a></p>
   <p class="mut">Seu acesso livre foi liberado neste aparelho. Em outro aparelho, entre aqui novamente com seu CPF.</p></div>`;
 }
+autoLogin();
 async function validar(){const c=(await sha($('#vNome').value.trim().replace(/\s+/g,' ').split(' ').map(w=>w?w[0].toUpperCase()+w.slice(1).toLowerCase():'').join(' ')+'|'+$('#vData').value.trim()+'|LIGA-HELP')).slice(0,8).toUpperCase();$('#vRes').textContent=(c===$('#vCod').value.trim().toUpperCase())?'✅ Comprovante válido':'❌ Não confere'}
 </script>
 </body>
