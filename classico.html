@@ -409,6 +409,7 @@ function loadState(){
       if(!parsed.consultorLoja) parsed.consultorLoja = {...CONSULTOR_LOJA_SEED};
       if(!parsed.historicoConsultor) parsed.historicoConsultor = HISTORICO_CONSULTOR_SEED.map(h=>({...h}));
       if(!parsed.segurosConsultor) parsed.segurosConsultor = SEGUROS_CONSULTOR_SEED.map(h=>({...h}));
+      parsed.historico=HISTORICO_SEED.map(h=>({...h}));parsed.historicoConsultor=HISTORICO_CONSULTOR_SEED.map(h=>({...h}));parsed.segurosConsultor=SEGUROS_CONSULTOR_SEED.map(h=>({...h}));parsed.consultorLoja={...CONSULTOR_LOJA_SEED};
       return parsed;
     }catch(e){}
   }
