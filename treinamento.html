@@ -92,7 +92,7 @@ async function doLogin(){
   try{
     const raw=$('#uCpf').value.trim(),pw=$('#uPw').value.trim();
     if(raw.toLowerCase()==='gestor'){
-      if(await pbk(pw,ACESSO_GESTOR.s)===ACESSO_GESTOR.h){startSession({t:'gestor',n:'Gestor',l:'',g:1});return}
+      if(await pbk(pw,ACESSO_GESTOR.s)===ACESSO_GESTOR.h){startSession({t:'gestor',n:'Gestor',l:'',g:1},await ekeyFor('gestor',pw));return}
       err.textContent='Usuário ou senha inválidos.';return;
     }
     const cpf=raw.replace(/\D/g,'');
@@ -100,15 +100,25 @@ async function doLogin(){
     const t=(await sha(ACESSO_SALT+cpf)).slice(0,6);
     const u=ACESSO_USERS.find(x=>x.t===t);
     if(!u||pw!==cpf.slice(-4)||(await pbk(cpf,u.s))!==u.h){err.textContent='Usuário ou senha inválidos. Confira o CPF e use os 4 últimos dígitos como senha.';return}
-    startSession(u);
+    startSession(u,await ekeyFor(u.t,cpf));
   }catch(e){err.textContent='Erro ao validar: '+e.message}
   finally{btn.disabled=false;btn.textContent='Entrar'}
 }
 ['uCpf','uPw'].forEach(id=>$('#'+id).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()}));
 function loadProg(){try{PROG=JSON.parse(localStorage.getItem('liga_prog_'+AUTH.t)||'{}')}catch(e){PROG={}}}
 function saveProg(){try{localStorage.setItem('liga_prog_'+AUTH.t,JSON.stringify(PROG))}catch(e){}}
-function startSession(u){
-  AUTH={t:u.t,nome:u.n,loja:u.l,gestor:!!u.g,done:!!u.g};
+/* chave que abre a lista pessoal de refin (criptografada); derivada do CPF, nunca guardamos o CPF */
+function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('falha ao carregar '+src));document.head.appendChild(s)})}
+async function ekeyFor(tag,secret){
+  try{
+    if(typeof REFIN_ENC==='undefined')await loadScript('refin-enc.js?v='+Date.now());
+    const ent=tag==='gestor'?REFIN_ENC.gestor:REFIN_ENC.users[tag];
+    if(!ent)return '';
+    return await pbk(secret,ent.s);
+  }catch(e){return ''}
+}
+function startSession(u,ekey){
+  AUTH={t:u.t,nome:u.n,loja:u.l,gestor:!!u.g,done:!!u.g,ekey:ekey||''};
   loadProg();
   if(PROG.concluido){AUTH.done=true;AUTH.data=PROG.concluido.data;AUTH.nota=PROG.concluido.nota}
   try{localStorage.setItem('liga_auth',JSON.stringify(AUTH))}catch(e){}
@@ -154,7 +164,9 @@ const MODS=[
  <p><b>Como ler:</b> <i>Quitados</i> = nº de contratos pagos · <i>PMT liberado</i> = parcela que deixou de ser descontada · <i>Já contratou</i> = histórico · <i>Consultor</i> = quem vendeu (tem o vínculo, liga primeiro).</p><p><b>Prioridade:</b> 2+ contratos quitados e maior PMT liberado.</p></div>
  <div class="card"><h3>💰 Refin</h3><p><b>O que é:</b> cliente com contrato ativo apto a refinanciar (receber um valor e/ou reduzir a parcela).</p>
  <p><b>Como ler:</b> <i>Parc. pagas</i> (12+ = mais chance) · <i>PMT</i> · <i>Saldo devedor</i> · <i>Último contato</i> · <i>Ação</i> (Ligar agora, Reoferecer, Retomar, Em andamento).</p>
- <p class="mut">A loja do cliente é estimada pela cidade. Se for de outra loja, avise o supervisor.</p></div>
+ <p><b>Seus clientes:</b> na aba Refin, <span class="k">🔒 Meus clientes</span> mostra os clientes que <b>você vendeu</b>, com telefone e link da simulação (liberado só com seu login por CPF). A aba <span class="k">🧑‍🤝‍🧑 Sem consultor</span> reúne os clientes de consultores que saíram: qualquer consultor pode ligar, mas registre o contato para não duplicar.</p>
+ <p class="mut">A loja do cliente é estimada pela cidade quando não há consultor. Se for de outra loja, avise o supervisor.</p></div>
+ <div class="card"><h3>⭐ Reconquista e estrelas</h3><p>Todo contrato reconquistado (situação <b>FDR</b>) vira uma <b>estrela</b> no nome do consultor. O ranking de estrelas fica na aba Reconquista e alimenta a premiação do fim do mês.</p></div>
  <div class="card"><h3>🔁 Reconquista</h3><p><b>O que é:</b> clientes com contrato em aberto e saldo que podem ser reconquistados. Situações: ✅ Reconquistado · 🤝 Promessa de pagamento · ⏳ Em aberto (contato agora).</p><p><b>Prioridade:</b> <i>Elegível = sim</i>, maior <i>saldo</i> e maior <i>atraso</i>.</p></div>
  <div class="warn">🔒 O painel público <b>não mostra CPF nem telefone</b>. Os contatos ficam só na <b>planilha do supervisor</b>, de uso restrito. Use o <b>código do cliente / adesão</b> para localizar o lead.</div>`,
  q:[{q:'Cliente "Quitado" é aquele que:',o:['Está com parcelas atrasadas','Terminou de pagar um empréstimo e tem margem liberada','Cancelou o benefício'],a:1,e:'Quitado = terminou de pagar; a parcela liberada vira oportunidade.'},
