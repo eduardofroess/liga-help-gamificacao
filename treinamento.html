@@ -52,7 +52,7 @@ a{color:#c4b5fd}.hid{display:none}
   <label class="f">Senha (últimos 4 dígitos)</label><input id="uPw" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" placeholder="••••">
   <p><button id="btnLogin" onclick="doLogin()" style="width:100%">Entrar</button></p>
   <div id="loginErr" class="err"></div>
-  <p class="mut">Não consegue entrar? Fale com seu supervisor. <a href="#" onclick="gestorMode();return false">Acesso gestor</a></p>
+  <p class="mut">Não consegue entrar? Fale com seu supervisor. <a href="#" onclick="gestorMode();return false">Acesso gestor / coordenador</a></p>
 </div>
 
 <!-- APP -->
@@ -86,13 +86,18 @@ let AUTH=null,PROG={},CUR=0,GESTOR=false;
 const LOJAS={'53631':'São Luís - São Francisco','54123':'Imperatriz - Centro','54245':'Açailândia - Centro','54275':'Pinheiro - Centro','54412':'Grajaú - Centro','55237':'Codó - Centro','56097':'São Luís - Anjo da Guarda','57035':'Imperatriz - Bernardo Sayão','57036':'Balsas - Centro','57037':'Barra do Corda - Centro'};
 
 /* ---------- LOGIN ---------- */
-function gestorMode(){GESTOR=true;$('#uCpf').placeholder='gestor';$('#uPw').maxLength=40;$('#uPw').type='password';$('#uPw').placeholder='senha do gestor';$('#loginErr').textContent='Modo gestor: informe usuário "gestor" e a senha.'}
+function gestorMode(){GESTOR=true;$('#uCpf').placeholder='gestor ou coordenador';$('#uPw').maxLength=40;$('#uPw').type='password';$('#uPw').placeholder='senha';$('#loginErr').textContent='Acesso gestor/coordenador: informe o usuário e a senha.'}
 async function doLogin(){
   const err=$('#loginErr');err.textContent='';const btn=$('#btnLogin');btn.disabled=true;btn.textContent='Verificando…';
   try{
     const raw=$('#uCpf').value.trim(),pw=$('#uPw').value.trim();
     if(raw.toLowerCase()==='gestor'){
       if(await pbk(pw,ACESSO_GESTOR.s)===ACESSO_GESTOR.h){startSession({t:'gestor',n:'Gestor',l:'',g:1},await ekeyFor('gestor',pw));return}
+      err.textContent='Usuário ou senha inválidos.';return;
+    }
+    const cd=(typeof ACESSO_COORD!=='undefined'?ACESSO_COORD:[]).find(c=>c.u===raw.toLowerCase());
+    if(cd){
+      if(await pbk(pw,cd.s)===cd.h){startSession({t:'coord:'+cd.u,n:cd.n,l:'',g:1,c:1},await ekeyFor('coord:'+cd.u,pw));return}
       err.textContent='Usuário ou senha inválidos.';return;
     }
     const cpf=raw.replace(/\D/g,'');
@@ -112,7 +117,7 @@ function loadScript(src){return new Promise((ok,no)=>{const s=document.createEle
 async function ekeyFor(tag,secret){
   try{
     if(typeof REFIN_ENC==='undefined')await loadScript('refin-enc.js?v='+Date.now());
-    const ent=tag==='gestor'?REFIN_ENC.gestor:REFIN_ENC.users[tag];
+    const ent=tag==='gestor'?REFIN_ENC.gestor:tag.startsWith('coord:')?(REFIN_ENC.coord||{})[tag.slice(6)]:REFIN_ENC.users[tag];
     if(!ent)return '';
     return await pbk(secret,ent.s);
   }catch(e){return ''}
@@ -120,6 +125,7 @@ async function ekeyFor(tag,secret){
 function startSession(u,ekey){
   AUTH={t:u.t,nome:u.n,loja:u.l,gestor:!!u.g,done:!!u.g,ekey:ekey||''};
   loadProg();
+  if(!PROG.inicio){PROG.inicio=new Date().toISOString();saveProg()}
   if(PROG.concluido){AUTH.done=true;AUTH.data=PROG.concluido.data;AUTH.nota=PROG.concluido.nota}
   try{localStorage.setItem('liga_auth',JSON.stringify(AUTH))}catch(e){}
   show();
@@ -131,7 +137,8 @@ function show(){
   const first=MODS.findIndex((m,i)=>!AUTH.gestor&&!PROG['m'+i]);CUR=first<0?0:first;
   renderMods();renderMod();
 }
-function autoLogin(){try{const a=JSON.parse(localStorage.getItem('liga_auth')||'null');if(a&&a.t){AUTH=a;loadProg();if(PROG.concluido){AUTH.done=true}show()}}catch(e){console.error(e)}}
+function autoLogin(){try{const a=JSON.parse(localStorage.getItem('liga_auth')||'null');if(a&&a.t&&a.t!=='gestor'&&!a.t.startsWith('coord:')&&!ACESSO_USERS.some(u=>u.t===a.t)){localStorage.removeItem('liga_auth');$('#loginErr').textContent='Acesso encerrado: este usuário não está mais ativo. Fale com seu supervisor.';return}
+  if(a&&a.t){AUTH=a;loadProg();if(PROG.concluido){AUTH.done=true}show()}}catch(e){console.error(e)}}
 
 /* ---------- MÓDULOS ---------- */
 const FAIXAS=[[30000,'0,60%'],[35000,'0,90%'],[40000,'1,20%'],[45000,'1,50%'],[50000,'1,80%'],[55000,'2,10%'],[60000,'2,40%'],[65000,'2,70%'],[75000,'3,00%'],[85000,'4,00%'],[100000,'5,00%']];
@@ -150,41 +157,41 @@ const MODS=[
  <h3>Filtros (topo)</h3><p>Escolha sua <span class="k">Loja</span> e seu <span class="k">Consultor</span>. O campo <span class="k">Buscar</span> procura por nome ou adesão. <span class="k">Seu nome (registro)</span> identifica quem registra os contatos. <span class="k">Exportar tabela (CSV)</span> baixa a tabela aberta.</p>
  <h3>📊 Resumo</h3><p>KPIs do mês: CNC acumulado, <b>projeção do mês</b> (ritmo atual × dias do mês), ritmo atual x o que precisa por dia, consultores na faixa de prêmio, seguros e as oportunidades das listas. O gráfico compara seu acumulado com a <b>meta linear</b>; o bloco <b>"Quase lá"</b> mostra quem está perto da 1ª faixa.</p>
  <h3>👤 Consultores</h3><p>Para cada consultor: CNC, faixa e prêmio, <b>quanto falta para a próxima faixa</b>, quanto precisa vender por dia, projeção, seguros e a coluna <b>O que fazer</b> com a orientação do dia.</p>
- <h3>🏬 Lojas (Supervisor)</h3><p>Semáforo por loja (<span class="pill">No ritmo</span> projeção ≥100% · <span class="pill">Atenção</span> ≥80% · <span class="pill">Crítico</span> abaixo), quem está sem faixa e a <b>ação do supervisor</b>.</p>
+ <h3>🏬 Lojas (Supervisor)</h3><p>Semáforo por loja (<span class="pill">No ritmo</span> projeção a partir de 80% · <span class="pill">Atenção</span> de 50% a 79,99% · <span class="pill">Crítico</span> abaixo de 50%), quem está sem faixa e a <b>ação do supervisor</b>.</p>
  <h3>Faixas de prêmio do CNC</h3>
  <table><tr><th>CNC acumulado (≥)</th><th>% de prêmio</th></tr>${FAIXAS.map(f=>`<tr><td>${m0(f[0])}</td><td>${f[1]}</td></tr>`).join('')}</table>
  <p class="mut">Prêmio de seguros: a partir de 10 seguros, R$ 5 por seguro (estimativa do painel). As regras oficiais estão na cartilha da LIGA do mês.</p>
- <div class="tip">⏱ Os dados são "até ontem": a data no cabeçalho do painel mostra até quando a produção está atualizada.</div>`,
+ <h3>🚨 Deflatores (aba Consultores)</h3><p>Cada consultor mostra o que foi realizado, quanto falta e o <b>plano de ação</b> para Seguros Independentes (3+), Consignado BMG (3+ contratos), Consignado Privado (2+) e Super Conta (3 concluídos e pagos). Quem já está em faixa de prêmio e perde % por deflator recebe o alerta 🚨.</p><h3>🩺 Atenção à carteira (Refin e Quitados)</h3><p>Mostra, por consultor, quantos clientes da carteira já foram trabalhados: <b>80% ou mais = Ótimo</b>, de 50% a 79,99% = Regular, abaixo de 50% = Crítico; e a meta mensal de refins.</p><div class="tip">⏱ Os dados são "até ontem": a data no cabeçalho do painel mostra até quando a produção está atualizada.</div>`,
  q:[{q:'O que é a "projeção do mês"?',o:['O prêmio garantido','Ritmo atual por dia multiplicado pelos dias do mês','A meta da loja'],a:1,e:'Projeção = produção acumulada ÷ dias passados × dias do mês.'},
     {q:'Um consultor com R$ 33.000 de CNC está em qual faixa?',o:['Ainda sem faixa','1ª faixa (0,60%)','Faixa de 1,20%'],a:1,e:'A 1ª faixa começa em R$ 30.000 (0,60%); a próxima, R$ 35.000.'},
     {q:'Onde vejo "o que fazer hoje" para cada consultor?',o:['Aba Consultores, coluna "O que fazer"','Só no WhatsApp','Aba Reconquista'],a:0,e:'A aba Consultores traz uma orientação automática por consultor.'},
-    {q:'Loja com projeção de 70% da meta aparece como:',o:['No ritmo','Atenção','Crítico'],a:2,e:'Abaixo de 80% da meta projetada = Crítico.'}]},
+    {q:'Loja com projeção de 70% da meta aparece como:',o:['No ritmo','Atenção','Crítico'],a:1,e:'De 50% a 79,99% da meta projetada = Atenção. Abaixo de 50% = Crítico; a partir de 80% = No ritmo.'}]},
 {t:'3. As três listas',html:()=>`<h2>As 3 listas de oportunidades</h2>
- <div class="card"><h3>🎉 Quitados — comece por aqui</h3><p><b>O que é:</b> cliente que terminou de pagar um ou mais empréstimos. A parcela ficou livre no benefício: ele tem <b>margem para novo crédito</b>.</p>
+ <div class="card"><h3>🎉 Quitados</h3><p><b>O que é:</b> cliente que terminou de pagar um ou mais empréstimos. A parcela ficou livre no benefício: ele tem <b>margem para novo crédito</b>.</p>
  <p><b>Como ler:</b> <i>Quitados</i> = nº de contratos pagos · <i>PMT liberado</i> = parcela que deixou de ser descontada · <i>Já contratou</i> = histórico · <i>Consultor</i> = quem vendeu (tem o vínculo, liga primeiro).</p><p><b>Prioridade:</b> 2+ contratos quitados e maior PMT liberado.</p></div>
  <div class="card"><h3>💰 Refin</h3><p><b>O que é:</b> cliente com contrato ativo apto a refinanciar (receber um valor e/ou reduzir a parcela).</p>
- <p><b>Como ler:</b> <i>Parc. pagas</i> (12+ = mais chance) · <i>PMT</i> · <i>Saldo devedor</i> · <i>Último contato</i> · <i>Ação</i> (Ligar agora, Reoferecer, Retomar, Em andamento).</p>
+ <p><b>Como ler:</b> <i>Parc. pagas</i> (a partir de 4 parcelas pagas já é possível aprovar o refin) · <i>PMT</i> · <i>Saldo devedor</i> · <i>Último contato</i> · <i>Ação</i> (Ligar agora, Reoferecer, Retomar, Em andamento).</p>
  <p><b>Seus clientes:</b> na aba Refin, <span class="k">🔒 Meus clientes</span> mostra os clientes que <b>você vendeu</b>, com telefone e link da simulação (liberado só com seu login por CPF). A aba <span class="k">🧑‍🤝‍🧑 Sem consultor</span> reúne os clientes de consultores que saíram: qualquer consultor pode ligar, mas registre o contato para não duplicar.</p>
  <p class="mut">A loja do cliente é estimada pela cidade quando não há consultor. Se for de outra loja, avise o supervisor.</p></div>
  <div class="card"><h3>⭐ Reconquista e estrelas</h3><p>Todo contrato reconquistado (situação <b>FDR</b>) vira uma <b>estrela</b> no nome do consultor. O ranking de estrelas fica na aba Reconquista e alimenta a premiação do fim do mês.</p></div>
  <div class="card"><h3>🔁 Reconquista</h3><p><b>O que é:</b> clientes com contrato em aberto e saldo que podem ser reconquistados. Situações: ✅ Reconquistado · 🤝 Promessa de pagamento · ⏳ Em aberto (contato agora).</p><p><b>Prioridade:</b> <i>Elegível = sim</i>, maior <i>saldo</i> e maior <i>atraso</i>.</p></div>
- <div class="warn">🔒 O painel público <b>não mostra CPF nem telefone</b>. Os contatos ficam só na <b>planilha do supervisor</b>, de uso restrito. Use o <b>código do cliente / adesão</b> para localizar o lead.</div>`,
+ <div class="warn">🔒 O painel público <b>não mostra CPF nem telefone</b>. Para contato, <b>pesquise no DNA</b> e fale com o <b>supervisor</b>; seus clientes aparecem com contato em <b>Meus clientes</b> (login por CPF). Use o <b>código do cliente / adesão</b> para localizar o lead.</div>`,
  q:[{q:'Cliente "Quitado" é aquele que:',o:['Está com parcelas atrasadas','Terminou de pagar um empréstimo e tem margem liberada','Cancelou o benefício'],a:1,e:'Quitado = terminou de pagar; a parcela liberada vira oportunidade.'},
     {q:'Quem deve ligar primeiro para um cliente Quitado?',o:['Qualquer consultor','O consultor que vendeu o contrato','Ninguém, só o supervisor'],a:1,e:'O consultor que vendeu tem o vínculo.'},
-    {q:'No Refin, qual tende a ter mais chance de aprovação?',o:['Poucas parcelas pagas','12 ou mais parcelas pagas','Tanto faz'],a:1,e:'12+ parcelas pagas indica melhor histórico.'},
-    {q:'Onde encontro o telefone do cliente?',o:['No painel público','Na planilha do supervisor','No gráfico do Resumo'],a:1,e:'Por segurança, CPF e telefone ficam só na planilha do supervisor.'}]},
+    {q:'A partir de quantas parcelas pagas o cliente já consegue aprovação no Refin?',o:['A partir de 12 parcelas','A partir de 4 parcelas','Só depois de quitar o contrato'],a:1,e:'A partir de 4 parcelas pagas o cliente já consegue aprovação do refin; mais parcelas pagas costumam dar melhor histórico.'},
+    {q:'Onde encontro o telefone do cliente?',o:['No painel público, aberto a qualquer pessoa','Pesquisando no DNA e com o supervisor (e em "Meus clientes", com seu login)','No gráfico do Resumo'],a:1,e:'O painel público não mostra contato. Pesquise no DNA e peça ao supervisor; seus próprios clientes aparecem em "Meus clientes" após o login.'}]},
 {t:'4. Abordagem, scripts e cuidados',html:()=>`<h2>Como abordar (e o que nunca fazer)</h2>
  <h3>Script — Quitados</h3><div class="script" id="s1">Olá, {nome}! Aqui é {seu nome} da Help!. Vi que você terminou de pagar seu empréstimo conosco, parabéns pelo compromisso! 🎉
 Como a parcela de R$ {valor} já saiu do seu benefício, você tem uma margem disponível. Posso simular rapidinho uma condição especial pra você, sem compromisso?</div><button onclick="cp('s1')">📋 Copiar</button>
  <h3>Script — Refin</h3><div class="script" id="s2">Olá, {nome}! Aqui é {seu nome} da Help!. Analisei seu contrato e você tem uma condição disponível para refinanciar: pode receber um valor na conta e/ou reduzir sua parcela. Posso te mostrar a simulação agora? Leva 2 minutinhos.</div><button onclick="cp('s2')">📋 Copiar</button>
  <h3>Script — Retomar quem desistiu</h3><div class="script" id="s2b">Olá, {nome}! {seu nome} da Help!. Da última vez não fechamos, e entendo. Mas as condições mudaram e conseguimos uma simulação melhor. Quer dar uma olhada, sem compromisso?</div><button onclick="cp('s2b')">📋 Copiar</button>
  <h3>Script — Reconquista</h3><div class="script" id="s3">Olá, {nome}! Aqui é {seu nome} da Help!. Estou entrando em contato para te ajudar a regularizar e manter seus benefícios ativos. Podemos conversar rapidinho sobre sua situação?</div><button onclick="cp('s3')">📋 Copiar</button>
- <h3>Objeções</h3><ul><li><b>"Não preciso agora"</b> → "Posso deixar a simulação pronta e te chamo em 15 dias?" (marque Contatado e agende).</li><li><b>"Tenho medo de golpe"</b> → ofereça atendimento na loja ou videochamada; nunca peça senha ou código.</li><li><b>"A parcela vai ficar alta"</b> → mostre simulações com parcelas menores.</li><li><b>"Já desisti antes"</b> → reconheça, mostre o que mudou, peça 2 minutos.</li></ul>
+ <h3>Objeções</h3><ul><li><b>"Não preciso agora"</b> → "Posso deixar a simulação pronta e te chamo em 15 dias?" (marque Contatado e agende).</li><li><b>"Tenho medo de golpe"</b> → pergunte se ele já teve alguma experiência negativa, escute e oriente; depois ofereça atendimento na loja ou videochamada. Nunca peça senha ou código.</li><li><b>"A parcela vai ficar alta"</b> → mostre simulações com parcelas menores.</li><li><b>"Já desisti antes"</b> → reconheça, mostre o que mudou, peça 2 minutos.</li></ul>
  <h3>Cuidados</h3><div class="warn"><ul><li>Nunca prometa valor, taxa ou aprovação antes da <b>simulação oficial</b>.</li><li>Cliente com <b>representante legal</b>: fale com o responsável e siga o procedimento.</li><li>Não compartilhe CPF, telefone ou a planilha em grupos abertos.</li><li>Respeite quem pediu para não ser contatado.</li><li>Nunca peça senha, código SMS ou dados bancários por mensagem.</li></ul></div>`,
  q:[{q:'Antes de falar valores ao cliente você deve:',o:['Prometer o maior valor','Fazer a simulação oficial','Pedir a senha do banco'],a:1,e:'Só fale em valores após a simulação oficial.'},
-    {q:'Cliente diz "tenho medo de golpe". O melhor é:',o:['Insistir mais','Oferecer atendimento na loja ou videochamada','Pedir o código SMS para provar'],a:1,e:'Nunca peça senha/código; ofereça canais seguros.'},
+    {q:'Cliente diz "tenho medo de golpe". O melhor é:',o:['Insistir mais','Perguntar se ele já teve alguma experiência negativa e, ouvindo, orientá-lo com segurança','Oferecer atendimento na loja ou videochamada logo de cara, sem conversar','Pedir o código SMS para provar'],a:1,e:'Ouça primeiro: pergunte se já teve alguma experiência negativa e oriente o cliente. Depois ofereça loja ou videochamada. Nunca peça senha ou código.'},
     {q:'Cliente com representante legal:',o:['Ignorar o aviso','Falar com o responsável seguindo o procedimento','Pedir a senha do cliente'],a:1,e:'O aviso indica que a abordagem muda.'},
-    {q:'Posso postar a lista de telefones no grupo geral?',o:['Sim, para agilizar','Não, uso restrito ao atendimento','Sim, se for de madrugada'],a:1,e:'Dados pessoais são de uso restrito (LGPD).'},
+    {q:'Posso compartilhar CPF, telefones ou a planilha de clientes em grupos de WhatsApp?',o:['Sim, para agilizar o trabalho do time','Não: dados pessoais são de uso restrito a quem atende o cliente (LGPD) e só circulam por canais oficiais','Sim, desde que o grupo seja só da minha loja','Sim, se for fora do horário comercial'],a:1,e:'CPF e telefone são dados pessoais protegidos pela LGPD: só quem atende o cliente usa, e apenas pelos canais oficiais. Nunca em grupos, mesmo internos.'},
     {q:'Para quem desistiu antes, o ideal é:',o:['Repetir a mesma oferta','Nunca mais contatar','Retomar com abordagem nova e simulação atualizada'],a:2,e:'Mostre o que mudou.'}]},
 {t:'5. Registro e aproveitamento (prática)',html:()=>`<h2>Registrando contatos</h2>
  <p>Em cada lista existe a coluna <b>Registro</b>. É ela que mostra se estamos aproveitando as listas. Na aba <b>📈 Aproveitamento</b> o time vê % trabalhado, interessados, vendidos, conversão por lista e quem está registrando.</p>
@@ -198,13 +205,13 @@ Como a parcela de R$ {valor} já saiu do seu benefício, você tem uma margem di
     {q:'Cliente pediu simulação e vai responder amanhã. Marco:',o:['Sem interesse','Interessado','Vendido'],a:1,e:'Interessado = pediu simulação / vai retornar.'},
     {q:'Para que serve a aba Aproveitamento?',o:['Excluir clientes das listas','Medir quanto das listas estamos trabalhando e convertendo','Alterar a meta de CNC'],a:1,e:'Mostra o funil por lista e quem registra.'}]},
 {t:'6. Rotina diária e prova final',html:()=>`<h2>Sua rotina e o papel do supervisor</h2>
- <table><tr><th>Quando</th><th>O que fazer</th></tr><tr><td>Início do dia</td><td>Abrir o painel, filtrar seu nome, ler "O que fazer".</td></tr><tr><td>1º bloco (1h)</td><td>10 contatos na lista <b>Quitados</b> (maior PMT primeiro).</td></tr><tr><td>2º bloco (1h)</td><td>10 contatos no <b>Refin</b> (Ligar agora e 12+ parcelas).</td></tr><tr><td>3º bloco (30min)</td><td>5 contatos de <b>Reconquista</b> elegíveis.</td></tr><tr><td>Fim do dia</td><td>Atualizar o <b>Registro</b> e agendar retornos.</td></tr></table>
+ <table><tr><th>Quando</th><th>O que fazer</th></tr><tr><td>Início do dia</td><td>Abrir o painel, filtrar seu nome, ler "O que fazer".</td></tr><tr><td>1º bloco (1h)</td><td>5 contatos de <b>Reconquista</b> elegíveis (maior saldo primeiro).</td></tr><tr><td>2º bloco (1h)</td><td>10 contatos na lista <b>Quitados</b> (maior PMT primeiro).</td></tr><tr><td>3º bloco (30min)</td><td>10 contatos no <b>Refin</b> (Ligar agora e 4+ parcelas pagas).</td></tr><tr><td>Fim do dia</td><td>Atualizar o <b>Registro</b> e agendar retornos.</td></tr></table>
  <p class="mut">Ritmo sugerido; a loja pode ajustar com o supervisor.</p>
  <h3>Supervisores</h3><ol><li>Distribuir a planilha da loja por consultor.</li><li>Acompanhar o semáforo da aba <b>Lojas</b> e o <b>Aproveitamento</b> diariamente.</li><li>Reunião semanal de 10 minutos: o que fechou, objeções, quem precisa de ajuda.</li><li>Reconhecer quem converte e replicar o script que funcionou.</li></ol>
  <div class="tip">🏁 Esta é a <b>prova final</b>: mistura todo o conteúdo. Acerte pelo menos 70% para liberar o acesso livre.</div>`,
- q:[{q:'Qual lista é recomendada para começar o dia?',o:['Reconquista de quem desistiu','Quitados, maiores PMT liberados primeiro','Nenhuma'],a:1,e:'Quitados tem a abordagem mais fácil.'},
+ q:[{q:'Qual lista é recomendada para começar o dia?',o:['Reconquista (clientes elegíveis em aberto, maior saldo primeiro)','Quitados, maiores PMT liberados primeiro','Nenhuma'],a:0,e:'Comece pela Reconquista: cada reconquista vira ⭐ e tem prazo no mês.'},
     {q:'Ao final do dia você deve:',o:['Apagar a lista','Atualizar o Registro dos contatos','Mandar CPF no grupo'],a:1,e:'Sem registro não há medição.'},
-    {q:'Loja com projeção de 90% da meta aparece como:',o:['No ritmo','Atenção','Crítico'],a:1,e:'Entre 80% e 99% = Atenção.'},
+    {q:'Loja com projeção de 90% da meta aparece como:',o:['No ritmo','Atenção','Crítico'],a:0,e:'A partir de 80% da meta projetada = No ritmo.'},
     {q:'Quem deve ligar primeiro a um cliente Quitado?',o:['Quem vendeu o contrato','Quem tem mais tempo livre','Sempre o supervisor'],a:0,e:'O consultor que vendeu tem o vínculo.'},
     {q:'Qual afirmação é correta sobre dados pessoais?',o:['Posso encaminhar a planilha a qualquer pessoa','CPF e telefone são de uso restrito ao atendimento','Posso postar telefones em redes sociais'],a:1,e:'Uso restrito.'},
     {q:'Cliente quitou 3 contratos. Ele é:',o:['Cliente fiel, prioridade alta','Cliente sem margem','Cliente para ignorar'],a:0,e:'2+ contratos quitados = cliente fiel.'}]}
@@ -242,14 +249,16 @@ function gradeQuiz(){
 async function goFinal(){
   const done=MODS.every((m,i)=>PROG['m'+i]);if(!done&&!AUTH.gestor)return;
   if(AUTH.gestor){$('#content').innerHTML=`<div class="card"><h2>Painel do gestor</h2><p><a href="index.html"><button>Abrir o painel</button></a></p><h3>Validar comprovante de um consultor</h3><label class="f">Nome completo</label><input id="vNome"><label class="f">Data (dd/mm/aaaa)</label><input id="vData"><label class="f">Código</label><input id="vCod"><p><button onclick="validar()">Validar</button> <span id="vRes" style="font-weight:700"></span></p></div>`;return}
-  if(!PROG.concluido){const d=new Date();const data=d.toLocaleDateString('pt-BR');const nota=Math.round(MODS.reduce((s,m,i)=>s+PROG['m'+i].nota,0)/MODS.length);const cod=(await sha(AUTH.nome+'|'+data+'|LIGA-HELP')).slice(0,8).toUpperCase();PROG.concluido={data,nota,cod};saveProg()}
+  if(!PROG.concluido){const d=new Date();const data=d.toLocaleDateString('pt-BR');const fim=d.toISOString();const nota=Math.round(MODS.reduce((s,m,i)=>s+PROG['m'+i].nota,0)/MODS.length);const cod=(await sha(AUTH.nome+'|'+data+'|LIGA-HELP')).slice(0,8).toUpperCase();PROG.concluido={data,nota,cod,ini:PROG.inicio||'',fim};saveProg()}
   AUTH.done=true;AUTH.data=PROG.concluido.data;try{localStorage.setItem('liga_auth',JSON.stringify(AUTH))}catch(e){}
-  const p=PROG.concluido;renderMods();
-  $('#content').innerHTML=`<div class="card"><h2>🏆 Treinamento concluído!</h2><p><b>${AUTH.nome}</b>${LOJAS[AUTH.loja]?' — '+LOJAS[AUTH.loja]:''}</p><p>Concluído em <b>${p.data}</b> · Média dos quizzes: <b>${p.nota}%</b> · Código: <b>${p.cod}</b></p>
+  const p=PROG.concluido;renderMods();const hf=iso=>iso?new Date(iso).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';const tIni=hf(p.ini),tFim=hf(p.fim);
+  $('#content').innerHTML=`<div class="card"><h2>🏆 Treinamento concluído!</h2><p><b>${AUTH.nome}</b>${LOJAS[AUTH.loja]?' — '+LOJAS[AUTH.loja]:''}</p><p>Iniciado em <b>${tIni}</b> · Concluído em <b>${tFim!=='—'?tFim:p.data}</b> · Média dos quizzes: <b>${p.nota}%</b> · Código: <b>${p.cod}</b></p>
   <div class="script" id="comp">✅ Treinamento do Painel LIGA Help! concluído
 Consultor: ${AUTH.nome}
 Loja: ${LOJAS[AUTH.loja]||'-'}
 Data: ${p.data}
+Início: ${tIni}
+Conclusão: ${tFim!=='—'?tFim:p.data}
 Média: ${p.nota}%
 Código: ${p.cod}</div><p><button class="alt" onclick="cp('comp')">📋 Copiar comprovante (enviar ao supervisor)</button> <a href="index.html"><button>Acessar o painel agora →</button></a></p>
   <p class="mut">Seu acesso livre foi liberado neste aparelho. Em outro aparelho, entre aqui novamente com seu CPF.</p></div>`;

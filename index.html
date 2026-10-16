@@ -47,6 +47,7 @@ svg text{fill:#c9bfe9;font-size:11px}
   <label>Loja<select id="fLoja"></select></label>
   <label>Consultor<select id="fCons"></select></label>
   <label>Meta CNC por loja (R$)<input id="fMeta" type="number" step="1000" value="60000"></label>
+  <label>Meta refin/mês (% da carteira)<input id="fMetaRefin" type="number" min="1" max="100" value="10" style="min-width:90px"></label>
   <label>Buscar<input id="fBusca" placeholder="nome ou adesão"></label>
   <label>Seu nome (registro)<input id="fUser" placeholder="quem está registrando"></label>
   <label>&nbsp;<button id="btnCsv">⬇ Exportar tabela (CSV)</button></label>
@@ -65,6 +66,7 @@ svg text{fill:#c9bfe9;font-size:11px}
 <script src="reconquista-estrelas.js"></script>
 <script src="refin-data.js"></script>
 <script src="quit-data.js"></script>
+<script src="acesso-data.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 const fmt=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -73,6 +75,8 @@ const pct=v=>(isFinite(v)?v:0).toLocaleString('pt-BR',{maximumFractionDigits:1})
 const tcase=s=>String(s||'').toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase());
 const short=n=>{const p=tcase(n).split(' ');return p.length>1?p[0]+' '+p[p.length-1]:p[0]};
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+(function(){try{const a=JSON.parse(localStorage.getItem('liga_auth')||'null');if(a&&a.t&&a.t!=='gestor'&&!String(a.t).startsWith('coord:')&&typeof ACESSO_USERS!=='undefined'&&!ACESSO_USERS.some(u=>u.t===a.t)){localStorage.removeItem('liga_auth');location.replace('treinamento.html')}}catch(e){}})();
+let MINEQ=null,POOLQ=null,MINEQ_ERR='',QUIT_MODE='meus';
 let D={},S={},TAB='resumo',SORT={k:null,d:-1},LASTCSV=null,RECO_ONLY_STAR=false,REFIN_MODE='meus',MINE=null,POOL=null,MINE_ERR='';
 
 function extract(src,name){
@@ -172,7 +176,7 @@ function lojas(){
       seg:rs.reduce((s,r)=>s+r.sq,0),recEl:rec.filter(x=>x.elegivel).length,recSaldo:rec.filter(x=>x.elegivel).reduce((s,x)=>s+(+x.saldo||0),0)};
   });
 }
-function semaforo(l){return l.projPct>=100?['ok','No ritmo']:l.projPct>=80?['wn','Atenção']:['bad','Crítico']}
+function semaforo(l){return l.projPct>=80?['ok','No ritmo']:l.projPct>50?['wn','Atenção']:['bad','Crítico']}
 const kpi=(l,v,s)=>`<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`;
 function bar(p){return `<div class="bar"><i style="width:${Math.min(Math.max(p,0),100)}%"></i></div>`}
 
@@ -228,7 +232,7 @@ function render(){
     </div>`;
   }
   if(TAB==='cons'){
-    m.innerHTML='<div class="card"><h3>Consultores — situação e o que fazer</h3>'+table([
+    m.innerHTML=deflCard(R)+'<div class="card" style="margin-top:12px"><h3>Consultores — situação e o que fazer</h3>'+table([
       {k:'nome',h:'Consultor',f:r=>'<b>'+esc(short(r.nome))+'</b><br><span class="mut">'+esc(r.lojaNome)+'</span>',s:r=>r.nome},
       {k:'cnc',h:'CNC',f:r=>fmt0(r.cnc),cls:'right'},
       {k:'pf',h:'Faixa / prêmio',f:r=>r.f?`<span class="pill ok">${r.f.p.toFixed(2)}%</span> ${fmt(r.premioCnc)}`:'<span class="pill nt">sem faixa</span>',s:r=>r.premioCnc},
@@ -259,29 +263,48 @@ function render(){
   if(TAB==='aprov'){renderAprov(m);return;}
   if(TAB==='reco'){
     const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
-    const star=new Set((typeof RECONQUISTA_ESTRELAS!=='undefined'?RECONQUISTA_ESTRELAS:[]).map(s=>String(s.id)));
+    const STAR_ALL=(typeof RECONQUISTA_ESTRELAS!=='undefined'?RECONQUISTA_ESTRELAS:[]);
+    const STM=STAR_ALL.filter(s=>String(s.data||'').startsWith(S.ym));
+    const sdate={};STM.forEach(s=>sdate[String(s.id)]=s.data);
+    const star=new Set(Object.keys(sdate));
+    const dtf=d=>d?d.split('-').reverse().join('/'):'—';
     let rec=D.REC.filter(x=>(!lj||x.codigo===lj)&&(!cs||x.cons===cs)&&(!q||String(x.id).includes(q)||String(x.cons||'').toLowerCase().includes(q)));
-    if(RECO_ONLY_STAR)rec=rec.filter(x=>star.has(String(x.id)));
-    const c=s=>rec.filter(x=>x.status===s).length;
+    const aberto=rec.filter(x=>!star.has(String(x.id))&&x.status!=='EF').length;
     rec=[...rec].sort((a,b)=>(star.has(String(b.id))-star.has(String(a.id)))||(b.elegivel-a.elegivel)||(b.saldo-a.saldo));
-    const ST_=(typeof RECONQUISTA_ESTRELAS!=='undefined'?RECONQUISTA_ESTRELAS:[]).filter(s=>(!lj||s.loja===lj));
+    const ST_=STM.filter(s=>(!lj||s.loja===lj)&&(!cs||s.cons===cs)&&(!q||String(s.id).includes(q)||String(s.cons||'').toLowerCase().includes(q)));
     const rk=Object.entries(ST_.reduce((o,s)=>{const k=s.cons||'(sem consultor)';o[k]=(o[k]||0)+1;return o},{})).sort((a,b)=>b[1]-a[1]);
-    const med=['🥇','🥈','🥉'];
-    m.innerHTML=`<div class="grid k6">${kpi('Leads na base',rec.length,'')}${kpi('⭐ Reconquistados no mês',ST_.length,'estrelas acumuladas'+(typeof ESTRELAS_ATUALIZADO!=='undefined'?' até '+ESTRELAS_ATUALIZADO.split('-').reverse().join('/'):''))}${kpi('Em aberto (precisa contato)',c('SR'),'')}${kpi('Elegíveis',rec.filter(x=>x.elegivel).length,fmt0(rec.filter(x=>x.elegivel).reduce((s,x)=>s+(+x.saldo||0),0))+' em saldo')}</div>
-    <div class="grid g2" style="margin-top:12px"><div class="card"><h3>🏆 Ranking de estrelas ⭐ — Reconquista</h3>${rk.length?rk.slice(0,12).map((r,i)=>`<div style="display:flex;gap:8px;align-items:center;margin:5px 0"><div style="width:30px">${med[i]||(i+1)+'º'}</div><div style="flex:1;font-size:13px">${esc(short(r[0]))}</div><div>${'⭐'.repeat(Math.min(r[1],10))}${r[1]>10?' +'+(r[1]-10):''} <b>${r[1]}</b></div></div>`).join(''):'<span class="mut">Nenhuma reconquista registrada ainda.</span>'}
-    <p class="mut" style="font-size:12px">Uma estrela por contrato reconquistado (situação FDR). O ranking alimenta a premiação do fim do mês.</p></div>
-    <div class="card"><h3>Como ganhar estrela ⭐</h3><p style="font-size:14px">Entre em contato com os clientes <b>em aberto</b> abaixo, regularize a situação e, na próxima atualização, o contrato aparece como <b>FDR</b> e vira uma estrela no seu nome.</p><button id="btnStar" class="${RECO_ONLY_STAR?'':'alt'}">${RECO_ONLY_STAR?'Ver todos os leads':'Ver só os reconquistados ⭐'}</button></div></div>
-    <div class="card" style="margin-top:12px"><h3>Leads de Reconquista (por adesão)</h3>`+table([
+    const med=['🥇','🥈','🥉'],mesTxt=S.ym.split('-').reverse().join('/');
+    const porLoja=D.LOJAS_SEED.map(l=>({l:l.nome,cod:l.codigo,est:STM.filter(s=>s.loja===l.codigo).length,ab:D.REC.filter(x=>x.codigo===l.codigo&&!star.has(String(x.id))&&x.status!=='EF').length,el:D.REC.filter(x=>x.codigo===l.codigo&&x.elegivel&&!star.has(String(x.id))).length})).filter(o=>!lj||o.cod===lj);
+    const fora=STAR_ALL.length-STM.length;
+    m.innerHTML=`<div class="grid k6">${kpi('Leads na base',rec.length,'')}${kpi('⭐ Reconquistados em '+mesTxt,ST_.length,'mês vigente · data da efetivação'+(typeof ESTRELAS_ATUALIZADO!=='undefined'?' · atualizado em '+ESTRELAS_ATUALIZADO.split('-').reverse().join('/'):''))}${kpi('Em aberto (precisa contato)',aberto,'')}${kpi('Elegíveis',rec.filter(x=>x.elegivel&&!star.has(String(x.id))).length,fmt0(rec.filter(x=>x.elegivel&&!star.has(String(x.id))).reduce((s,x)=>s+(+x.saldo||0),0))+' em saldo')}</div>
+    <div class="grid g2" style="margin-top:12px"><div class="card"><h3>🏆 Ranking de estrelas ⭐ — Reconquista de ${mesTxt}</h3>${rk.length?rk.slice(0,12).map((r,i)=>`<div style="display:flex;gap:8px;align-items:center;margin:5px 0"><div style="width:30px">${med[i]||(i+1)+'º'}</div><div style="flex:1;font-size:13px">${esc(short(r[0]))}</div><div>${'⭐'.repeat(Math.min(r[1],10))}${r[1]>10?' +'+(r[1]-10):''} <b>${r[1]}</b></div></div>`).join(''):'<span class="mut">Nenhuma reconquista efetivada neste mês ainda.</span>'}
+    <p class="mut" style="font-size:12px">Uma estrela por contrato reconquistado e <b>efetivado no mês vigente</b> (pela data da efetivação). ${fora?fora+' reconquista(s) de meses anteriores não entram na contagem.':''}</p></div>
+    <div class="card"><h3>Reconquistas por loja — ${mesTxt}</h3>`+table([
+      {k:'l',h:'Loja',f:o=>'<b>'+esc(o.l)+'</b>'},
+      {k:'est',h:'⭐ no mês',f:o=>'<b>'+o.est+'</b>',cls:'right'},
+      {k:'ab',h:'Em aberto',cls:'right'},
+      {k:'el',h:'Elegíveis',cls:'right'}
+    ],porLoja,'reco_loja')+`<p class="mut" style="font-size:12px">Use esta tabela para conferir com o realizado no DNA (Reconquista efetivada no mês). Divergência? Me envie a base atualizada que eu corrijo.</p></div></div>
+    <div class="card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><h3>${RECO_ONLY_STAR?'⭐ Reconquistados em '+mesTxt+' (data da efetivação)':'Leads de Reconquista (por adesão)'}</h3><button id="btnStar" class="${RECO_ONLY_STAR?'':'alt'}">${RECO_ONLY_STAR?'Ver todos os leads':'Ver só os reconquistados ⭐'}</button></div>`+(RECO_ONLY_STAR?table([
+      {k:'data',h:'Efetivado em',f:s=>'<b>'+dtf(s.data)+'</b>',s:s=>s.data},
+      {k:'id',h:'Adesão',f:s=>'<b>'+esc(s.id)+'</b>'},
+      {k:'cons',h:'Consultor',f:s=>esc(s.cons?short(s.cons):'—')},
+      {k:'loja',h:'Loja',f:s=>esc(S.lojaNome[s.loja]||s.loja),s:s=>s.loja},
+      {k:'origem',h:'Origem',f:s=>esc(s.origem==='FDR'?'FDR (reconquistado)':'Promessa efetivada')},
+      {k:'saldo',h:'Saldo',f:s=>fmt(s.saldo),cls:'right',s:s=>+s.saldo||0}
+    ],[...ST_].sort((a,b)=>b.data<a.data?-1:1),'reco_star'):table([
       {k:'star',h:'⭐',f:x=>star.has(String(x.id))?'⭐':'',s:x=>star.has(String(x.id))?1:0,csv:x=>star.has(String(x.id))?'reconquistado':''},
-      {k:'id',h:'Adesão',f:x=>'<b>'+esc(x.id)+'</b>'},
+      {k:'dt',h:'Efetivado em',f:x=>star.has(String(x.id))?'<b>'+dtf(sdate[String(x.id)])+'</b>':'<span class="mut">—</span>',s:x=>sdate[String(x.id)]||'',csv:x=>dtf(sdate[String(x.id)])},
+      {k:'id',h:'Adesão',f:x=>'<b class="cpy" data-v="'+esc(x.id)+'" style="cursor:pointer" title="Copiar">'+esc(x.id)+' 📋</b>'},
       {k:'cons',h:'Consultor',f:x=>esc(x.cons?short(x.cons):'—')},
       {k:'loja',h:'Loja',f:x=>esc((S.lojaNome[x.codigo]||x.codigo)),s:x=>x.codigo},
       {k:'banco',h:'Banco',f:x=>esc(String(x.banco||'').replace(/^\d+\s*-\s*/,''))},
-      {k:'status',h:'Situação',f:x=>`<span class="pill ${x.status==='EF'?'ok':'nt'}">${esc(x.status==='EF'?'✅ Reconquistado (FDR)':'⏳ Em aberto — precisa contato')}</span>`},
+      {k:'status',h:'Situação',f:x=>{const ef=star.has(String(x.id));return `<span class="pill ${ef?'ok':'nt'}">${esc(ef?'✅ Reconquistado':'⏳ Em aberto — precisa contato')}</span>`},s:x=>star.has(String(x.id))?1:0},
       {k:'prio',h:'Prioridade',f:x=>esc(x.prio?tcase(x.prio):'—')},
       {k:'saldo',h:'Saldo',f:x=>fmt(x.saldo),cls:'right',s:x=>+x.saldo||0},
+      {k:'lk',h:'Link p/ o cliente',f:x=>x.link&&!star.has(String(x.id))?`<button class="lkb alt" data-a="copy" data-id="${esc(x.id)}" data-l="${esc(x.link)}">📋 Copiar</button> <button class="lkb" data-a="wa" data-id="${esc(x.id)}" data-l="${esc(x.link)}">💬 Enviar</button>`:'—',csv:x=>x.link||''},
       {k:'reg',h:'Registro',f:x=>regSelect('C',x.id),s:x=>(REG['C:'+x.id]||{}).s||'',csv:x=>regCsv('C',x.id)}
-    ],rec.slice(0,400),'reco')+(rec.length>400?'<p class="mut">Mostrando 400 de '+rec.length+'. Use os filtros.</p>':'')+'</div>';
+    ],rec.slice(0,400),'reco')+(rec.length>400?'<p class="mut">Mostrando 400 de '+rec.length+'. Use os filtros.</p>':'')+'<p class="mut" style="font-size:12px">O link abre a jornada de Reconquista direto para o cliente. "💬 Enviar" abre o WhatsApp com a mensagem pronta (escolha o contato do cliente); cada clique é registrado em Aproveitamento.</p>')+'</div>';
     $('#btnStar').onclick=()=>{RECO_ONLY_STAR=!RECO_ONLY_STAR;render()};
   }
 }
@@ -295,21 +318,44 @@ function refinList(){
 const unhex=h=>new Uint8Array(h.match(/../g).map(x=>parseInt(x,16)));
 const b64u=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 function getAuth(){try{return JSON.parse(localStorage.getItem('liga_auth')||'null')}catch(e){return null}}
+function encEntry(ENC,a){if(a.gestor){const t=String(a.t||'');return t.startsWith('coord:')?(ENC.coord||{})[t.slice(6)]:ENC.gestor}return ENC.users[a.t]}
+const hexs=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+async function sha256h(t){return hexs(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)))}
+async function pbkHex(secret,saltHex){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),'PBKDF2',false,['deriveBits']);return hexs(await crypto.subtle.deriveBits({name:'PBKDF2',salt:unhex(saltHex),iterations:150000,hash:'SHA-256'},k,256))}
+function loadQEnc(){return new Promise((ok,no)=>{if(typeof QUIT_ENC!=='undefined')return ok();const s=document.createElement('script');s.src='quit-enc.js?v='+Date.now();s.onload=()=>ok();s.onerror=()=>no(new Error('Não foi possível carregar a lista protegida'));document.head.appendChild(s)})}
+async function loadMineQ(){
+  if(MINEQ||MINEQ_ERR)return;const a=getAuth();
+  if(!a||!a.ekey){MINEQ_ERR='nokey';return}
+  try{await loadQEnc();const ent=encEntry(QUIT_ENC,a);
+    if(!ent){MINEQ={leads:[],noentry:true};return}
+    MINEQ=await decBlob(ent,a.ekey);
+    if(MINEQ.pk){try{POOLQ=await decBlob(QUIT_ENC.pool,MINEQ.pk)}catch(e){POOLQ=null}}
+  }catch(e){MINEQ_ERR='fail:'+e.message}
+}
+function unlockCard(){const a=getAuth();if(!a||a.ekey||a.gestor)return a&&a.gestor&&!a.ekey?'<div class="card">🔑 Sessão sem chave. Saia e entre novamente com seu usuário e senha.</div>':'';
+  return '<div class="card" style="margin-bottom:12px"><h3>🔑 Liberar meus clientes com CPF e telefone</h3><p class="mut" style="font-size:13px">Digite seu CPF uma vez neste aparelho (ele não é guardado). Isso abre sua lista pessoal com CPF e telefone dos seus clientes.</p><input id="unCpf" inputmode="numeric" placeholder="000.000.000-00" style="min-width:200px"> <button id="unBtn">Liberar</button> <span id="unMsg" class="mut"></span></div>'}
+function bindUnlock(){const b=$('#unBtn');if(!b)return;b.onclick=async()=>{const a=getAuth(),msg=$('#unMsg');const cpf=($('#unCpf').value||'').replace(/\D/g,'');
+  if(cpf.length!==11){msg.textContent='Informe os 11 dígitos.';return}
+  msg.textContent='Verificando…';
+  try{const t=(await sha256h('liga-help-2026'+cpf)).slice(0,6);if(t!==a.t){msg.textContent='Este CPF não é o do usuário logado.';return}
+    await loadEnc();const ent=REFIN_ENC.users[a.t];if(!ent){msg.textContent='Sem lista pessoal para este CPF.';a.ekey='x';return}
+    const key=await pbkHex(cpf,ent.s);await decBlob(ent,key);a.ekey=key;localStorage.setItem('liga_auth',JSON.stringify(a));
+    MINE=null;MINE_ERR='';MINEQ=null;MINEQ_ERR='';POOL=null;POOLQ=null;render()}catch(e){msg.textContent='Não foi possível liberar: '+e.message}}}
 async function decBlob(entry,keyHex){const key=await crypto.subtle.importKey('raw',unhex(keyHex),'AES-GCM',false,['decrypt']);const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64u(entry.iv)},key,b64u(entry.ct));return JSON.parse(new TextDecoder().decode(pt))}
 function loadEnc(){return new Promise((ok,no)=>{if(typeof REFIN_ENC!=='undefined')return ok();const s=document.createElement('script');s.src='refin-enc.js?v='+Date.now();s.onload=()=>ok();s.onerror=()=>no(new Error('Não foi possível carregar a lista protegida'));document.head.appendChild(s)})}
 async function loadMine(){
   if(MINE||MINE_ERR)return;const a=getAuth();
   if(!a||!a.ekey){MINE_ERR='nokey';return}
-  try{await loadEnc();const ent=a.gestor?REFIN_ENC.gestor:REFIN_ENC.users[a.t];
+  try{await loadEnc();const ent=encEntry(REFIN_ENC,a);
     if(!ent){MINE={nome:a.nome,leads:[],pk:null,noentry:true};return}
     MINE=await decBlob(ent,a.ekey);
     if(MINE.pk){try{POOL=await decBlob(REFIN_ENC.pool,MINE.pk)}catch(e){POOL=null}}
   }catch(e){MINE_ERR='fail:'+e.message}
 }
-function wa(f){const d=String(f||'').replace(/\D/g,'');return d?`<a href="https://wa.me/55${d}" target="_blank" rel="noopener">💬 ${esc(d)}</a>`:''}
+function wa(f){const d=String(f||'').replace(/\D/g,'');return d?`<a href="https://wa.me/55${d}" target="_blank" rel="noopener" data-trk="wa">💬 ${esc(d)}</a>`:''}
 function refinCols(nomes,priv){
   const base=[
-    {k:'id',h:'Cód. Cliente',f:x=>'<b>'+esc(x.id)+'</b>'+(priv&&x.cpf?'<br><span class="mut">CPF '+esc(x.cpf)+'</span>':'')},
+    {k:'id',h:'Cód. Cliente',f:x=>'<b class="cpy" data-v="'+esc(x.id)+'" title="Clique para copiar" style="cursor:pointer">'+esc(x.id)+' 📋</b>'+(priv&&x.cpf?'<br><span class="mut cpy" data-v="'+esc(x.cpf)+'" style="cursor:pointer" title="Copiar CPF">CPF '+esc(x.cpf)+'</span>':'')},
     ...(priv?[{k:'fones',h:'Contato',f:x=>(x.fones||[]).map(wa).join('<br>')||'—',csv:x=>(x.fones||[]).join(' / ')}]:[]),
     {k:'cid',h:'Cidade',f:x=>esc(x.cid)+(x.bairro?'<br><span class="mut">'+esc(x.bairro)+'</span>':'')},
     {k:'loja',h:'Loja',f:x=>esc(nomes[x.loja]||x.loja),s:x=>x.loja},
@@ -321,7 +367,7 @@ function refinCols(nomes,priv){
     {k:'tab',h:'Último contato',f:x=>esc(x.tab||'—')+(x.ua?'<br><span class="mut">'+x.ua.split('-').reverse().join('/')+'</span>':'')},
     {k:'pr',h:'Ação',f:x=>{const p=refinPrio(x);return `<span class="pill ${p[0]}">${p[1]}</span>`},s:x=>refinPrio(x)[1]}
   ];
-  if(priv)base.push({k:'lk',h:'Simulação',f:x=>x.link?`<a href="${esc(x.link)}" target="_blank" rel="noopener">abrir</a>`:'—',csv:x=>x.link||''});
+  if(priv)base.push({k:'lk',h:'Simulação / links',f:x=>((x.link?`<a href="${esc(x.link)}" target="_blank" rel="noopener" data-trk="sim">simulação</a>`:'')+(x.lr?`<br><a href="${esc(x.lr)}" target="_blank" rel="noopener" data-trk="reco_link">reconquista</a>`:''))||'—',csv:x=>((x.link||'')+' '+(x.lr||'')).trim()});
   base.push({k:'reg',h:'Registro',f:x=>regSelect('R',x.id),s:x=>(REG['R:'+x.id]||{}).s||'',csv:x=>regCsv('R',x.id)});
   return base;
 }
@@ -331,11 +377,12 @@ async function renderRefin(m){
   if(REFIN_MODE==='meus'&&!(a&&a.ekey)&&!window.__rfInit){REFIN_MODE='rede'}
   window.__rfInit=1;
   const tabs=[['meus','🔒 Meus clientes'],['pool','🧑‍🤝‍🧑 Sem consultor (todos)'],['rede','🌐 Rede toda (resumo)']];
-  m.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+tabs.map(t=>`<button class="rfm ${REFIN_MODE===t[0]?'':'alt'}" data-m="${t[0]}">${t[1]}</button>`).join('')+'</div><div id="rfBody"></div>';
+  m.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+tabs.map(t=>`<button class="rfm ${REFIN_MODE===t[0]?'':'alt'}" data-m="${t[0]}">${t[1]}</button>`).join('')+'</div><div id="unBox"></div><div id="rfBody"></div>';
   m.querySelectorAll('.rfm').forEach(b=>b.onclick=()=>{REFIN_MODE=b.dataset.m;render()});
+  $('#unBox').innerHTML=unlockCard();bindUnlock();
   const el=$('#rfBody');
   if(REFIN_MODE==='rede'){renderRefinRede(el);return}
-  if(!(a&&a.ekey)){el.innerHTML='<div class="card">🔑 Para ver seus clientes com contato, <b>saia e entre novamente</b> com seu CPF (link <b>Sair</b> no topo). Isso libera sua lista pessoal.</div>';if(REFIN_MODE==='pool')renderRefinPool(el,true);return}
+  if(!(a&&a.ekey)){el.innerHTML=REFIN_MODE==='pool'?'':'<div class="card">🔑 Digite seu CPF no quadro acima para liberar seus clientes com <b>CPF e telefone</b>.</div>';if(REFIN_MODE==='pool')renderRefinPool(el,true);return}
   if(!MINE&&!MINE_ERR){el.innerHTML='<div class="card">🔓 Abrindo sua lista protegida…</div>';await loadMine();render();return}
   if(MINE_ERR){el.innerHTML='<div class="card">⚠️ Não consegui abrir a lista protegida ('+esc(MINE_ERR)+'). Saia e entre novamente com seu CPF.</div>';return}
   if(REFIN_MODE==='pool'){renderRefinPool(el,false);return}
@@ -345,6 +392,7 @@ async function renderRefin(m){
   if(MINE.noentry){el.innerHTML='<div class="card">Seu CPF não tem uma lista pessoal de refin nesta base. Veja a aba <b>Sem consultor (todos)</b> para pegar clientes disponíveis.</div>';return}
   const tab=t=>L.filter(x=>x.tab===t).length,trab=L.filter(x=>(REG['R:'+x.id]||{}).s).length;
   el.innerHTML=`<div class="grid k6">${kpi(a.gestor?'Refin (todos os consultores)':'Meus clientes de Refin',L.length,'com contato liberado')}${kpi('PMT somado',fmt0(L.reduce((s,x)=>s+x.pmt,0)),'por mês')}${kpi('Ligar agora',tab('Não Contato'),'nunca contatados')}${kpi('Já trabalhados',trab,pct(L.length?trab/L.length*100:0)+' da lista')}</div>
+   ${atencaoBlock(MINE.leads||[],'R')}
    <div class="card" style="margin-top:12px"><h3>${a.gestor?'Todos os clientes de refin com consultor':'Meus clientes de refin — prioridade para você'}</h3><p class="mut" style="font-size:13px">Estes são os clientes que você mesmo vendeu: o vínculo é seu. Dados de contato são pessoais — não compartilhe.</p>`+table(refinCols(nomes,true),[...L].sort((x,y)=>y.pmt-x.pmt),'refin_meus')+'</div>';
 }
 function renderRefinPool(el,noKey){
@@ -366,6 +414,7 @@ function renderRefinRede(m){
     ${kpi('Parcela (PMT) somada',fmt0(L.reduce((s,x)=>s+x.pmt,0)),'por mês')}
     ${kpi('Saldo devedor somado',fmt0(L.reduce((s,x)=>s+x.sal,0)),'carteira apta')}
     ${kpi('Ligar agora',tab('Não Contato'),'nunca contatados')}</div>
+    ${atencaoBlock(L,'R')}
     <div class="grid g2" style="margin-top:12px"><div class="card"><h3>Oportunidades por consultor</h3>${hbars(Object.entries(L.reduce((o,x)=>{const k=x.ex?'(sem consultor ativo)':short(x.cons);o[k]=(o[k]||0)+1;return o},{})).map(([k,v])=>({l:k,v})).sort((a,b)=>b.v-a.v).slice(0,12),v=>v)}</div>
     <div class="card"><h3>Situação do último contato</h3>${hbars(Object.entries(L.reduce((o,x)=>(o[x.tab||'—']=(o[x.tab||'—']||0)+1,o),{})).map(([k,v])=>({l:k,v})).sort((a,b)=>b.v-a.v),v=>v)}
     <p class="mut" style="font-size:12px">Esta visão não mostra telefone nem CPF. Cada consultor vê os próprios clientes com contato na aba "Meus clientes" (login com CPF).</p></div></div>
@@ -416,7 +465,8 @@ function regCsv(list,id){return ST[(REG[list+':'+id]||{}).s||''][0]}
 function setReg(k,s,remote){const cur=REG[k]||{};REG[k]={s,u:remote?remote.u:who(),t:remote?remote.t:Date.now()};saveReg();
   if(!remote&&SYNC_URL){try{fetch(SYNC_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({key:k,s:s,u:REG[k].u,t:REG[k].t})})}catch(e){}}}
 async function syncPull(){if(!SYNC_URL)return;try{const a=await (await fetch(SYNC_URL)).json();let ch=0;for(const r of a){if(!REG[r.key]||REG[r.key].t<r.t){REG[r.key]={s:r.s,u:r.u,t:r.t};ch++}}if(ch){saveReg();if(TAB==='aprov')render()}}catch(e){}}
-document.addEventListener('change',e=>{const s=e.target.closest&&e.target.closest('.regsel');if(s){setReg(s.dataset.k,s.value);s.style.outline=s.value?'2px solid #22c55e':'none'}});
+document.addEventListener('change',e=>{const d=e.target.closest&&e.target.closest('.dinp');if(d){setReg(d.dataset.k,d.value);render();return}
+  const s=e.target.closest&&e.target.closest('.regsel');if(s){setReg(s.dataset.k,s.value);s.style.outline=s.value?'2px solid #22c55e':'none'}});
 function aprovData(){
   const lj=$('#fLoja').value;
   const lists=[
@@ -429,9 +479,16 @@ function aprovData(){
     const tot=l.L.length,trab=tot-c[''];
     return {...l,tot,c,trab,pt:tot?trab/tot*100:0,conv:trab?c.vendido/trab*100:0};});
 }
+function usoLinks(){
+  const u={};Object.entries(REG).forEach(([k,r])=>{if(!k.startsWith('K:'))return;const n=r.u||'(sem nome)';const o=u[n]=u[n]||{n:0,t:0,k:{}};o.n++;o.t=Math.max(o.t,r.t||0);const kind=k.split(':')[1];o.k[kind]=(o.k[kind]||0)+1});
+  const L=Object.entries(u).sort((a,b)=>b[1].n-a[1].n);
+  if(!L.length)return '<span class="mut">Nenhum clique registrado ainda. Cliques em WhatsApp, simulação e links de reconquista são contados com o nome de quem está logado.</span><p class="mut" style="font-size:12px">'+(SYNC_URL?'✅ Sincronizado com a planilha compartilhada.':'⚠️ Sem planilha compartilhada, cada aparelho só enxerga os próprios cliques.')+'</p>';
+  const nm={wa:'WhatsApp',sim:'simulação',reco_link:'link reconquista',reco_copy:'copiou link reconquista',reco_wa:'enviou link reconquista'};
+  return hbars(L.map(([n,o])=>({l:n,v:o.n})),v=>v)+'<p class="mut" style="font-size:12px">'+L.slice(0,8).map(([n,o])=>esc(n)+': '+Object.entries(o.k).map(([k,v])=>v+' '+(nm[k]||k)).join(', ')+' (último: '+new Date(o.t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+')').join('<br>')+'</p><p class="mut" style="font-size:12px">'+(SYNC_URL?'✅ Sincronizado com a planilha compartilhada.':'⚠️ Sem planilha compartilhada, cada aparelho só enxerga os próprios cliques.')+'</p>';
+}
 function renderAprov(m){
   const A=aprovData(),all=A.reduce((s,a)=>s+a.tot,0),trab=A.reduce((s,a)=>s+a.trab,0),ven=A.reduce((s,a)=>s+a.c.vendido,0),int=A.reduce((s,a)=>s+a.c.interessado,0);
-  const users={};Object.values(REG).forEach(r=>{if(r.s){const u=r.u||'(sem nome)';users[u]=users[u]||{n:0,v:0};users[u].n++;if(r.s==='vendido')users[u].v++}});
+  const users={};Object.entries(REG).forEach(([k,r])=>{if(r.s&&!/^[KD]:/.test(k)){const u=r.u||'(sem nome)';users[u]=users[u]||{n:0,v:0};users[u].n++;if(r.s==='vendido')users[u].v++}});
   const ur=Object.entries(users).sort((a,b)=>b[1].n-a[1].n);
   m.innerHTML=`<div class="grid k6">${kpi('Leads nas listas',all,'Refin + Quitados + Reconquista')}
     ${kpi('Trabalhados',trab,pct(all?trab/all*100:0)+' do total')}
@@ -449,6 +506,7 @@ function renderAprov(m){
       {k:'conv',h:'Conversão',f:a=>pct(a.conv),s:a=>a.conv,csv:a=>a.conv.toFixed(1)}
     ],A,'aprov')+`</div>
     <div class="grid g2" style="margin-top:12px"><div class="card"><h3>Quem está registrando</h3>${ur.length?hbars(ur.map(([u,v])=>({l:u,v:v.n})),v=>v):'<span class="mut">Nenhum registro ainda. Use a coluna "Registro" nas abas Refin, Quitados e Reconquista.</span>'}</div>
+    <div class="card"><h3>🖱️ Quem está clicando nos links</h3>${usoLinks()}</div>
     <div class="card"><h3>Registro de contatos</h3>
       <p class="mut" style="font-size:13px">${SYNC_URL?'✅ Sincronizado com a planilha compartilhada.':'⚠️ Neste aparelho o registro fica salvo só aqui. Para somar o time todo: exporte e importe, ou ative a planilha compartilhada (apps-script-registro.gs).'}</p>
       <button id="btnExp">⬇ Exportar registro</button> <button id="btnImp" style="background:#8b5cf6">⬆ Importar registro</button> <button id="btnWa" style="background:#22c55e">📋 Copiar resumo p/ WhatsApp</button>
@@ -463,7 +521,7 @@ function quitList(){
   const all=(typeof QUIT_SEED!=='undefined')?QUIT_SEED:[];
   return all.filter(x=>(!lj||x.loja===lj)&&(!cs||x.cons===cs)&&(!q||x.id.includes(q)||x.cid.toLowerCase().includes(q)||x.cons.toLowerCase().includes(q)||x.ades.some(a=>a.includes(q))));
 }
-function renderQuit(m){
+function renderQuitRede(m){
   const L=quitList(),nomes={};D.LOJAS_SEED.forEach(l=>nomes[l.codigo]=l.nome);
   const porC=Object.entries(L.reduce((o,x)=>{const k=x.cons||'(sem consultor)';o[k]=(o[k]||0)+1;return o},{})).map(([k,v])=>({l:short(k),v})).sort((a,b)=>b.v-a.v).slice(0,10);
   const porL=Object.entries(L.reduce((o,x)=>(o[x.loja]=(o[x.loja]||0)+1,o),{})).map(([k,v])=>({l:nomes[k]||k,v})).sort((a,b)=>b.v-a.v);
@@ -473,9 +531,10 @@ function renderQuit(m){
     ${kpi('Valor já contratado',fmt0(L.reduce((s,x)=>s+x.lib,0)),'histórico desses clientes')}
     ${kpi('2+ contratos quitados',L.filter(x=>x.n>=2).length,'clientes fiéis — priorize')}
     ${kpi('Com representante legal',L.filter(x=>x.rl).length,'exige atenção na abordagem')}</div>
+    ${atencaoBlock(L,'Q')}
     <div class="grid g2" style="margin-top:12px"><div class="card"><h3>Por loja</h3>${hbars(porL,v=>v)}</div>
     <div class="card"><h3>Top consultores (quem vendeu o contrato)</h3>${hbars(porC,v=>v)}
-    <p class="mut" style="font-size:12px">Dica: o consultor que vendeu tem o vínculo — ele deve ligar primeiro. Telefones e CPF ficam só na planilha dos supervisores.</p></div></div>
+    <p class="mut" style="font-size:12px">Dica: o consultor que vendeu tem o vínculo — ele deve ligar primeiro. Para ver CPF e telefone dos seus clientes use a aba "Meus clientes" (login com CPF).</p></div></div>
     <div class="card" style="margin-top:12px"><h3>Clientes que terminaram de pagar (ordenados pela margem liberada)</h3>`+table([
       {k:'id',h:'Cód. Cliente',f:x=>'<b>'+esc(x.id)+'</b><br><span class="mut">adesão '+esc(x.ades[0]||'')+(x.ades.length>1?' +'+(x.ades.length-1):'')+'</span>',s:x=>x.id},
       {k:'cid',h:'Cidade',f:x=>esc(x.cid)},
@@ -490,10 +549,127 @@ function renderQuit(m){
       {k:'reg',h:'Registro',f:x=>regSelect('Q',x.id),s:x=>(REG['Q:'+x.id]||{}).s||'',csv:x=>regCsv('Q',x.id)}
     ],[...L].sort((a,b)=>b.pmt-a.pmt).slice(0,500),'quit')+(L.length>500?'<p class="mut">Mostrando 500 de '+L.length+'. Use os filtros.</p>':'')+'</div>';
 }
+/* ===== helpers de mês, atenção à carteira e metas ===== */
+const inMonth=d=>!!d&&String(d).startsWith(S.ym);
+const isVenda=x=>/com venda/i.test(x.tab||'')&&!/sem venda/i.test(x.tab||'');
+const nivel=v=>v>=80?['ok','Ótimo']:v>50?['wn','Regular']:['bad','Crítico'];
+function atencaoCalc(list,kind){
+  const by={},pc=Math.max(1,+($('#fMetaRefin')&&$('#fMetaRefin').value)||10);
+  list.filter(x=>x.cons&&!x.ex).forEach(x=>{const o=by[x.cons]=by[x.cons]||{cons:x.cons,loja:x.loja,tot:0,trab:0,vend:0,pmtV:0,pmt:0};
+    o.tot++;o.pmt+=x.pmt||0;const reg=(REG[kind+':'+x.id]||{}).s||'';
+    if(inMonth(x.ua)||reg)o.trab++;
+    if((kind==='R'&&isVenda(x)&&inMonth(x.ua))||reg==='vendido'){o.vend++;o.pmtV+=x.pmt||0}});
+  return Object.values(by).map(o=>{o.pct=o.tot?o.trab/o.tot*100:0;o.st=nivel(o.pct);o.meta=Math.max(1,Math.ceil(o.tot*pc/100));o.pm=o.vend/o.meta*100;o.falta=o.tot-o.trab;
+    const need=Math.max(Math.ceil(o.tot*0.8)-o.trab,0),dia=Math.ceil(need/Math.max(S.restam,1));
+    o.plano=(need>0?'Faltam '+need+' clientes trabalhados para chegar a 80% (Ótimo): ~'+dia+' contato(s)/dia. ':'✅ Carteira bem trabalhada: mantenha. ')+(o.vend<o.meta?'Meta do mês: faltam '+(o.meta-o.vend)+' '+(kind==='R'?'refin(s)':'venda(s)')+'.':'🏅 Meta do mês batida.');return o}).sort((a,b)=>a.pct-b.pct);
+}
+function refinDiario(list){
+  const c={};list.filter(x=>isVenda(x)&&inMonth(x.ua)).forEach(x=>{c[x.ua]=(c[x.ua]||0)+1});
+  const days=[];for(let d=1;d<=Math.min(S.diaRef+1,S.diasMes);d++){const k=S.ym+'-'+String(d).padStart(2,'0');days.push([d,c[k]||0])}
+  const mx=Math.max(1,...days.map(x=>x[1])),tot=days.reduce((s,x)=>s+x[1],0);
+  return '<h3>📅 Refins com venda ao longo do mês ('+tot+')</h3><div style="display:flex;align-items:flex-end;gap:3px;height:96px">'+days.map(([d,v])=>`<div title="dia ${d}: ${v}" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center"><span style="font-size:10px">${v||''}</span><div style="width:100%;background:linear-gradient(var(--or),var(--pu));height:${v/mx*66}px;min-height:${v?3:0}px;border-radius:3px"></div><span class="mut" style="font-size:9px">${d}</span></div>`).join('')+'</div><p class="mut" style="font-size:11px">Conta contatos tabulados no DNA como "Contato Efetivo com Venda" no mês.</p>';
+}
+function atencaoBlock(list,kind){
+  const A=atencaoCalc(list,kind),nome=kind==='R'?'Refin':'Quitados',pc=Math.max(1,+($('#fMetaRefin')&&$('#fMetaRefin').value)||10);
+  const tot=A.reduce((s,a)=>s+a.tot,0),trab=A.reduce((s,a)=>s+a.trab,0),vend=A.reduce((s,a)=>s+a.vend,0),meta=A.reduce((s,a)=>s+a.meta,0),p=tot?trab/tot*100:0,st=nivel(p);
+  if(!A.length)return '';
+  return `<div class="card" style="margin-top:12px"><h3>🩺 Atenção à carteira de ${nome} — por consultor</h3>
+   <div class="grid k6" style="margin-bottom:10px">${kpi('Carteira (clientes)',tot,'com consultor ativo')}${kpi('Trabalhados no mês',trab,pct(p)+' · '+st[1])}${kpi('Vendidos no mês',vend,'meta '+meta+' ('+pc+'% da carteira)')}${kpi('Falta trabalhar',tot-trab,'Ótimo ≥80% · Regular >50% · Crítico ≤50%')}</div>`+
+   table([
+    {k:'cons',h:'Consultor',f:a=>'<b>'+esc(short(a.cons))+'</b>',s:a=>a.cons},
+    {k:'tot',h:'Carteira',cls:'right'},
+    {k:'trab',h:'Trabalhados',f:a=>a.trab,cls:'right'},
+    {k:'falta',h:'Falta trabalhar',f:a=>a.falta,cls:'right'},
+    {k:'pct',h:'% atenção',f:a=>`<span class="pill ${a.st[0]}">${a.st[1]} · ${pct(a.pct)}</span>${bar(a.pct)}`,s:a=>a.pct,csv:a=>a.pct.toFixed(1)+'% '+a.st[1]},
+    {k:'vend',h:'Vendidos',f:a=>'<b>'+a.vend+'</b>',cls:'right'},
+    {k:'meta',h:'Meta do mês',f:a=>a.meta+'<br>'+bar(a.pm)+'<span class="mut">'+pct(a.pm)+'</span>',cls:'right',s:a=>a.pm,csv:a=>a.vend+'/'+a.meta},
+    {k:'pmtV',h:'PMT vendido',f:a=>fmt0(a.pmtV),cls:'right'},
+    {k:'plano',h:'Plano de ação',f:a=>'<div class="act">'+esc(a.plano)+'</div>'}
+   ],A,'atenc_'+kind)+(kind==='R'?'<div style="margin-top:12px">'+refinDiario(list)+'</div>':'')+'<p class="mut" style="font-size:11px">"Trabalhado" = cliente com contato registrado no DNA neste mês ou marcado no painel. Meta do mês = % da carteira (campo "Meta refin/mês" no topo).</p></div>';
+}
+function dcount(nome,f,val){const v=(REG['D:'+nome+':'+f]||{}).s;if(v!==undefined&&v!=='')return +v;return val>0?null:0}
+function defl(r){
+  const arr=S.cons[r.nome],last=arr[arr.length-1].valores;
+  const it=[
+    {k:'seg',lab:'Seguros independentes',n:r.sq,min:3,pen:20},
+    {k:'cb',lab:'Consignado BMG (benefícios distintos)',n:dcount(r.nome,'cb',(last.EmprestimoConsignado||{}).atual||0),min:3,pen:20},
+    {k:'cp',lab:'Consignado privado (CPFs distintos)',n:dcount(r.nome,'cp',(last.ConsigPrivado||{}).atual||0),min:2,pen:10},
+    {k:'sc',lab:'Super Conta (concluídos e pagos)',n:dcount(r.nome,'sc',1),min:3,pen:100}
+  ];
+  it.forEach(x=>{x.st=x.n===null?'?':x.n>=x.min?'ok':'bad';x.falta=x.n===null?null:Math.max(x.min-x.n,0)});
+  const bad=it.filter(x=>x.st==='bad'),inel=bad.some(x=>x.k==='sc'),pen=inel?100:bad.reduce((s,x)=>s+x.pen,0);
+  const plano=bad.length?bad.map(x=>'Faltam '+x.falta+' em '+x.lab.toLowerCase()).join('; ')+'.':(it.some(x=>x.st==='?')?'Informe a quantidade dos itens pendentes.':'✅ Sem deflator.');
+  return {it,bad,pen:Math.min(pen,100),inel,plano,alerta:!!r.f&&bad.length>0,liq:r.premioCnc*(1-Math.min(pen,100)/100)};
+}
+function deflCard(R){
+  const L=R.map(r=>({r,d:defl(r)})).sort((a,b)=>(b.d.alerta-a.d.alerta)||(b.d.pen-a.d.pen)||(b.r.cnc-a.r.cnc));
+  const al=L.filter(x=>x.d.alerta);
+  const cell=(r,x)=>x.n===null?`<input class="dinp" data-k="D:${esc(r.nome)}:${x.k}" type="number" min="0" placeholder="qtd?" style="width:62px;min-width:62px;padding:3px"><br><span class="mut" style="font-size:10px">mín ${x.min} · informar</span>`:`<b>${x.n}</b> / ${x.min} <span class="pill ${x.st==='ok'?'ok':'bad'}">${x.st==='ok'?'✅':'−'+(x.k==='sc'?'elegib.':x.pen+'%')}</span>${x.st==='bad'?'<br><span class="mut" style="font-size:11px">faltam '+x.falta+'</span>':''}${x.k!=='seg'?`<br><input class="dinp" data-k="D:${esc(r.nome)}:${x.k}" type="number" min="0" value="${x.n}" title="Ajustar qtd" style="width:52px;min-width:52px;padding:2px;font-size:11px">`:''}`;
+  return '<div class="card"><h3>🚨 Deflatores da LIGA — realizado × falta × plano de ação</h3>'+
+   `<p class="mut" style="font-size:12px">Regras da cartilha: Seguros independentes 3+ (2 = −20%) · Consignado BMG 3+ contratos (1–2 = −20%) · Consignado privado 2+ (1 = −10%) · Super Conta 3 concluídos e pagos (elegibilidade). ${al.length?'<b style="color:#fca5a5">🚨 '+al.length+' consultor(es) já em faixa de prêmio perdendo prêmio por deflator.</b>':'Nenhum consultor em faixa perdendo prêmio por deflator conhecido.'} Quantidades de contratos que a base não traz podem ser informadas na própria linha.</p>`+
+   table([
+    {k:'nome',h:'Consultor',f:o=>(o.d.alerta?'🚨 ':'')+'<b>'+esc(short(o.r.nome))+'</b><br><span class="mut">'+esc(o.r.lojaNome)+'</span>',s:o=>o.r.nome},
+    {k:'pf',h:'Faixa / prêmio CNC',f:o=>o.r.f?`<span class="pill ok">${o.r.f.p.toFixed(2)}%</span> ${fmt(o.r.premioCnc)}`:'<span class="pill nt">sem faixa</span>',s:o=>o.r.premioCnc},
+    {k:'seg',h:'Seguros indep. (3+)',f:o=>cell(o.r,o.d.it[0]),s:o=>o.d.it[0].n},
+    {k:'cb',h:'Consig. BMG (3+)',f:o=>cell(o.r,o.d.it[1]),s:o=>o.d.it[1].n??-1},
+    {k:'cp',h:'Consig. privado (2+)',f:o=>cell(o.r,o.d.it[2]),s:o=>o.d.it[2].n??-1},
+    {k:'sc',h:'Super Conta (3+)',f:o=>cell(o.r,o.d.it[3]),s:o=>o.d.it[3].n??-1},
+    {k:'imp',h:'Impacto no prêmio',f:o=>o.d.alerta?`<span class="pill bad">🚨 −${o.d.pen}%</span><br>${o.d.inel?'<span class="mut">perde elegibilidade</span>':fmt(o.r.premioCnc)+' → <b>'+fmt(o.d.liq)+'</b>'}`:(o.d.bad.length?'<span class="pill wn">−'+o.d.pen+'% (sem faixa ainda)</span>':'<span class="pill ok">sem deflator</span>'),s:o=>o.d.pen,csv:o=>o.d.pen+'%'},
+    {k:'pl',h:'Plano de ação',f:o=>'<div class="act">'+esc(o.d.plano)+'</div>',csv:o=>o.d.plano}
+   ],L,'defl')+'</div>';
+}
+function trackClick(kind,id){const k='K:'+kind+':'+id+':'+Date.now();REG[k]={s:'clique',u:who(),t:Date.now()};saveReg();
+  if(SYNC_URL){try{fetch(SYNC_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({key:k,s:'clique',u:REG[k].u,t:REG[k].t})})}catch(e){}}}
+const waLink=l=>'https://wa.me/?text='+encodeURIComponent('Olá! Aqui é da Help!. Segue o seu link para regularizar o contrato com segurança: '+l);
+/* ----- Quitados: modos ----- */
+function quitCols(nomes,priv){
+  return [
+    {k:'id',h:'Cód. Cliente',f:x=>'<b class="cpy" data-v="'+esc(x.id)+'" title="Clique para copiar" style="cursor:pointer">'+esc(x.id)+' 📋</b>'+(priv&&x.cpf?'<br><span class="mut cpy" data-v="'+esc(x.cpf)+'" style="cursor:pointer" title="Copiar CPF">CPF '+esc(x.cpf)+'</span>':'')+'<br><span class="mut">adesão '+esc((x.ades||[])[0]||'')+((x.ades||[]).length>1?' +'+(x.ades.length-1):'')+'</span>',s:x=>x.id},
+    ...(priv?[{k:'fones',h:'Contato',f:x=>(x.fones||[]).map(wa).join('<br>')||'—',csv:x=>(x.fones||[]).join(' / ')}]:[]),
+    {k:'cid',h:'Cidade',f:x=>esc(x.cid)+(x.bairro?'<br><span class="mut">'+esc(x.bairro)+'</span>':'')},
+    {k:'loja',h:'Loja',f:x=>esc(nomes[x.loja]||x.loja),s:x=>x.loja},
+    {k:'cons',h:'Consultor',f:x=>x.cons?esc(short(x.cons))+(x.ex?' <span class="pill bad">sem consultor ativo</span>':''):'<span class="pill bad">sem consultor</span>',s:x=>x.cons||''},
+    {k:'n',h:'Quitados',f:x=>x.n>=2?'<span class="pill ok">'+x.n+' contratos</span>':'1',cls:'right'},
+    {k:'pmt',h:'PMT liberado',f:x=>fmt(x.pmt),cls:'right'},
+    {k:'lib',h:'Já contratou',f:x=>fmt(x.lib),cls:'right'},
+    {k:'ult',h:'Última produção',f:x=>x.ult?x.ult.split('-').reverse().join('/'):'—',s:x=>x.ult},
+    {k:'tab',h:'Último contato',f:x=>esc(x.tab||'—')+(x.ua?'<br><span class="mut">'+x.ua.split('-').reverse().join('/')+'</span>':'')},
+    {k:'ac',h:'Ação',f:x=>'<div class="act">'+(x.n>=2?'⭐ Cliente fiel: ofereça CNC/novo crédito com a margem de '+fmt0(x.pmt)+'.':'Ofereça novo crédito (margem liberada de '+fmt0(x.pmt)+').')+'</div>',s:x=>x.n},
+    {k:'reg',h:'Registro',f:x=>regSelect('Q',x.id),s:x=>(REG['Q:'+x.id]||{}).s||'',csv:x=>regCsv('Q',x.id)}
+  ];
+}
+async function renderQuit(m){
+  const a=getAuth();
+  const tabs=[['meus','🔒 Meus clientes'],['pool','🧑‍🤝‍🧑 Sem consultor (todos)'],['rede','🌐 Rede toda (resumo)']];
+  if(QUIT_MODE==='meus'&&!(a&&a.ekey)&&!window.__qInit)QUIT_MODE='rede';window.__qInit=1;
+  m.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+tabs.map(t=>`<button class="qm ${QUIT_MODE===t[0]?'':'alt'}" data-m="${t[0]}">${t[1]}</button>`).join('')+'</div><div id="unBox"></div><div id="qBody"></div>';
+  m.querySelectorAll('.qm').forEach(b=>b.onclick=()=>{QUIT_MODE=b.dataset.m;render()});
+  $('#unBox').innerHTML=unlockCard();bindUnlock();
+  const el=$('#qBody');
+  if(QUIT_MODE==='rede'){renderQuitRede(el);return}
+  const nomes={};D.LOJAS_SEED.forEach(l=>nomes[l.codigo]=l.nome);
+  const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
+  const flt=x=>(!lj||x.loja===lj)&&(!cs||x.cons===cs)&&(!q||x.id.includes(q)||(x.cid||'').toLowerCase().includes(q)||(x.cons||'').toLowerCase().includes(q)||(x.ades||[]).some(z=>z.includes(q)));
+  if(!(a&&a.ekey)){
+    if(QUIT_MODE==='pool'){const L=(typeof QUIT_SEED!=='undefined'?QUIT_SEED:[]).filter(x=>x.ex&&flt(x));el.innerHTML=`<div class="card"><h3>🧑‍🤝‍🧑 Quitados de consultores que saíram — liberado para todos</h3><p class="mut" style="font-size:13px">Libere seu CPF no quadro acima para ver telefones. Registre o contato para não duplicar.</p>`+table(quitCols(nomes,false),[...L].sort((x,y)=>y.pmt-x.pmt).slice(0,500),'quit_pool')+'</div>'}
+    else el.innerHTML='<div class="card">🔑 Digite seu CPF no quadro acima para liberar seus clientes com <b>CPF e telefone</b>.</div>';
+    return}
+  if(!MINEQ&&!MINEQ_ERR){el.innerHTML='<div class="card">🔓 Abrindo sua lista protegida…</div>';await loadMineQ();render();return}
+  if(MINEQ_ERR){el.innerHTML='<div class="card">⚠️ Não consegui abrir a lista protegida ('+esc(MINEQ_ERR)+'). Saia e entre novamente.</div>';return}
+  if(QUIT_MODE==='pool'){
+    const pm={};(POOLQ||[]).forEach(p=>pm[p.id]=p);
+    const L=(typeof QUIT_SEED!=='undefined'?QUIT_SEED:[]).filter(x=>x.ex&&flt(x)).map(x=>pm[x.id]?{...pm[x.id]}:x);
+    el.innerHTML=`<div class="grid k6">${kpi('Quitados sem consultor ativo',L.length,'disponíveis para qualquer consultor')}${kpi('PMT liberado',fmt0(L.reduce((s,x)=>s+x.pmt,0)),'')}</div><div class="card" style="margin-top:12px"><h3>🧑‍🤝‍🧑 Quitados de consultores que saíram — liberado para todos</h3><p class="mut" style="font-size:13px">Quem ligar primeiro registra o contato na coluna Registro.</p>`+table(quitCols(nomes,!!POOLQ),[...L].sort((x,y)=>y.pmt-x.pmt).slice(0,500),'quit_pool')+'</div>';return}
+  if(MINEQ.noentry){el.innerHTML='<div class="card">Seu CPF não tem clientes quitados vinculados. Veja <b>Sem consultor (todos)</b>.</div>';return}
+  const L=(MINEQ.leads||[]).filter(flt);
+  el.innerHTML=`<div class="grid k6">${kpi(a.gestor?'Quitados (todos os consultores)':'Meus clientes quitados',L.length,'com contato liberado')}${kpi('PMT liberado',fmt0(L.reduce((s,x)=>s+x.pmt,0)),'por mês')}${kpi('2+ contratos quitados',L.filter(x=>x.n>=2).length,'clientes fiéis')}${kpi('Já trabalhados',L.filter(x=>(REG['Q:'+x.id]||{}).s).length,'registro no painel')}</div>${atencaoBlock(MINEQ.leads||[],'Q')}
+   <div class="card" style="margin-top:12px"><h3>Meus clientes quitados — você tem o vínculo</h3><p class="mut" style="font-size:13px">Dados de contato são pessoais — não compartilhe.</p>`+table(quitCols(nomes,true),[...L].sort((x,y)=>y.pmt-x.pmt).slice(0,800),'quit_meus')+'</div>';
+}
+
 function acaoLoja(l,R){
   const a=[];const rs=R.filter(r=>r.loja===l.codigo);
-  if(l.projPct<80)a.push('Meta em risco: reunião rápida hoje; precisa '+fmt0(l.nec)+'/dia.');
-  else if(l.projPct<100)a.push('Perto da meta: precisa '+fmt0(l.nec)+'/dia para fechar.');
+  if(l.projPct<=50)a.push('Crítico: reunião rápida hoje; precisa '+fmt0(l.nec)+'/dia.');
+  else if(l.projPct<80)a.push('Atenção: precisa '+fmt0(l.nec)+'/dia para voltar ao ritmo.');
   else a.push('No ritmo: manter e puxar quem está sem faixa.');
   const z=rs.filter(r=>r.cnc<=0).map(r=>short(r.nome));if(z.length)a.push('Sem CNC: '+z.join(', ')+'.');
   const q=rs.filter(r=>r.p&&r.f&&r.falta<=r.nec*2).slice(0,3).map(r=>short(r.nome));
@@ -509,10 +685,15 @@ function csv(){
   const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='painel-liga-'+TAB+'.csv';a.click();
 }
 document.addEventListener('click',e=>{
+  const cpy=e.target.closest('.cpy');if(cpy){try{navigator.clipboard.writeText(cpy.dataset.v);const o=cpy.style.outline;cpy.style.outline='2px solid #22c55e';setTimeout(()=>cpy.style.outline=o,700)}catch(x){}}
+  const lk=e.target.closest('.lkb');if(lk){const l=lk.dataset.l,id=lk.dataset.id;trackClick('reco_'+lk.dataset.a,id);if(lk.dataset.a==='copy'){navigator.clipboard.writeText(l).then(()=>{lk.textContent='✅ Copiado'})}else window.open(waLink(l),'_blank','noopener')}
+  const tk=e.target.closest('a[data-trk]');if(tk){const row=tk.closest('tr'),c=row&&row.querySelector('.cpy');trackClick(tk.dataset.trk,c?c.dataset.v:'')}
   const t=e.target.closest('.tab');if(t){TAB=t.dataset.t;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));render();}
   const th=e.target.closest('th[data-k]');if(th){const k=th.dataset.k,id=th.dataset.id;SORT={id,k,d:SORT.k===k&&SORT.id===id?-SORT.d:-1};render();}
 });
 $('#fLoja').onchange=()=>{fillCons();render()};$('#fCons').onchange=render;$('#fBusca').oninput=render;$('#btnCsv').onclick=csv;
+$('#fMetaRefin').onchange=()=>{try{localStorage.setItem('liga_meta_refin',$('#fMetaRefin').value)}catch(e){}render()};
+try{const mr=localStorage.getItem('liga_meta_refin');if(mr)$('#fMetaRefin').value=mr}catch(e){}
 $('#fMeta').onchange=()=>{try{localStorage.setItem('liga_meta',$('#fMeta').value)}catch(e){};render()};
 try{const v=localStorage.getItem('liga_meta');if(v)$('#fMeta').value=v;const u=localStorage.getItem('liga_user');if(u)$('#fUser').value=u}catch(e){}
 $('#lnkSair').onclick=e=>{e.preventDefault();try{localStorage.removeItem('liga_auth')}catch(x){}location.href='treinamento.html'};
