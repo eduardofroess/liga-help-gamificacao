@@ -54,6 +54,7 @@ svg text{fill:#c9bfe9;font-size:11px}
 </div>
 <div class="tabs" id="tabs">
   <div class="tab on" data-t="resumo">📊 Resumo</div>
+  <div class="tab" data-t="camp">✈️ Campanha Porto de Galinhas</div>
   <div class="tab" data-t="cons">👤 Consultores</div>
   <div class="tab" data-t="lojas">🏬 Lojas (Supervisor)</div>
   <div class="tab" data-t="reco">🔁 Reconquista</div>
@@ -67,6 +68,7 @@ svg text{fill:#c9bfe9;font-size:11px}
 <script src="refin-data.js"></script>
 <script src="quit-data.js"></script>
 <script src="acesso-data.js"></script>
+<script src="campanha-data.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 const fmt=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -258,6 +260,7 @@ function render(){
       {k:'ac',h:'Ação do supervisor',f:l=>'<div class="act">'+esc(acaoLoja(l,R))+'</div>',s:l=>l.semFaixa}
     ],L.sort((a,b)=>b.pct-a.pct),'lojas')+'</div>';
   }
+  if(TAB==='camp'){renderCamp(m);return;}
   if(TAB==='refin'){renderRefin(m);return;}
   if(TAB==='quit'){renderQuit(m);return;}
   if(TAB==='aprov'){renderAprov(m);return;}
@@ -664,6 +667,77 @@ async function renderQuit(m){
   const L=(MINEQ.leads||[]).filter(flt);
   el.innerHTML=`<div class="grid k6">${kpi(a.gestor?'Quitados (todos os consultores)':'Meus clientes quitados',L.length,'com contato liberado')}${kpi('PMT liberado',fmt0(L.reduce((s,x)=>s+x.pmt,0)),'por mês')}${kpi('2+ contratos quitados',L.filter(x=>x.n>=2).length,'clientes fiéis')}${kpi('Já trabalhados',L.filter(x=>(REG['Q:'+x.id]||{}).s).length,'registro no painel')}</div>${atencaoBlock(MINEQ.leads||[],'Q')}
    <div class="card" style="margin-top:12px"><h3>Meus clientes quitados — você tem o vínculo</h3><p class="mut" style="font-size:13px">Dados de contato são pessoais — não compartilhe.</p>`+table(quitCols(nomes,true),[...L].sort((x,y)=>y.pmt-x.pmt).slice(0,800),'quit_meus')+'</div>';
+}
+
+
+/* ===== Campanha: Viagem Porto de Galinhas ===== */
+let CAMP_CANC=false;
+function campAcao(c){
+  if(c.sit==='CANCELADO')return 'Cancelado — fora da campanha.';
+  const a=[];
+  if(c.sit==='BLOQUEADO')a.push('⚠️ Situação BLOQUEADO no DNA: regularize com o supervisor para concorrer.');
+  if(c.prem==='Premiado')a.push('🏆 Premiado!');
+  else{
+    if(c.elP==='Sim'&&c.elS==='Sim')a.push('✅ Elegível em produção e seguros.');
+    else if(c.elP==='Sim')a.push('Elegível em produção; falta elegibilidade de seguros (projeção: '+c.si+' seguros independentes).');
+    else if(c.elS==='Sim')a.push('Elegível em seguros; falta elegibilidade de produção.');
+    else a.push('Ainda não elegível: acelere produção e seguros (posição '+c.rkP+' na rede, projeção '+Math.round(c.proj/1000)+' mil pts).');
+  }
+  if(c.rec>0)a.push('📣 '+c.rec+' reclamação(ões): cuidado com a qualidade da venda.');
+  return a.join(' ');
+}
+function renderCamp(m){
+  if(typeof CAMPANHA==='undefined'){m.innerHTML='<div class="card">Dados da campanha não carregados.</div>';return}
+  const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
+  const all=CAMPANHA,vivos=all.filter(c=>c.sit!=='CANCELADO');
+  let L=all.filter(c=>(!lj||c.loja===lj)&&(!cs||c.n===cs)&&(!q||c.n.toLowerCase().includes(q))&&(CAMP_CANC||c.sit!=='CANCELADO'));
+  const best=[...vivos].sort((a,b)=>a.rkP-b.rkP)[0],bestS=[...vivos].sort((a,b)=>a.rkS-b.rkS)[0];
+  const dt=CAMPANHA_ATUALIZADA.split('-').reverse().join('/');
+  const nomeLoja=c=>S.lojaNome[c]||c;
+  const pill=c=>c==='ATIVO'?'ok':c==='BLOQUEADO'?'wn':'bad';
+  const lojas=Object.values(vivos.reduce((o,c)=>{const x=o[c.loja]=o[c.loja]||{loja:c.loja,n:0,proj:0,elP:0,elS:0,best:1e9,seg:0};x.n++;x.proj+=c.proj;x.elP+=c.elP==='Sim'?1:0;x.elS+=c.elS==='Sim'?1:0;x.best=Math.min(x.best,c.rkP);return o},{}));
+  (typeof CAMPANHA_LOJAS!=='undefined'?CAMPANHA_LOJAS:[]).forEach(z=>{const x=lojas.find(l=>l.loja===z.cod);if(x){x.seg=z.seg;x.ativos=z.ativos;x.hc=z.hc}else lojas.push({loja:z.cod,n:0,proj:0,elP:0,elS:0,best:0,seg:z.seg,ativos:z.ativos,hc:z.hc})});
+  const maxP=Math.max(...L.map(c=>c.proj),1);
+  const P=CAMPANHA_PESOS;
+  m.innerHTML=`<div class="card" style="background:linear-gradient(90deg,#0e7490,#8b5cf6);border:0"><h3 style="font-size:19px;margin:0">✈️ ${esc(CAMPANHA_NOME)} — ranking da campanha</h3><div style="font-size:13px;opacity:.95">Base de ${dt} · ${vivos.length} consultores ativos/bloqueados da 4F Soluções · pontos ponderados pelos pesos de cada produto</div></div>
+  <div class="grid k6" style="margin-top:12px">
+    ${kpi('Melhor posição na rede',best?best.rkP+'º':'—',best?esc(short(best.n))+' · '+esc(nomeLoja(best.loja)):'')}
+    ${kpi('Melhor em seguros',bestS?bestS.rkS+'º':'—',bestS?esc(short(bestS.n)):'')}
+    ${kpi('Elegíveis em produção',vivos.filter(c=>c.elP==='Sim').length+' / '+vivos.length,'segundo o DNA')}
+    ${kpi('Elegíveis em seguros',vivos.filter(c=>c.elS==='Sim').length+' / '+vivos.length,'segundo o DNA')}
+    ${kpi('Premiados',all.filter(c=>c.prem==='Premiado').length,'até agora')}
+    ${kpi('Produção projetada (pts)',Math.round(vivos.reduce((s,c)=>s+c.proj,0)/1000).toLocaleString('pt-BR')+' mil','soma dos consultores ativos')}
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h3>Como os pontos são calculados</h3><p style="font-size:13px">Produção: <b>CNC ×${P.cnc}</b> · Consignado BMG ×${P.cb} · Consig. privado ×${P.cp} · Bmg Card ×${P.bc} · Cartão Benefício ×${P.ct} · FGTS ×${P.fg}.<br>Seguros: Seguro CNC ×${P.sc} · Vida Familiar ×${P.sv} · Bmg Med ×${P.sm}.</p><p class="mut" style="font-size:12px">Quanto mais CNC, mais pontos: cada R$ 1 de CNC vale 5× um R$ 1 de Consignado ou FGTS. A <b>posição na rede</b> compara você com todos os consultores do país; a <b>posição 4F</b>, só com o nosso time.</p>
+    <p class="mut" style="font-size:12px">⚠️ Regulamento (premiação, corte de posição e prazo) não veio no arquivo. Me envie para eu mostrar a linha de corte e quanto falta para cada um.</p></div>
+    <div class="card"><h3>Lojas na campanha</h3>`+table([
+      {k:'loja',h:'Loja',f:l=>'<b>'+esc(nomeLoja(l.loja))+'</b>',s:l=>l.loja},
+      {k:'n',h:'Consultores',f:l=>l.n+(l.ativos!==undefined?' <span class="mut">('+l.ativos+' ativos)</span>':''),cls:'right'},
+      {k:'best',h:'Melhor posição',f:l=>l.best?l.best+'º':'—',cls:'right',s:l=>l.best||9999},
+      {k:'elP',h:'Eleg. prod.',cls:'right'},
+      {k:'elS',h:'Eleg. seg.',cls:'right'},
+      {k:'seg',h:'Seguros no mês',cls:'right'},
+      {k:'hc',h:'Seguros/consultor',f:l=>l.hc!==undefined?l.hc.toLocaleString('pt-BR',{maximumFractionDigits:1}):'—',cls:'right',s:l=>l.hc||0}
+    ],lojas.filter(l=>!lj||l.loja===lj).sort((a,b)=>(b.hc||0)-(a.hc||0)),'camp_lojas')+`</div></div>
+  <div class="card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><h3>Ranking da campanha — consultores</h3><button id="btnCampC" class="alt">${CAMP_CANC?'Ocultar cancelados':'Mostrar cancelados'}</button></div>`+table([
+    {k:'rkP',h:'Posição rede',f:c=>'<b>'+c.rkP+'º</b>',s:c=>c.rkP,cls:'right'},
+    {k:'rkF',h:'Posição 4F',f:c=>c.rkF+'º',s:c=>c.rkF,cls:'right'},
+    {k:'n',h:'Consultor',f:c=>'<b>'+esc(short(c.n))+'</b><br><span class="mut">'+esc(nomeLoja(c.loja))+' · '+c.meses+' meses</span>',s:c=>c.n},
+    {k:'sit',h:'Situação',f:c=>`<span class="pill ${pill(c.sit)}">${esc(tcase(c.sit))}</span>`,s:c=>c.sit},
+    {k:'elP',h:'Elegível produção',f:c=>`<span class="pill ${c.elP==='Sim'?'ok':'nt'}">${esc(c.elP)}</span>`,s:c=>c.elP},
+    {k:'elS',h:'Elegível seguros',f:c=>`<span class="pill ${c.elS==='Sim'?'ok':'nt'}">${esc(c.elS)}</span>`,s:c=>c.elS},
+    {k:'prem',h:'Premiado',f:c=>c.prem==='Premiado'?'🏆 Sim':'<span class="mut">Não</span>',s:c=>c.prem},
+    {k:'proj',h:'Produção projetada (pts)',f:c=>Math.round(c.proj).toLocaleString('pt-BR')+bar(c.proj/maxP*100),s:c=>c.proj,cls:'right'},
+    {k:'prod',h:'Pontos atuais',f:c=>Math.round(c.prod).toLocaleString('pt-BR'),s:c=>c.prod,cls:'right'},
+    {k:'cnc',h:'CNC (pts)',f:c=>Math.round(c.cnc).toLocaleString('pt-BR'),s:c=>c.cnc,cls:'right'},
+    {k:'rkS',h:'Posição seguros',f:c=>c.rkS+'º',s:c=>c.rkS,cls:'right'},
+    {k:'st',h:'Seguros (pts)',f:c=>c.st+'<br><span class="mut">projeção '+c.si+'</span>',s:c=>c.st,cls:'right'},
+    {k:'pm',h:'% meta',f:c=>pct(c.pm*100),s:c=>c.pm,cls:'right'},
+    {k:'rec',h:'Reclam.',f:c=>c.rec?'<span class="pill bad">'+c.rec+'</span>':'0',s:c=>c.rec,cls:'right'},
+    {k:'ac',h:'O que fazer',f:c=>'<div class="act">'+esc(campAcao(c))+'</div>',csv:c=>campAcao(c)}
+  ],L.sort((a,b)=>a.rkP-b.rkP),'camp')+'</div>';
+  const b=$('#btnCampC');if(b)b.onclick=()=>{CAMP_CANC=!CAMP_CANC;render()};
 }
 
 function acaoLoja(l,R){
