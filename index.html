@@ -273,13 +273,14 @@ function render(){
     const dtf=d=>d?d.split('-').reverse().join('/'):'—';
     let rec=D.REC.filter(x=>(!lj||x.codigo===lj)&&(!cs||x.cons===cs)&&(!q||String(x.id).includes(q)||String(x.cons||'').toLowerCase().includes(q)));
     const aberto=rec.filter(x=>!star.has(String(x.id))&&x.status!=='EF').length;
-    rec=[...rec].sort((a,b)=>(star.has(String(b.id))-star.has(String(a.id)))||(b.elegivel-a.elegivel)||(b.saldo-a.saldo));
+    const pr=x=>/baixa/i.test(x.prio||'')||x.mot?0:1;
+    rec=[...rec].sort((a,b)=>(star.has(String(b.id))-star.has(String(a.id)))||(pr(b)-pr(a))||(b.elegivel-a.elegivel)||(b.saldo-a.saldo));
     const ST_=STM.filter(s=>(!lj||s.loja===lj)&&(!cs||s.cons===cs)&&(!q||String(s.id).includes(q)||String(s.cons||'').toLowerCase().includes(q)));
     const rk=Object.entries(ST_.reduce((o,s)=>{const k=s.cons||'(sem consultor)';o[k]=(o[k]||0)+1;return o},{})).sort((a,b)=>b[1]-a[1]);
     const med=['🥇','🥈','🥉'],mesTxt=S.ym.split('-').reverse().join('/');
     const porLoja=D.LOJAS_SEED.map(l=>({l:l.nome,cod:l.codigo,est:STM.filter(s=>s.loja===l.codigo).length,ab:D.REC.filter(x=>x.codigo===l.codigo&&!star.has(String(x.id))&&x.status!=='EF').length,el:D.REC.filter(x=>x.codigo===l.codigo&&x.elegivel&&!star.has(String(x.id))).length})).filter(o=>!lj||o.cod===lj);
     const fora=STAR_ALL.length-STM.length;
-    m.innerHTML=`<div class="grid k6">${kpi('Leads na base',rec.length,'')}${kpi('⭐ Reconquistados em '+mesTxt,ST_.length,'mês vigente · data da efetivação'+(typeof ESTRELAS_ATUALIZADO!=='undefined'?' · atualizado em '+ESTRELAS_ATUALIZADO.split('-').reverse().join('/'):''))}${kpi('Em aberto (precisa contato)',aberto,'')}${kpi('Elegíveis',rec.filter(x=>x.elegivel&&!star.has(String(x.id))).length,fmt0(rec.filter(x=>x.elegivel&&!star.has(String(x.id))).reduce((s,x)=>s+(+x.saldo||0),0))+' em saldo')}</div>
+    m.innerHTML=`<div class="grid k6">${kpi('Leads na base',rec.length,'')}${kpi('⭐ Reconquistados em '+mesTxt,ST_.length,'mês vigente · data da efetivação'+(typeof ESTRELAS_ATUALIZADO!=='undefined'?' · atualizado em '+ESTRELAS_ATUALIZADO.split('-').reverse().join('/'):''))}${kpi('Em aberto (precisa contato)',aberto,'')}${kpi('Prioridade (contato agora)',rec.filter(x=>!star.has(String(x.id))&&!(/baixa/i.test(x.prio||'')||x.mot)).length,fmt0(rec.filter(x=>x.elegivel&&!star.has(String(x.id))).reduce((s,x)=>s+(+x.saldo||0),0))+' em saldo')}</div>
     <div class="grid g2" style="margin-top:12px"><div class="card"><h3>🏆 Ranking de estrelas ⭐ — Reconquista de ${mesTxt}</h3>${rk.length?rk.slice(0,12).map((r,i)=>`<div style="display:flex;gap:8px;align-items:center;margin:5px 0"><div style="width:30px">${med[i]||(i+1)+'º'}</div><div style="flex:1;font-size:13px">${esc(short(r[0]))}</div><div>${'⭐'.repeat(Math.min(r[1],10))}${r[1]>10?' +'+(r[1]-10):''} <b>${r[1]}</b></div></div>`).join(''):'<span class="mut">Nenhuma reconquista efetivada neste mês ainda.</span>'}
     <p class="mut" style="font-size:12px">Uma estrela por contrato reconquistado e <b>efetivado no mês vigente</b> (pela data da efetivação). ${fora?fora+' reconquista(s) de meses anteriores não entram na contagem.':''}</p></div>
     <div class="card"><h3>Reconquistas por loja — ${mesTxt}</h3>`+table([
@@ -303,7 +304,7 @@ function render(){
       {k:'loja',h:'Loja',f:x=>esc((S.lojaNome[x.codigo]||x.codigo)),s:x=>x.codigo},
       {k:'banco',h:'Banco',f:x=>esc(String(x.banco||'').replace(/^\d+\s*-\s*/,''))},
       {k:'status',h:'Situação',f:x=>{const ef=star.has(String(x.id));return `<span class="pill ${ef?'ok':'nt'}">${esc(ef?'✅ Reconquistado':'⏳ Em aberto — precisa contato')}</span>`},s:x=>star.has(String(x.id))?1:0},
-      {k:'prio',h:'Prioridade',f:x=>esc(x.prio?tcase(x.prio):'—')},
+      {k:'prio',h:'Prioridade',f:x=>{const lo=/baixa/i.test(x.prio||'')||x.mot;return `<span class="pill ${lo?'nt':'ok'}">${lo?'Baixa prioridade':'⭐ Prioridade'}</span>`+(x.mot?'<br><span class="mut" style="font-size:11px">'+esc(String(x.mot).split('/')[0].trim())+'</span>':'')},s:x=>/baixa/i.test(x.prio||'')||x.mot?0:1,csv:x=>x.prio||''},
       {k:'saldo',h:'Saldo',f:x=>fmt(x.saldo),cls:'right',s:x=>+x.saldo||0},
       {k:'lk',h:'Link p/ o cliente',f:x=>x.link&&!star.has(String(x.id))?`<button class="lkb alt" data-a="copy" data-id="${esc(x.id)}" data-l="${esc(x.link)}">📋 Copiar</button> <button class="lkb" data-a="wa" data-id="${esc(x.id)}" data-l="${esc(x.link)}">💬 Enviar</button>`:'—',csv:x=>x.link||''},
       {k:'reg',h:'Registro',f:x=>regSelect('C',x.id),s:x=>(REG['C:'+x.id]||{}).s||'',csv:x=>regCsv('C',x.id)}
