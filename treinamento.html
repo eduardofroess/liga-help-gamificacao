@@ -86,7 +86,7 @@ let AUTH=null,PROG={},CUR=0,GESTOR=false;
 const LOJAS={'53631':'São Luís - São Francisco','54123':'Imperatriz - Centro','54245':'Açailândia - Centro','54275':'Pinheiro - Centro','54412':'Grajaú - Centro','55237':'Codó - Centro','56097':'São Luís - Anjo da Guarda','57035':'Imperatriz - Bernardo Sayão','57036':'Balsas - Centro','57037':'Barra do Corda - Centro'};
 
 /* ---------- LOGIN ---------- */
-function gestorMode(){GESTOR=true;$('#uCpf').placeholder='gestor ou coordenador';$('#uPw').maxLength=40;$('#uPw').type='password';$('#uPw').placeholder='senha';$('#loginErr').textContent='Acesso gestor/coordenador: informe o usuário e a senha.'}
+function gestorMode(){GESTOR=true;$('#uPw').inputMode='text';$('#uCpf').placeholder='gestor ou coordenador';$('#uPw').maxLength=40;$('#uPw').type='password';$('#uPw').placeholder='senha';$('#loginErr').textContent='Acesso gestor/coordenador: informe o usuário e a senha.'}
 async function doLogin(){
   const err=$('#loginErr');err.textContent='';const btn=$('#btnLogin');btn.disabled=true;btn.textContent='Verificando…';
   try{
@@ -109,6 +109,7 @@ async function doLogin(){
   }catch(e){err.textContent='Erro ao validar: '+e.message}
   finally{btn.disabled=false;btn.textContent='Entrar'}
 }
+$('#uCpf').addEventListener('input',()=>{const v=$('#uCpf').value;if(/[a-zA-Z]/.test(v)){$('#uPw').maxLength=40;$('#uPw').inputMode='text';$('#uPw').placeholder='senha'}else{$('#uPw').maxLength=4;$('#uPw').inputMode='numeric';$('#uPw').placeholder='••••'}});
 ['uCpf','uPw'].forEach(id=>$('#'+id).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()}));
 function loadProg(){try{PROG=JSON.parse(localStorage.getItem('liga_prog_'+AUTH.t)||'{}')}catch(e){PROG={}}}
 function saveProg(){try{localStorage.setItem('liga_prog_'+AUTH.t,JSON.stringify(PROG))}catch(e){}}
