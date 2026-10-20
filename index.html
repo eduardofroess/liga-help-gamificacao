@@ -360,7 +360,7 @@ async function loadMine(){
 function wa(f){const d=String(f||'').replace(/\D/g,'');return d?`<a href="https://wa.me/55${d}" target="_blank" rel="noopener" data-trk="wa">💬 ${esc(d)}</a>`:''}
 function refinCols(nomes,priv){
   const base=[
-    {k:'id',h:'Adesão / CPF',f:x=>'<b class="cpy" data-v="'+esc(x.ad||x.id)+'" title="Clique para copiar" style="cursor:pointer">'+esc(x.ad||x.id)+' 📋</b>'+(priv&&x.cpf?'<br><span class="mut cpy" data-v="'+esc(x.cpf)+'" style="cursor:pointer" title="Copiar CPF">CPF '+esc(x.cpf)+'</span>':'')},
+    {k:'id',h:priv?'CPF':'Cód. cliente',f:x=>priv&&x.cpf?'<b class="cpy" data-v="'+esc(x.cpf)+'" title="Clique para copiar" style="cursor:pointer">'+esc(x.cpf)+' 📋</b><br><span class="mut">cód. '+esc(x.id)+'</span>':'<b class="cpy" data-v="'+esc(x.id)+'" title="Clique para copiar" style="cursor:pointer">'+esc(x.id)+' 📋</b>',s:x=>x.id},
     ...(priv?[{k:'fones',h:'Contato',f:x=>(x.fones||[]).map(wa).join('<br>')||'—',csv:x=>(x.fones||[]).join(' / ')}]:[]),
     {k:'cid',h:'Cidade',f:x=>esc(x.cid)+(x.bairro?'<br><span class="mut">'+esc(x.bairro)+'</span>':'')},
     {k:'loja',h:'Loja',f:x=>esc(nomes[x.loja]||x.loja),s:x=>x.loja},
