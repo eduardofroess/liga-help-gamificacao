@@ -360,7 +360,7 @@ async function loadMine(){
 function wa(f){const d=String(f||'').replace(/\D/g,'');return d?`<a href="https://wa.me/55${d}" target="_blank" rel="noopener" data-trk="wa">💬 ${esc(d)}</a>`:''}
 function refinCols(nomes,priv){
   const base=[
-    {k:'id',h:'Cód. Cliente',f:x=>'<b class="cpy" data-v="'+esc(x.id)+'" title="Clique para copiar" style="cursor:pointer">'+esc(x.id)+' 📋</b>'+(priv&&x.cpf?'<br><span class="mut cpy" data-v="'+esc(x.cpf)+'" style="cursor:pointer" title="Copiar CPF">CPF '+esc(x.cpf)+'</span>':'')},
+    {k:'id',h:'Adesão / CPF',f:x=>'<b class="cpy" data-v="'+esc(x.ad||x.id)+'" title="Clique para copiar" style="cursor:pointer">'+esc(x.ad||x.id)+' 📋</b>'+(priv&&x.cpf?'<br><span class="mut cpy" data-v="'+esc(x.cpf)+'" style="cursor:pointer" title="Copiar CPF">CPF '+esc(x.cpf)+'</span>':'')},
     ...(priv?[{k:'fones',h:'Contato',f:x=>(x.fones||[]).map(wa).join('<br>')||'—',csv:x=>(x.fones||[]).join(' / ')}]:[]),
     {k:'cid',h:'Cidade',f:x=>esc(x.cid)+(x.bairro?'<br><span class="mut">'+esc(x.bairro)+'</span>':'')},
     {k:'loja',h:'Loja',f:x=>esc(nomes[x.loja]||x.loja),s:x=>x.loja},
@@ -447,7 +447,7 @@ function _oldRefinUnused(m){
     <div class="card"><h3>Situação do último contato</h3>${hbars(Object.entries(L.reduce((o,x)=>(o[x.tab||'—']=(o[x.tab||'—']||0)+1,o),{})).map(([k,v])=>({l:k,v})).sort((a,b)=>b.v-a.v),v=>v)}
     <p class="mut" style="font-size:12px">A base não traz a loja do cliente: a loja é estimada pela cidade. Telefones e CPF ficam só na planilha dos supervisores.</p></div></div>
     <div class="card" style="margin-top:12px"><h3>Lista de oportunidades (clique no cabeçalho para ordenar)</h3>`+table([
-      {k:'id',h:'Cód. Cliente',f:x=>'<b>'+esc(x.id)+'</b>'},
+      {k:'id',h:'Adesão',f:x=>'<b>'+esc(x.ad||x.id)+'</b>'},
       {k:'cid',h:'Cidade',f:x=>esc(x.cid)},
       {k:'loja',h:'Loja',f:x=>esc(nomes[x.loja]||x.loja),s:x=>x.loja},
       {k:'prod',h:'Produto atual',f:x=>esc(x.prod)},
@@ -541,7 +541,7 @@ function renderQuitRede(m){
     <div class="card"><h3>Top consultores (quem vendeu o contrato)</h3>${hbars(porC,v=>v)}
     <p class="mut" style="font-size:12px">Dica: o consultor que vendeu tem o vínculo — ele deve ligar primeiro. Para ver CPF e telefone dos seus clientes use a aba "Meus clientes" (login com CPF).</p></div></div>
     <div class="card" style="margin-top:12px"><h3>Clientes que terminaram de pagar (ordenados pela margem liberada)</h3>`+table([
-      {k:'id',h:'Cód. Cliente',f:x=>'<b>'+esc(x.id)+'</b><br><span class="mut">adesão '+esc(x.ades[0]||'')+(x.ades.length>1?' +'+(x.ades.length-1):'')+'</span>',s:x=>x.id},
+      {k:'id',h:'Adesão',f:x=>'<b>'+esc(x.ades[0]||x.id)+'</b>'+(x.ades.length>1?'<br><span class="mut">+'+(x.ades.length-1)+' contrato(s)</span>':''),s:x=>x.ades[0]||x.id},
       {k:'cid',h:'Cidade',f:x=>esc(x.cid)},
       {k:'loja',h:'Loja',f:x=>esc(nomes[x.loja]||x.loja),s:x=>x.loja},
       {k:'cons',h:'Consultor',f:x=>esc(x.cons?short(x.cons):'—')},
@@ -665,7 +665,7 @@ const waLink=l=>'https://wa.me/?text='+encodeURIComponent('Olá! Aqui é da Help
 /* ----- Quitados: modos ----- */
 function quitCols(nomes,priv){
   return [
-    {k:'id',h:'Cód. Cliente',f:x=>'<b class="cpy" data-v="'+esc(x.id)+'" title="Clique para copiar" style="cursor:pointer">'+esc(x.id)+' 📋</b>'+(priv&&x.cpf?'<br><span class="mut cpy" data-v="'+esc(x.cpf)+'" style="cursor:pointer" title="Copiar CPF">CPF '+esc(x.cpf)+'</span>':'')+'<br><span class="mut">adesão '+esc((x.ades||[])[0]||'')+((x.ades||[]).length>1?' +'+(x.ades.length-1):'')+'</span>',s:x=>x.id},
+    {k:'id',h:'Adesão / CPF',f:x=>'<b class="cpy" data-v="'+esc((x.ades||[])[0]||x.id)+'" title="Clique para copiar" style="cursor:pointer">'+esc((x.ades||[])[0]||x.id)+' 📋</b>'+(priv&&x.cpf?'<br><span class="mut cpy" data-v="'+esc(x.cpf)+'" style="cursor:pointer" title="Copiar CPF">CPF '+esc(x.cpf)+'</span>':'')+((x.ades||[]).length>1?'<br><span class="mut">+'+(x.ades.length-1)+' contrato(s)</span>':''),s:x=>x.id},
     ...(priv?[{k:'fones',h:'Contato',f:x=>(x.fones||[]).map(wa).join('<br>')||'—',csv:x=>(x.fones||[]).join(' / ')}]:[]),
     {k:'cid',h:'Cidade',f:x=>esc(x.cid)+(x.bairro?'<br><span class="mut">'+esc(x.bairro)+'</span>':'')},
     {k:'loja',h:'Loja',f:x=>esc(nomes[x.loja]||x.loja),s:x=>x.loja},
