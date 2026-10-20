@@ -69,6 +69,7 @@ svg text{fill:#c9bfe9;font-size:11px}
 <script src="quit-data.js"></script>
 <script src="acesso-data.js"></script>
 <script src="campanha-data.js"></script>
+<script src="deflatores-data.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 const fmt=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -605,7 +606,43 @@ function defl(r){
   const plano=bad.length?bad.map(x=>'Faltam '+x.falta+' em '+x.lab.toLowerCase()).join('; ')+'.':(it.some(x=>x.st==='?')?'Informe a quantidade dos itens pendentes.':'✅ Sem deflator.');
   return {it,bad,pen:Math.min(pen,100),inel,plano,alerta:!!r.f&&bad.length>0,liq:r.premioCnc*(1-Math.min(pen,100)/100)};
 }
+
 function deflCard(R){
+  if(typeof DEFLATORES==='undefined')return deflCardOld(R);
+  const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
+  const nm=c=>S.lojaNome[c]||c;
+  const mk=(n,min,d)=>{const p=Math.round((1-d)*100);return `<b>${n}</b> / ${min} <span class="pill ${d<1?'bad':'ok'}">${d<1?'−'+p+'%':'✅'}</span>${n<min?'<br><span class="mut" style="font-size:11px">faltam '+(min-n)+'</span>':''}`};
+  let L=DEFLATORES.filter(d=>d.sit!=='CANCELADO'&&(!lj||d.loja===lj)&&(!cs||d.n.toUpperCase()===cs)&&(!q||d.n.toLowerCase().includes(q))).map(d=>{
+    const fx=!/FAIXA 0/i.test(d.faixa)&&d.pcnc>0;
+    const mult=d.dSeg*d.dSc*d.dCb*d.dCp*d.dRec*d.dEmi;
+    const perda=fx?d.pcnc*(1-mult):0;
+    const plano=[];
+    if(d.si<3)plano.push('faltam '+(3-d.si)+' seguro(s) independente(s)');
+    if(d.cb<3)plano.push('faltam '+(3-d.cb)+' contrato(s) de Consignado BMG (benefícios distintos)');
+    if(d.cp<2)plano.push('faltam '+(2-d.cp)+' contrato(s) de Consignado privado (CPFs distintos)');
+    if(d.sc<3)plano.push('faltam '+(3-d.sc)+' Super Conta concluído(s) e pago(s)');
+    if(d.recl>0)plano.push(d.recl+' reclamação(ões)/cancelamento(s): reverter quando possível');
+    if(d.fim>0)plano.push('fim de relacionamento: −'+d.fim+' pts (use a Reconquista para evitar)');
+    return {d,fx,mult,perda,alerta:fx&&mult<1,plano:plano.length?'Para zerar deflatores: '+plano.join('; ')+'.':'✅ Sem deflator.'};
+  }).sort((a,b)=>(b.alerta-a.alerta)||(a.mult-b.mult)||b.d.pprod-a.d.pprod);
+  const al=L.filter(o=>o.alerta),dt=DEFLATORES_ATUALIZADO.split('-').reverse().join('/');
+  return '<div class="card"><h3>🚨 Deflatores da LIGA — realizado × falta × plano de ação</h3>'+
+   `<p class="mut" style="font-size:12px">Base LIGA de ${dt}. Regras: Seguros independentes 3+ · Consignado BMG 3+ contratos · Consignado privado 2+ · Super Conta 3 concluídos e pagos (cada item abaixo do mínimo reduz o prêmio). ${al.length?'<b style="color:#fca5a5">🚨 '+al.length+' consultor(es) já em faixa de prêmio perdendo prêmio por deflator.</b>':'Nenhum consultor em faixa perdendo prêmio por deflator.'}</p>`+
+   table([
+    {k:'n',h:'Consultor',f:o=>(o.alerta?'🚨 ':'')+'<b>'+esc(short(o.d.n))+'</b><br><span class="mut">'+esc(nm(o.d.loja))+'</span> <span class="pill '+(o.d.sit==='ATIVO'?'ok':'wn')+'">'+esc(tcase(o.d.sit))+'</span>',s:o=>o.d.n},
+    {k:'fx',h:'Faixa CNC (proj.)',f:o=>o.fx?`<span class="pill ok">${esc(o.d.faixa.replace('FAIXA ','Faixa '))}</span><br>${fmt(o.d.pcnc)}`:'<span class="pill nt">sem faixa</span>',s:o=>o.d.pcnc},
+    {k:'si',h:'Seguros indep. (3+)',f:o=>mk(o.d.si,3,o.d.dSeg),s:o=>o.d.si},
+    {k:'cb',h:'Consig. BMG (3+)',f:o=>mk(o.d.cb,3,o.d.dCb),s:o=>o.d.cb},
+    {k:'cp',h:'Consig. privado (2+)',f:o=>mk(o.d.cp,2,o.d.dCp),s:o=>o.d.cp},
+    {k:'sc',h:'Super Conta (3+)',f:o=>mk(o.d.sc,3,o.d.dSc),s:o=>o.d.sc},
+    {k:'rc',h:'Reclam. / Fim relac.',f:o=>(o.d.recl?'<span class="pill bad">'+o.d.recl+' reclam.</span> ':'0 reclam. ')+'<br>'+(o.d.fim?'<span class="pill bad">−'+o.d.fim+' pts fim relac.</span>':'<span class="mut">sem fim de relac.</span>'),s:o=>o.d.fim},
+    {k:'pp',h:'Prêmio produção → final',f:o=>fmt(o.d.pprod+o.d.pbonus)+' → <b>'+fmt(o.d.pfinal)+'</b>',cls:'right',s:o=>o.d.pfinal},
+    {k:'imp',h:'Alerta',f:o=>o.alerta?`<span class="pill bad">🚨 perde ${fmt(o.perda)}</span><br><span class="mut" style="font-size:11px">no prêmio de CNC por deflator</span>`:(o.mult<1?'<span class="pill wn">deflator ativo (sem faixa ainda)</span>':'<span class="pill ok">sem deflator</span>'),s:o=>o.perda,csv:o=>o.perda},
+    {k:'pl',h:'Plano de ação',f:o=>'<div class="act">'+esc(o.plano)+'</div>',csv:o=>o.plano}
+   ],L,'defl2')+'</div>';
+}
+
+function deflCardOld(R){
   const L=R.map(r=>({r,d:defl(r)})).sort((a,b)=>(b.d.alerta-a.d.alerta)||(b.d.pen-a.d.pen)||(b.r.cnc-a.r.cnc));
   const al=L.filter(x=>x.d.alerta);
   const cell=(r,x)=>x.n===null?`<input class="dinp" data-k="D:${esc(r.nome)}:${x.k}" type="number" min="0" placeholder="qtd?" style="width:62px;min-width:62px;padding:3px"><br><span class="mut" style="font-size:10px">mín ${x.min} · informar</span>`:`<b>${x.n}</b> / ${x.min} <span class="pill ${x.st==='ok'?'ok':'bad'}">${x.st==='ok'?'✅':'−'+(x.k==='sc'?'elegib.':x.pen+'%')}</span>${x.st==='bad'?'<br><span class="mut" style="font-size:11px">faltam '+x.falta+'</span>':''}${x.k!=='seg'?`<br><input class="dinp" data-k="D:${esc(r.nome)}:${x.k}" type="number" min="0" value="${x.n}" title="Ajustar qtd" style="width:52px;min-width:52px;padding:2px;font-size:11px">`:''}`;
