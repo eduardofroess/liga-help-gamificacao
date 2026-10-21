@@ -109,7 +109,7 @@ async function doLogin(){
   }catch(e){err.textContent='Erro ao validar: '+e.message}
   finally{btn.disabled=false;btn.textContent='Entrar'}
 }
-$('#uCpf').addEventListener('input',()=>{const v=$('#uCpf').value;if(/[a-zA-Z]/.test(v)){$('#uPw').maxLength=40;$('#uPw').inputMode='text';$('#uPw').placeholder='senha'}else{$('#uPw').maxLength=4;$('#uPw').inputMode='numeric';$('#uPw').placeholder='••••'}});
+$('#uCpf').addEventListener('input',()=>{const v=$('#uCpf').value;if(/[a-zA-Z]/.test(v)||(typeof ACESSO_COORD!=='undefined'&&ACESSO_COORD.some(c=>c.u===v.trim().toLowerCase()))){$('#uPw').maxLength=40;$('#uPw').inputMode='text';$('#uPw').placeholder='senha'}else{$('#uPw').maxLength=4;$('#uPw').inputMode='numeric';$('#uPw').placeholder='••••'}});
 ['uCpf','uPw'].forEach(id=>$('#'+id).addEventListener('keydown',e=>{if(e.key==='Enter')doLogin()}));
 function loadProg(){try{PROG=JSON.parse(localStorage.getItem('liga_prog_'+AUTH.t)||'{}')}catch(e){PROG={}}}
 function saveProg(){try{localStorage.setItem('liga_prog_'+AUTH.t,JSON.stringify(PROG))}catch(e){}}
