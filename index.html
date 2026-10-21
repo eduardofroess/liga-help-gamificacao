@@ -126,7 +126,8 @@ function prepare(){
   S.lojaNome={};D.LOJAS_SEED.forEach(l=>S.lojaNome[l.codigo]=l.nome);
   const [dd,mm,aa]=[S.ref.slice(8),S.ref.slice(5,7),S.ref.slice(0,4)];
   $('#sub').textContent='Produção até '+dd+'/'+mm+'/'+aa+' · dia '+S.diaRef+' de '+S.diasMes+' · restam '+S.restam+' dias'+(D.RECDATA?' · Reconquista de '+D.RECDATA.split('-').reverse().join('/'):'');
-  $('#fLoja').innerHTML='<option value="">Todas as lojas</option>'+D.LOJAS_SEED.map(l=>`<option value="${l.codigo}">${esc(l.nome)}</option>`).join('');
+  {const ED=['53631','56097','55237','57036','54275'],EL=['54123','57035','54412','54245','57037'];const op=l=>`<option value="${l.codigo}">${esc(l.nome)}</option>`;const L=D.LOJAS_SEED;
+  $('#fLoja').innerHTML='<option value="">Todas as lojas</option>'+'<optgroup label="Eduardo (5 lojas)">'+L.filter(l=>ED.includes(l.codigo)).map(op).join('')+'</optgroup><optgroup label="Edilson (5 lojas)">'+L.filter(l=>EL.includes(l.codigo)).map(op).join('')+'</optgroup>'+L.filter(l=>!ED.includes(l.codigo)&&!EL.includes(l.codigo)).map(op).join('');}
   try{const a=JSON.parse(localStorage.getItem('liga_auth')||'null');
     if(a){$('#hello').textContent='👤 '+a.nome;if(!$('#fUser').value)$('#fUser').value=a.nome;
       if(!a.gestor&&a.loja&&D.LOJAS_SEED.some(l=>l.codigo===a.loja))$('#fLoja').value=a.loja}}catch(e){}
@@ -179,7 +180,7 @@ function lojas(){
       seg:rs.reduce((s,r)=>s+r.sq,0),recEl:rec.filter(x=>x.elegivel).length,recSaldo:rec.filter(x=>x.elegivel).reduce((s,x)=>s+(+x.saldo||0),0)};
   });
 }
-function semaforo(l){return l.projPct>=80?['ok','No ritmo']:l.projPct>50?['wn','Atenção']:['bad','Crítico']}
+function semaforo(l){return l.projPct>=80?['ok','Bom']:l.projPct>=70?['wn','Ok']:['bad','Baixo']}
 const kpi=(l,v,s)=>`<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`;
 function bar(p){return `<div class="bar"><i style="width:${Math.min(Math.max(p,0),100)}%"></i></div>`}
 
