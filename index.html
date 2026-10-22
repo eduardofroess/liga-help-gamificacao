@@ -54,6 +54,7 @@ svg text{fill:#c9bfe9;font-size:11px}
 </div>
 <div class="tabs" id="tabs">
   <div class="tab on" data-t="resumo">📊 Resumo</div>
+  <div class="tab" data-t="hoje">⏱ Hoje (parcial)</div>
   <div class="tab" data-t="pex">🏆 PEX</div>
   <div class="tab" data-t="camp">✈️ Campanha Porto de Galinhas</div>
   <div class="tab" data-t="cons">👤 Consultores</div>
@@ -73,6 +74,7 @@ svg text{fill:#c9bfe9;font-size:11px}
 <script src="deflatores-data.js"></script>
 <script src="fimrel-data.js"></script>
 <script src="pex-data.js"></script>
+<script src="hoje-data.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 const fmt=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -265,6 +267,7 @@ function render(){
       {k:'ac',h:'Ação do supervisor',f:l=>'<div class="act">'+esc(acaoLoja(l,R))+'</div>',s:l=>l.semFaixa}
     ],L.sort((a,b)=>b.pct-a.pct),'lojas')+'</div>';
   }
+  if(TAB==='hoje'){renderHoje(m);return;}
   if(TAB==='pex'){renderPex(m);return;}
   if(TAB==='camp'){renderCamp(m);return;}
   if(TAB==='refin'){renderRefin(m);return;}
@@ -785,6 +788,44 @@ function renderCamp(m){
 }
 
 
+/* ===== Hoje (parcial) — Produtividade help! ===== */
+function renderHoje(m){
+  if(typeof HOJE==='undefined'){m.innerHTML='<div class="card">Dados do dia indisponíveis.</div>';return}
+  const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().trim();
+  const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
+  const ros={};(typeof DEFLATORES!=='undefined'?DEFLATORES:[]).forEach(d=>{ros[norm(d.n)]=d});
+  const nm=c=>S.lojaNome[c]||'—';
+  let L=HOJE.c.map(x=>{const r=ros[norm(x.n)];return {n:x.n,loja:r?r.loja:'',sit:r?r.sit:'',dig:x.dig||0,digProj:x.digProj||0,ap:x.ap||0,apProj:x.apProj||0,meta:x.meta||0}})
+    .filter(x=>x.sit!=='CANCELADO'&&(!lj||x.loja===lj)&&(!cs||norm(x.n)===norm(cs))&&(!q||x.n.toLowerCase().includes(q)));
+  const dig=L.reduce((s,x)=>s+x.dig,0),ap=L.reduce((s,x)=>s+x.ap,0),meta=L.reduce((s,x)=>s+x.meta,0);
+  const prod=L.filter(x=>x.dig>0),zer=L.filter(x=>x.dig===0);
+  const porLoja={};L.forEach(x=>{const k=x.loja||'—';(porLoja[k]=porLoja[k]||{c:k,dig:0,ap:0,meta:0,n:0,z:0});const o=porLoja[k];o.dig+=x.dig;o.ap+=x.ap;o.meta+=x.meta;o.n++;if(x.dig===0)o.z++});
+  m.innerHTML=`<div class="card" style="border-left:4px solid #f97316"><b>⏱ Produção parcial do dia — ${esc(HOJE.dia)}</b><br><span class="mut" style="font-size:12px">Fonte: ${esc(HOJE.fonte)} · atualizado às <b>${esc(HOJE.atualizado)}</b>. Só CNC (Crédito na Conta). Este dado muda ao longo do dia e <b>não é o fechamento</b>: o oficial entra quando o BI vira o dia. Valores em R$.</span></div>
+  <div class="grid k6" style="margin-top:12px">
+    ${kpi('Digitado hoje (CNC)',fmt0(dig),'projeção do dia '+fmt0(L.reduce((s,x)=>s+x.digProj,0)))}
+    ${kpi('Aprovado hoje',fmt0(ap),'meta do dia '+fmt0(meta)+' ('+pct(meta?ap/meta*100:0)+')')}
+    ${kpi('Consultores com digitação',prod.length+' / '+L.length,zer.length+' ainda sem digitar')}
+    ${kpi('Lojas zeradas hoje',HOJE.lojasZeradas+' / '+HOJE.lojasTotal,'franquia toda (CNC)')}
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h3>🎯 Ainda sem digitar hoje (CNC)</h3>${zer.length?zer.sort((a,b)=>b.meta-a.meta).map(x=>`<p style="margin:5px 0"><b>${esc(short(x.n))}</b> <span class="mut">(${esc(nm(x.loja))}) · meta do dia ${fmt0(x.meta)}</span></p>`).join(''):'<span class="mut">Todos já digitaram hoje. 🎉</span>'}</div>
+    <div class="card"><h3>Lojas — hoje</h3>${table([
+      {k:'c',h:'Loja',f:o=>'<b>'+esc(nm(o.c))+'</b>',s:o=>nm(o.c)},
+      {k:'dig',h:'Digitado',f:o=>fmt0(o.dig),cls:'right'},
+      {k:'ap',h:'Aprovado',f:o=>fmt0(o.ap),cls:'right'},
+      {k:'meta',h:'Meta do dia',f:o=>fmt0(o.meta),cls:'right'},
+      {k:'z',h:'Sem digitar',f:o=>o.z+' / '+o.n}
+    ],Object.values(porLoja),'hoje_loja')}</div>
+  </div>
+  <div class="card" style="margin-top:12px"><h3>Consultores — hoje</h3>${table([
+    {k:'n',h:'Consultor',f:x=>'<b>'+esc(short(x.n))+'</b><br><span class="mut">'+esc(nm(x.loja))+'</span>',s:x=>x.n},
+    {k:'dig',h:'Digitado',f:x=>fmt0(x.dig),cls:'right'},
+    {k:'digProj',h:'Projeção digitação',f:x=>x.digProj?fmt0(x.digProj):'—',cls:'right'},
+    {k:'ap',h:'Aprovado',f:x=>x.ap?fmt0(x.ap):'—',cls:'right'},
+    {k:'meta',h:'Meta do dia',f:x=>fmt0(x.meta),cls:'right'},
+    {k:'pc',h:'% da meta (digitado)',f:x=>x.meta?pct(x.dig/x.meta*100)+bar(x.dig/x.meta*100):'—',s:x=>x.meta?x.dig/x.meta:0}
+  ],L,'hoje')}</div>`;
+}
 /* ===== PEX — Programa de Excelência ===== */
 function renderPex(m){
   if(typeof PEX==='undefined'){m.innerHTML='<div class="card">Dados do PEX indisponíveis.</div>';return}
