@@ -803,26 +803,25 @@ function renderHoje(m){
   m.innerHTML=`<div class="card" style="border-left:4px solid #f97316"><b>⏱ Produção parcial do dia — ${esc(HOJE.dia)}</b><br><span class="mut" style="font-size:12px">Fonte: ${esc(HOJE.fonte)} · atualizado às <b>${esc(HOJE.atualizado)}</b>. Só CNC (Crédito na Conta). Este dado muda ao longo do dia e <b>não é o fechamento</b>: o oficial entra quando o BI vira o dia. Valores em R$.</span></div>
   <div class="grid k6" style="margin-top:12px">
     ${kpi('Digitado hoje (CNC)',fmt0(dig),'projeção do dia '+fmt0(L.reduce((s,x)=>s+x.digProj,0)))}
-    ${kpi('Aprovado hoje',fmt0(ap),'meta do dia '+fmt0(meta)+' ('+pct(meta?ap/meta*100:0)+')')}
+    ${kpi('Aprovado hoje',fmt0(ap),'aprovação do dia, parcial')}
     ${kpi('Consultores com digitação',prod.length+' / '+L.length,zer.length+' ainda sem digitar')}
     ${kpi('Lojas zeradas hoje',HOJE.lojasZeradas+' / '+HOJE.lojasTotal,'franquia toda (CNC)')}
   </div>
   <div class="grid g2" style="margin-top:12px">
-    <div class="card"><h3>🎯 Ainda sem digitar hoje (CNC)</h3>${zer.length?zer.sort((a,b)=>b.meta-a.meta).map(x=>`<p style="margin:5px 0"><b>${esc(short(x.n))}</b> <span class="mut">(${esc(nm(x.loja))}) · meta do dia ${fmt0(x.meta)}</span></p>`).join(''):'<span class="mut">Todos já digitaram hoje. 🎉</span>'}</div>
+    <div class="card"><h3>🎯 Ainda sem digitar hoje (CNC)</h3>${zer.length?zer.sort((a,b)=>b.meta-a.meta).map(x=>`<p style="margin:5px 0"><b>${esc(short(x.n))}</b> <span class="mut">(${esc(nm(x.loja))}) · meta diária (BI) ${fmt0(x.meta)}</span></p>`).join(''):'<span class="mut">Todos já digitaram hoje. 🎉</span>'}</div>
     <div class="card"><h3>Lojas — hoje</h3>${table([
       {k:'c',h:'Loja',f:o=>'<b>'+esc(nm(o.c))+'</b>',s:o=>nm(o.c)},
       {k:'dig',h:'Digitado',f:o=>fmt0(o.dig),cls:'right'},
       {k:'ap',h:'Aprovado',f:o=>fmt0(o.ap),cls:'right'},
-      {k:'meta',h:'Meta do dia',f:o=>fmt0(o.meta),cls:'right'},
       {k:'z',h:'Sem digitar',f:o=>o.z+' / '+o.n}
     ],Object.values(porLoja),'hoje_loja')}</div>
   </div>
   <div class="card" style="margin-top:12px"><h3>Consultores — hoje</h3>${table([
-    {k:'n',h:'Consultor',f:x=>'<b>'+esc(short(x.n))+'</b><br><span class="mut">'+esc(nm(x.loja))+'</span>',s:x=>x.n},
+    {k:'n',h:'Consultor',f:x=>'<b>'+esc(short(x.n))+'</b><br><span class="mut">'+esc(x.loja?nm(x.loja):'loja não identificada')+'</span>',s:x=>x.n},
     {k:'dig',h:'Digitado',f:x=>fmt0(x.dig),cls:'right'},
     {k:'digProj',h:'Projeção digitação',f:x=>x.digProj?fmt0(x.digProj):'—',cls:'right'},
     {k:'ap',h:'Aprovado',f:x=>x.ap?fmt0(x.ap):'—',cls:'right'},
-    {k:'meta',h:'Meta do dia',f:x=>fmt0(x.meta),cls:'right'},
+    {k:'meta',h:'Meta diária (DU, BI)',f:x=>fmt0(x.meta),cls:'right'},
     {k:'pc',h:'% da meta (digitado)',f:x=>x.meta?pct(x.dig/x.meta*100)+bar(x.dig/x.meta*100):'—',s:x=>x.meta?x.dig/x.meta:0}
   ],L,'hoje')}</div>`;
 }
