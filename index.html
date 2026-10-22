@@ -75,6 +75,7 @@ svg text{fill:#c9bfe9;font-size:11px}
 <script src="fimrel-data.js"></script>
 <script src="pex-data.js"></script>
 <script src="hoje-data.js"></script>
+<script src="supervisores-data.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 const fmt=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -85,7 +86,7 @@ const short=n=>{const p=tcase(n).split(' ');return p.length>1?p[0]+' '+p[p.lengt
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 (function(){try{const a=JSON.parse(localStorage.getItem('liga_auth')||'null');if(a&&a.t&&a.t!=='gestor'&&!String(a.t).startsWith('coord:')&&typeof ACESSO_USERS!=='undefined'&&!ACESSO_USERS.some(u=>u.t===a.t)){localStorage.removeItem('liga_auth');location.replace('treinamento.html')}}catch(e){}})();
 let MINEQ=null,POOLQ=null,MINEQ_ERR='',QUIT_MODE='meus';
-let D={},S={},TAB='resumo',SORT={k:null,d:-1},LASTCSV=null,RECO_ONLY_STAR=false,REFIN_MODE='meus',MINE=null,POOL=null,MINE_ERR='';
+let D={},S={},TAB='resumo',SORT={k:null,d:-1},LASTCSV=null,CSVS={},RECO_ONLY_STAR=false,REFIN_MODE='meus',MINE=null,POOL=null,MINE_ERR='';
 
 function extract(src,name){
   const k=src.indexOf('const '+name+' ');if(k<0)return null;
@@ -210,8 +211,10 @@ function hbars(items,fmtv){
 }
 function table(cols,data,id){
   if(SORT.id===id&&SORT.k){const c=cols.find(c=>c.k===SORT.k);if(c)data=[...data].sort((a,b)=>{const x=c.s?c.s(a):a[c.k],y=c.s?c.s(b):b[c.k];return (x>y?1:x<y?-1:0)*SORT.d})}
-  LASTCSV={cols,data};
-  return `<div class="tw"><table><thead><tr>${cols.map(c=>`<th data-id="${id}" data-k="${c.k}">${c.h}${SORT.id===id&&SORT.k===c.k?(SORT.d>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead><tbody>${data.map(r=>'<tr>'+cols.map(c=>`<td class="${c.cls||''}">${c.f?c.f(r):esc(r[c.k])}</td>`).join('')+'</tr>').join('')}</tbody></table></div>`;
+  LASTCSV={cols,data};CSVS[id]={cols,data};
+  const cur=$('#fLoja')?$('#fLoja').value:'';
+  const tb=`<div class="tbar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 0 6px"><span class="mut" style="font-size:12px">🏬 Loja:</span><select class="tbSel" style="padding:4px 6px;border-radius:6px;max-width:230px"><option value="">Todas as lojas</option>${(D.LOJAS_SEED||[]).map(l=>`<option value="${l.codigo}"${l.codigo===cur?' selected':''}>${esc(l.nome)}</option>`).join('')}</select><span class="mut" style="font-size:12px">${data.length} linha(s)</span>${canExport()?`<button class="tbExp" data-id="${id}" title="Baixa esta tabela já filtrada pela loja escolhida">⬇ Exportar (CSV)</button>`:''}</div>`;
+  return tb+`<div class="tw"><table><thead><tr>${cols.map(c=>`<th data-id="${id}" data-k="${c.k}">${c.h}${SORT.id===id&&SORT.k===c.k?(SORT.d>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead><tbody>${data.map(r=>'<tr>'+cols.map(c=>`<td class="${c.cls||''}">${c.f?c.f(r):esc(r[c.k])}</td>`).join('')+'</tr>').join('')}</tbody></table></div>`;
 }
 function render(){
   const R=rows(),L=lojas(),m=$('#main');
@@ -885,21 +888,33 @@ function acaoLoja(l,R){
   if(l.recEl)a.push('Distribuir '+l.recEl+' leads de Reconquista.');
   return a.join(' ');
 }
-function csv(){
-  if(!LASTCSV)return;const {cols,data}=LASTCSV;
+/* Exportação: só supervisor (lista SUPERVISORES), coordenador ou gestor. Controle simples no navegador. */
+function canExport(){
+  const a=getAuth();if(!a)return false;
+  if(a.gestor||String(a.t||'').startsWith('coord:'))return true;
+  const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().trim();
+  return typeof SUPERVISORES!=='undefined'&&SUPERVISORES.some(n=>norm(n)===norm(a.nome));
+}
+function csv(id){
+  if(!canExport())return;
+  const src=(typeof id==='string'&&CSVS[id])?CSVS[id]:LASTCSV;
+  if(!src)return;const {cols,data}=src;
   const strip=h=>String(h).replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
   const lines=[cols.map(c=>c.h)].concat(data.map(r=>cols.map(c=>c.csv?c.csv(r):strip(c.f?c.f(r):r[c.k]))));
   const b=new Blob(['﻿'+lines.map(l=>l.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n')],{type:'text/csv'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='painel-liga-'+TAB+'.csv';a.click();
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);const lj=$('#fLoja').value,ln=lj?(S.lojaNome[lj]||lj).replace(/[^A-Za-z0-9]+/g,'-'):'todas-as-lojas';a.download='painel-liga-'+(typeof id==='string'?id:TAB)+'-'+ln+'-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
 }
 document.addEventListener('click',e=>{
   const cpy=e.target.closest('.cpy');if(cpy){try{navigator.clipboard.writeText(cpy.dataset.v);const o=cpy.style.outline;cpy.style.outline='2px solid #22c55e';setTimeout(()=>cpy.style.outline=o,700)}catch(x){}}
   const lk=e.target.closest('.lkb');if(lk){const l=lk.dataset.l,id=lk.dataset.id;trackClick('reco_'+lk.dataset.a,id);if(lk.dataset.a==='copy'){navigator.clipboard.writeText(l).then(()=>{lk.textContent='✅ Copiado'})}else window.open(waLink(l),'_blank','noopener')}
   const tk=e.target.closest('a[data-trk]');if(tk){const row=tk.closest('tr'),c=row&&row.querySelector('.cpy');trackClick(tk.dataset.trk,c?c.dataset.v:'')}
   const t=e.target.closest('.tab');if(t){TAB=t.dataset.t;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));render();}
+  const ex=e.target.closest('.tbExp');if(ex){csv(ex.dataset.id)}
   const th=e.target.closest('th[data-k]');if(th){const k=th.dataset.k,id=th.dataset.id;SORT={id,k,d:SORT.k===k&&SORT.id===id?-SORT.d:-1};render();}
 });
-$('#fLoja').onchange=()=>{fillCons();render()};$('#fCons').onchange=render;$('#fBusca').oninput=render;$('#btnCsv').onclick=csv;
+$('#fLoja').onchange=()=>{fillCons();render()};$('#fCons').onchange=render;$('#fBusca').oninput=render;$('#btnCsv').onclick=()=>csv();
+if(!canExport()){const b=$('#btnCsv');if(b&&b.parentElement)b.parentElement.style.display='none'}
+document.addEventListener('change',e=>{const s=e.target.closest&&e.target.closest('.tbSel');if(s){$('#fLoja').value=s.value;fillCons();render()}});
 $('#fMetaRefin').onchange=()=>{try{localStorage.setItem('liga_meta_refin',$('#fMetaRefin').value)}catch(e){}render()};
 try{const mr=localStorage.getItem('liga_meta_refin');if(mr)$('#fMetaRefin').value=mr}catch(e){}
 $('#fMeta').onchange=()=>{try{localStorage.setItem('liga_meta',$('#fMeta').value)}catch(e){};render()};
