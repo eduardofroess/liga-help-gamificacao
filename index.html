@@ -70,6 +70,7 @@ svg text{fill:#c9bfe9;font-size:11px}
 <script src="acesso-data.js"></script>
 <script src="campanha-data.js"></script>
 <script src="deflatores-data.js"></script>
+<script src="fimrel-data.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 const fmt=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -291,6 +292,7 @@ function render(){
       {k:'ab',h:'Em aberto',cls:'right'},
       {k:'el',h:'Elegíveis',cls:'right'}
     ],porLoja,'reco_loja')+`<p class="mut" style="font-size:12px">Use esta tabela para conferir com o realizado no DNA (Reconquista efetivada no mês). Divergência? Me envie a base atualizada que eu corrijo.</p></div></div>
+    ${fimRelCard(lj,cs,q)}
     <div class="card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><h3>${RECO_ONLY_STAR?'⭐ Reconquistados em '+mesTxt+' (data da efetivação)':'Leads de Reconquista (por adesão)'}</h3><button id="btnStar" class="${RECO_ONLY_STAR?'':'alt'}">${RECO_ONLY_STAR?'Ver todos os leads':'Ver só os reconquistados ⭐'}</button></div>`+(RECO_ONLY_STAR?table([
       {k:'data',h:'Efetivado em',f:s=>'<b>'+dtf(s.data)+'</b>',s:s=>s.data},
       {k:'id',h:'Adesão',f:s=>'<b>'+esc(s.id)+'</b>'},
@@ -777,6 +779,27 @@ function renderCamp(m){
     {k:'ac',h:'O que fazer',f:c=>'<div class="act">'+esc(campAcao(c))+'</div>',csv:c=>campAcao(c)}
   ],L.sort((a,b)=>a.rkP-b.rkP),'camp')+'</div>';
   const b=$('#btnCampC');if(b)b.onclick=()=>{CAMP_CANC=!CAMP_CANC;render()};
+}
+
+
+function fimRelCard(lj,cs,q){
+  if(typeof FIMREL==='undefined')return '';
+  const nm=c=>S.lojaNome[c]||c,dtf=d=>d?d.split('-').reverse().join('/'):'—';
+  const L=FIMREL.filter(x=>(!lj||x.loja===lj)&&(!cs||x.cons===cs)&&(!q||x.ad.includes(q)||x.cons.toLowerCase().includes(q)));
+  const por=Object.entries(L.reduce((o,x)=>{o[x.cons]=(o[x.cons]||0)+1;return o},{})).sort((a,b)=>b[1]-a[1]);
+  const dt=FIMREL_ATUALIZADO.split('-').reverse().join('/');
+  return '<div class="card" style="margin-top:12px"><h3>🚪 Fim de relacionamento — clientes que saíram recentemente</h3>'+
+   `<p class="mut" style="font-size:12px">Base LIGA de ${dt}. São contratos de CNC cujo cliente transferiu o benefício. Cada contrato custa <b>−50 pts</b> ao consultor. <b>Plano:</b> reconquistar o cliente e colocar a promessa de reconquista até o último dia útil do mês; se efetivar só no mês seguinte, o contrato não deflaciona.</p>`+
+   `<div class="grid k6">${kpi('Contratos que saíram',L.length,'−'+(L.length*50)+' pts em risco')}</div>`+
+   (por.length?'<p style="font-size:13px">'+por.map(([n,v])=>esc(short(n))+' <b>'+v+'</b>').join(' · ')+'</p>':'')+
+   table([
+    {k:'ad',h:'Adesão',f:x=>'<b class="cpy" data-v="'+esc(x.ad)+'" style="cursor:pointer" title="Copiar">'+esc(x.ad)+' 📋</b>'},
+    {k:'cons',h:'Consultor',f:x=>esc(short(x.cons))},
+    {k:'loja',h:'Loja',f:x=>esc(nm(x.loja)),s:x=>x.loja},
+    {k:'dc',h:'Contrato',f:x=>dtf(x.dc),s:x=>x.dc},
+    {k:'df',h:'Saiu em',f:x=>'<b>'+dtf(x.df)+'</b>',s:x=>x.df},
+    {k:'ac',h:'O que fazer',f:x=>'<div class="act">Procurar o cliente e abrir a reconquista deste contrato antes do último dia útil do mês.</div>',csv:x=>'Reconquistar antes do ultimo dia util'}
+   ],L,'fimrel')+'</div>';
 }
 
 function acaoLoja(l,R){
