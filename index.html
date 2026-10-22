@@ -50,7 +50,7 @@ svg text{fill:#c9bfe9;font-size:11px}
   <label>Meta refin/mês (% da carteira)<input id="fMetaRefin" type="number" min="1" max="100" value="10" style="min-width:90px"></label>
   <label>Buscar<input id="fBusca" placeholder="nome ou adesão"></label>
   <label>Seu nome (registro)<input id="fUser" placeholder="quem está registrando"></label>
-  <label>&nbsp;<button id="btnCsv">⬇ Exportar tabela (CSV)</button></label>
+  <label>&nbsp;<button id="btnCsv">⬇ Exportar tabela (Excel)</button></label>
 </div>
 <div class="tabs" id="tabs">
   <div class="tab on" data-t="resumo">📊 Resumo</div>
@@ -213,7 +213,7 @@ function table(cols,data,id){
   if(SORT.id===id&&SORT.k){const c=cols.find(c=>c.k===SORT.k);if(c)data=[...data].sort((a,b)=>{const x=c.s?c.s(a):a[c.k],y=c.s?c.s(b):b[c.k];return (x>y?1:x<y?-1:0)*SORT.d})}
   LASTCSV={cols,data};CSVS[id]={cols,data};
   const cur=$('#fLoja')?$('#fLoja').value:'';
-  const tb=`<div class="tbar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 0 6px"><span class="mut" style="font-size:12px">🏬 Loja:</span><select class="tbSel" style="padding:4px 6px;border-radius:6px;max-width:230px"><option value="">Todas as lojas</option>${(()=>{const ED=['53631','56097','55237','57036','54275'],EL=['54123','57035','54412','54245','57037'],L=D.LOJAS_SEED||[],op=l=>`<option value="${l.codigo}"${l.codigo===cur?' selected':''}>${esc(l.nome)}</option>`;return '<optgroup label="Eduardo (5 lojas)">'+L.filter(l=>ED.includes(l.codigo)).map(op).join('')+'</optgroup><optgroup label="Edilson (5 lojas)">'+L.filter(l=>EL.includes(l.codigo)).map(op).join('')+'</optgroup>'+L.filter(l=>!ED.includes(l.codigo)&&!EL.includes(l.codigo)).map(op).join('')})()}</select><span class="mut" style="font-size:12px">${data.length} linha(s)</span>${canExport()?`<button class="tbExp" data-id="${id}" title="Baixa esta tabela já filtrada pela loja escolhida">⬇ Exportar (CSV)</button>`:''}</div>`;
+  const tb=`<div class="tbar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 0 6px"><span class="mut" style="font-size:12px">🏬 Loja:</span><select class="tbSel" style="padding:4px 6px;border-radius:6px;max-width:230px"><option value="">Todas as lojas</option>${(()=>{const ED=['53631','56097','55237','57036','54275'],EL=['54123','57035','54412','54245','57037'],L=D.LOJAS_SEED||[],op=l=>`<option value="${l.codigo}"${l.codigo===cur?' selected':''}>${esc(l.nome)}</option>`;return '<optgroup label="Eduardo (5 lojas)">'+L.filter(l=>ED.includes(l.codigo)).map(op).join('')+'</optgroup><optgroup label="Edilson (5 lojas)">'+L.filter(l=>EL.includes(l.codigo)).map(op).join('')+'</optgroup>'+L.filter(l=>!ED.includes(l.codigo)&&!EL.includes(l.codigo)).map(op).join('')})()}</select><span class="mut" style="font-size:12px">${data.length} linha(s)</span>${canExport()?`<button class="tbExp" data-id="${id}" title="Baixa esta tabela já filtrada pela loja escolhida">⬇ Exportar (Excel)</button>`:''}</div>`;
   return tb+`<div class="tw"><table><thead><tr>${cols.map(c=>`<th data-id="${id}" data-k="${c.k}">${c.h}${SORT.id===id&&SORT.k===c.k?(SORT.d>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead><tbody>${data.map(r=>'<tr>'+cols.map(c=>`<td class="${c.cls||''}">${c.f?c.f(r):esc(r[c.k])}</td>`).join('')+'</tr>').join('')}</tbody></table></div>`;
 }
 function render(){
@@ -899,10 +899,16 @@ function csv(id){
   if(!canExport())return;
   const src=(typeof id==='string'&&CSVS[id])?CSVS[id]:LASTCSV;
   if(!src)return;const {cols,data}=src;
-  const strip=h=>String(h).replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').trim();
-  const lines=[cols.map(c=>c.h)].concat(data.map(r=>cols.map(c=>c.csv?c.csv(r):strip(c.f?c.f(r):r[c.k]))));
-  const b=new Blob(['﻿'+lines.map(l=>l.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n')],{type:'text/csv'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(b);const lj=$('#fLoja').value,ln=lj?(S.lojaNome[lj]||lj).replace(/[^A-Za-z0-9]+/g,'-'):'todas-as-lojas';a.download='painel-liga-'+(typeof id==='string'?id:TAB)+'-'+ln+'-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  const emo=/[\u{1F000}-\u{1FFFF}\u2600-\u27BF\uFE0F\u200D]/gu;
+  const strip=h=>String(h??'').replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(emo,'').replace(/\s+/g,' ').trim();
+  const X=v=>String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');
+  const row=(arr,st)=>'<Row>'+arr.map(v=>'<Cell'+(st?' ss:StyleID="h"':'')+'><Data ss:Type="String">'+X(v)+'</Data></Cell>').join('')+'</Row>';
+  const lines=[row(cols.map(c=>strip(c.h)),true)].concat(data.map(r=>row(cols.map(c=>strip(c.csv?c.csv(r):(c.f?c.f(r):r[c.k]))))));
+  const xml='<?xml version="1.0" encoding="UTF-8"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="h"><Font ss:Bold="1"/><Interior ss:Color="#FDE68A" ss:Pattern="Solid"/></Style></Styles><Worksheet ss:Name="Painel LIGA"><Table>'+lines.join('')+'</Table></Worksheet></Workbook>';
+  const b=new Blob([xml],{type:'application/vnd.ms-excel;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);
+  const lj=$('#fLoja').value,ln=lj?(S.lojaNome[lj]||lj).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'-'):'todas-as-lojas';
+  a.download='painel-liga-'+(typeof id==='string'?id:TAB)+'-'+ln+'-'+new Date().toISOString().slice(0,10)+'.xls';a.click();
 }
 document.addEventListener('click',e=>{
   const cpy=e.target.closest('.cpy');if(cpy){try{navigator.clipboard.writeText(cpy.dataset.v);const o=cpy.style.outline;cpy.style.outline='2px solid #22c55e';setTimeout(()=>cpy.style.outline=o,700)}catch(x){}}
