@@ -54,6 +54,7 @@ svg text{fill:#c9bfe9;font-size:11px}
 </div>
 <div class="tabs" id="tabs">
   <div class="tab on" data-t="resumo">📊 Resumo</div>
+  <div class="tab" data-t="pex">🏆 PEX</div>
   <div class="tab" data-t="camp">✈️ Campanha Porto de Galinhas</div>
   <div class="tab" data-t="cons">👤 Consultores</div>
   <div class="tab" data-t="lojas">🏬 Lojas (Supervisor)</div>
@@ -71,6 +72,7 @@ svg text{fill:#c9bfe9;font-size:11px}
 <script src="campanha-data.js"></script>
 <script src="deflatores-data.js"></script>
 <script src="fimrel-data.js"></script>
+<script src="pex-data.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 const fmt=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -263,6 +265,7 @@ function render(){
       {k:'ac',h:'Ação do supervisor',f:l=>'<div class="act">'+esc(acaoLoja(l,R))+'</div>',s:l=>l.semFaixa}
     ],L.sort((a,b)=>b.pct-a.pct),'lojas')+'</div>';
   }
+  if(TAB==='pex'){renderPex(m);return;}
   if(TAB==='camp'){renderCamp(m);return;}
   if(TAB==='refin'){renderRefin(m);return;}
   if(TAB==='quit'){renderQuit(m);return;}
@@ -782,6 +785,35 @@ function renderCamp(m){
 }
 
 
+/* ===== PEX — Programa de Excelência ===== */
+function renderPex(m){
+  if(typeof PEX==='undefined'){m.innerHTML='<div class="card">Dados do PEX indisponíveis.</div>';return}
+  const lj=$('#fLoja').value,nm=c=>S.lojaNome[c]||c;
+  const tot=PEX.itens.reduce((s,i)=>s+i.p,0),mx=PEX.itens.reduce((s,i)=>s+i.max,0);
+  const perda=PEX.itens.filter(i=>i.p<i.max).sort((a,b)=>(b.max-b.p)-(a.max-a.p));
+  const L=PEX.lojas.filter(l=>!lj||l.c===lj).sort((a,b)=>a.rank-b.rank);
+  const A=PEX.anual;
+  m.innerHTML=`<div class="card" style="border-left:4px solid #f97316"><b>🏆 PEX — Programa de Excelência (7ª edição)</b><br><span class="mut" style="font-size:12px">Fonte: Power BI PEX · Mês de referência <b>${esc(PEX.ref)}</b> · base ${esc(PEX.base)} · atualizado ${esc(PEX.atualizado)}. Premiação do PEX é por qualidade (reclamações, ação cível, fim de relacionamento, checklist, treinamentos); o 1º lugar pode ganhar até uma loja montada.</span></div>
+  <div class="grid k6" style="margin-top:12px">
+    ${kpi('Pontos do mês ('+esc(PEX.ref)+')',tot.toLocaleString('pt-BR')+' / '+mx,pct(tot/mx*100)+' do máximo dos itens do mês')}
+    ${kpi('Pontuação anual — franqueado',A.franqueado.toLocaleString('pt-BR')+' / '+A.max,'ranking anual: '+A.rank+'º · '+esc(A.tipo))}
+    ${kpi('2º semestre',A.s2.toLocaleString('pt-BR'),'1º semestre fechou em '+A.s1.toLocaleString('pt-BR'))}
+    ${kpi('Ranking mensal da franquia',PEX.totalRank+'º',fmt0(PEX.totalProd)+' projetados')}
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h3>Itens do mês (franquia)</h3>${PEX.itens.map(i=>`<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><div style="width:190px;font-size:12px">${esc(i.k)}</div><div style="flex:1">${bar(i.p/i.max*100)}</div><div style="width:70px;text-align:right;font-size:12px"><b>${i.p.toLocaleString('pt-BR')}</b> / ${i.max}</div></div>`).join('')}</div>
+    <div class="card"><h3>🎯 Onde estamos perdendo pontos</h3>${perda.map(i=>`<p style="margin:7px 0"><b>${esc(i.k)}</b>: faltam <b>${(i.max-i.p).toLocaleString('pt-BR')} pts</b><br><span class="act">${i.k.startsWith('Fim')?'Cada cliente que transfere o benefício custa ponto. Use a aba 🔁 Reconquista (lista de Fim de Relacionamento) para trazer o cliente de volta antes do fechamento do mês.':i.k.startsWith('Check')?'Cumpra o checklist de padronização da loja (vistoria semestral).':'Evite ocorrências: documente bem a venda e trate reclamações no 1º contato.'}</span></p>`).join('')||'<span class="mut">Todos os itens no máximo.</span>'}</div>
+  </div>
+  <div class="card" style="margin-top:12px"><h3>Lojas — pontos do mês e ranking</h3>${table([
+    {k:'c',h:'Loja',f:l=>'<b>'+esc(nm(l.c))+'</b>',s:l=>nm(l.c)},
+    {k:'rank',h:'Rank mensal',f:l=>l.rank+'º'},
+    {k:'prod',h:'Produção projetada',f:l=>fmt0(l.prod),cls:'right'},
+    {k:'rec1',h:'Reclam. 1ª inst.',f:l=>l.rec1+' / 20 '+(l.rec1>=20?'✅':'⚠️')},
+    {k:'rec2',h:'Reclam. 2ª inst.',f:l=>l.rec2+' / 20 '+(l.rec2>=20?'✅':'⚠️')},
+    {k:'fim',h:'Fim de relacionamento',f:l=>l.fim+' / 20 '+(l.fim>=20?'✅':'⚠️')+'<br>'+bar(l.fim/20*100)}
+  ],L,'pex')}
+  <p class="mut" style="font-size:11px;margin-top:8px">Todas as lojas da 4F estão hoje como "Não elegível / Não premiado" no PEX (Ranking B). Os pontos por loja de Fim de Relacionamento mostram onde mais clientes saíram: as lojas com 0 são as que mais perderam pontos.</p></div>`;
+}
 function fimRelCard(lj,cs,q){
   if(typeof FIMREL==='undefined')return '';
   const nm=c=>S.lojaNome[c]||c,dtf=d=>d?d.split('-').reverse().join('/'):'—';
