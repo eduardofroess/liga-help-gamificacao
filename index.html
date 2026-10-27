@@ -284,9 +284,9 @@ function render(){
     const star=new Set(Object.keys(sdate));
     const dtf=d=>d?d.split('-').reverse().join('/'):'—';
     let rec=D.REC.filter(x=>(!lj||x.codigo===lj)&&(!cs||x.cons===cs)&&(!q||String(x.id).includes(q)||String(x.cons||'').toLowerCase().includes(q)));
-    const aberto=rec.filter(x=>!star.has(String(x.id))&&x.status!=='EF').length;
+    const aberto=rec.filter(x=>!star.has(String(x.id))).length;
     const pr=x=>/baixa/i.test(x.prio||'')||x.mot?0:1;
-    rec=[...rec].sort((a,b)=>(star.has(String(b.id))-star.has(String(a.id)))||(pr(b)-pr(a))||(b.elegivel-a.elegivel)||(b.saldo-a.saldo));
+    rec=[...rec].sort((a,b)=>(star.has(String(b.id))-star.has(String(a.id)))||((b.status==='EF')-(a.status==='EF'))||(pr(b)-pr(a))||(b.elegivel-a.elegivel)||(b.saldo-a.saldo));
     const ST_=STM.filter(s=>(!lj||s.loja===lj)&&(!cs||s.cons===cs)&&(!q||String(s.id).includes(q)||String(s.cons||'').toLowerCase().includes(q)));
     const rk=Object.entries(ST_.reduce((o,s)=>{const k=s.cons||'(sem consultor)';o[k]=(o[k]||0)+1;return o},{})).sort((a,b)=>b[1]-a[1]);
     const med=['🥇','🥈','🥉'],mesTxt=S.ym.split('-').reverse().join('/');
@@ -313,6 +313,7 @@ function render(){
       {k:'star',h:'⭐',f:x=>star.has(String(x.id))?'⭐':'',s:x=>star.has(String(x.id))?1:0,csv:x=>star.has(String(x.id))?'reconquistado':''},
       {k:'dt',h:'Efetivado em',f:x=>star.has(String(x.id))?'<b>'+dtf(sdate[String(x.id)])+'</b>':'<span class="mut">—</span>',s:x=>sdate[String(x.id)]||'',csv:x=>dtf(sdate[String(x.id)])},
       {k:'id',h:'Adesão',f:x=>'<b class="cpy" data-v="'+esc(x.id)+'" style="cursor:pointer" title="Copiar">'+esc(x.id)+' 📋</b>'},
+      {k:'tipo',h:'Tipo',f:x=>x.status==='EF'?'<span class="pill ok">FDR · prioridade</span>':'<span class="pill nt">Oportunidade</span>',s:x=>x.status==='EF'?1:0,csv:x=>x.status==='EF'?'FDR':'Oportunidade'},
       {k:'cons',h:'Consultor',f:x=>esc(x.cons?short(x.cons):'—')},
       {k:'loja',h:'Loja',f:x=>esc((S.lojaNome[x.codigo]||x.codigo)),s:x=>x.codigo},
       {k:'banco',h:'Banco',f:x=>esc(String(x.banco||'').replace(/^\d+\s*-\s*/,''))},
@@ -321,7 +322,7 @@ function render(){
       {k:'saldo',h:'Saldo',f:x=>fmt(x.saldo),cls:'right',s:x=>+x.saldo||0},
       {k:'lk',h:'Link p/ o cliente',f:x=>x.link&&!star.has(String(x.id))?`<button class="lkb alt" data-a="copy" data-id="${esc(x.id)}" data-l="${esc(x.link)}">📋 Copiar</button> <button class="lkb" data-a="wa" data-id="${esc(x.id)}" data-l="${esc(x.link)}">💬 Enviar</button>`:'—',csv:x=>x.link||''},
       {k:'reg',h:'Registro',f:x=>regSelect('C',x.id),s:x=>(REG['C:'+x.id]||{}).s||'',csv:x=>regCsv('C',x.id)}
-    ],rec.slice(0,400),'reco')+(rec.length>400?'<p class="mut">Mostrando 400 de '+rec.length+'. Use os filtros.</p>':'')+'<p class="mut" style="font-size:12px">O link abre a jornada de Reconquista direto para o cliente. "💬 Enviar" abre o WhatsApp com a mensagem pronta (escolha o contato do cliente); cada clique é registrado em Aproveitamento.</p>')+'</div>';
+    ],rec.slice(0,600),'reco')+(rec.length>600?'<p class="mut">Mostrando 600 de '+rec.length+'. Use os filtros (loja, consultor ou adesão).</p>':'')+'<p class="mut" style="font-size:12px">O link abre a jornada de Reconquista direto para o cliente. "💬 Enviar" abre o WhatsApp com a mensagem pronta (escolha o contato do cliente); cada clique é registrado em Aproveitamento.</p>')+'</div>';
     $('#btnStar').onclick=()=>{RECO_ONLY_STAR=!RECO_ONLY_STAR;render()};
   }
 }
