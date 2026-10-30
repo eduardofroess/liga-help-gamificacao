@@ -126,6 +126,7 @@ async function ekeyFor(tag,secret){
 function startSession(u,ekey){
   AUTH={t:u.t,nome:u.n,loja:u.l,gestor:!!u.g,done:!!u.g,ekey:ekey||''};
   loadProg();
+  if(!AUTH.gestor&&!PROG.concluido){MODS.forEach((m,i)=>{PROG['m'+i]={nota:100,data:new Date().toISOString()}});PROG.concluido={data:new Date().toLocaleDateString('pt-BR'),nota:100,cod:'DEMO0000',ini:'',fim:''};saveProg()}
   if(!PROG.inicio){PROG.inicio=new Date().toISOString();saveProg()}
   if(PROG.concluido){AUTH.done=true;AUTH.data=PROG.concluido.data;AUTH.nota=PROG.concluido.nota}
   try{localStorage.setItem('liga_auth',JSON.stringify(AUTH))}catch(e){}
@@ -133,7 +134,7 @@ function startSession(u,ekey){
 }
 function logout(){try{localStorage.removeItem('liga_auth')}catch(e){}location.href='treinamento.html'}
 function show(){
-  if(AUTH.gestor&&!/[?&]treino/.test(location.search)){location.replace('index.html');return}
+  if((AUTH.gestor||AUTH.done)&&!/[?&]treino/.test(location.search)){location.replace('index.html');return}
   $('#login').classList.add('hid');$('#app').classList.remove('hid');$('#who').classList.remove('hid');
   $('#whoName').textContent='👤 '+AUTH.nome+(AUTH.loja&&LOJAS[AUTH.loja]?' · '+LOJAS[AUTH.loja]:'');
   const first=MODS.findIndex((m,i)=>!AUTH.gestor&&!PROG['m'+i]);CUR=first<0?0:first;
