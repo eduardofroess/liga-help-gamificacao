@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Painel LIGA Help! — BI de Produção</title>
+<script>/* Acesso: só libera após login + treinamento concluído (controle simples, não é segurança forte) */
+(function(){try{var a=JSON.parse(localStorage.getItem('liga_auth')||'null');if(!a||!a.done){location.replace('treinamento.html')}}catch(e){location.replace('treinamento.html')}})();
+</script>
+<style>
+:root{--bg:#120a24;--card:#1c1236;--card2:#241846;--line:#34285c;--tx:#f3efff;--mut:#a79ccc;--or:#ff7a1a;--pu:#8b5cf6;--ok:#22c55e;--wn:#f5b301;--bad:#ef4444}
+*{box-sizing:border-box}
+body{margin:0;font-family:Segoe UI,system-ui,Arial,sans-serif;background:linear-gradient(135deg,#1a0b33 0%,#120a24 55%,#2a1203 140%);color:var(--tx);min-height:100vh}
+header{padding:16px 22px;background:linear-gradient(90deg,var(--or),var(--pu));display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+header h1{margin:0;font-size:20px}header small{opacity:.9;display:block;font-size:12px;margin-top:2px}
+.filters{display:flex;flex-wrap:wrap;gap:8px;padding:12px 22px;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.filters label{font-size:11px;color:var(--mut);display:flex;flex-direction:column;gap:3px}
+select,input{background:var(--card2);color:var(--tx);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;min-width:140px}
+.tabs{display:flex;gap:6px;padding:10px 22px 0;flex-wrap:wrap}
+.tab{padding:9px 16px;border-radius:10px 10px 0 0;background:var(--card);color:var(--mut);cursor:pointer;border:1px solid var(--line);border-bottom:none;font-size:14px}
+.tab.on{background:var(--card2);color:#fff;border-color:var(--or)}
+main{padding:16px 22px 40px}
+.grid{display:grid;gap:12px}.k6{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+.kpi .l{font-size:12px;color:var(--mut)}.kpi .v{font-size:24px;font-weight:700;margin-top:4px}.kpi .s{font-size:12px;color:var(--mut);margin-top:3px}
+h3{margin:0 0 10px;font-size:15px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{position:sticky;top:0;background:var(--card2);text-align:left;color:var(--mut);font-weight:600;padding:8px;cursor:pointer;white-space:nowrap}
+td{padding:8px;border-top:1px solid var(--line);vertical-align:top}
+.tw{overflow:auto;max-height:620px;border-radius:10px}
+.bar{background:#2c2150;border-radius:99px;height:9px;overflow:hidden;min-width:80px}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--or),var(--pu))}
+.pill{padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;display:inline-block}
+.ok{background:#14532d;color:#86efac}.wn{background:#5b4400;color:#fde68a}.bad{background:#5f1414;color:#fca5a5}.nt{background:#2c2150;color:#c4b5fd}
+.act{color:#ddd6fe;font-size:12px;max-width:420px}
+button{background:var(--or);border:0;color:#fff;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:600}
+a{color:#c4b5fd}.mut{color:var(--mut)}.right{text-align:right}
+svg text{fill:#c9bfe9;font-size:11px}
+@media(max-width:640px){main,.filters,.tabs{padding-left:10px;padding-right:10px}.kpi .v{font-size:20px}}
+</style>
+</head>
+<body><div style="background:#b00020;color:#fff;text-align:center;font:600 13px system-ui;padding:6px 10px;position:sticky;top:0;z-index:99999">AMBIENTE DE DEMONSTRAÇÃO — todos os nomes, números, CPFs e telefones são FICTÍCIOS</div>
+<header>
+  <div><h1>🏆 Painel LIGA Help! — BI de Produção</h1><small id="sub">Carregando…</small></div>
+  <div><span id="hello" style="margin-right:10px"></span><a href="treinamento.html" style="color:#fff;font-weight:700">🎓 Treinamento</a> &nbsp;·&nbsp; <a href="#" id="lnkSair" style="color:#fff">Sair</a> &nbsp;·&nbsp;<a href="classico.html" style="color:#fff">Versão clássica</a></div>
+</header>
+<div class="filters">
+  <label>Loja<select id="fLoja"></select></label>
+  <label>Consultor<select id="fCons"></select></label>
+  <label>Meta CNC por loja (R$)<input id="fMeta" type="number" step="1000" value="60000"></label>
+  <label>Meta refin/mês (% da carteira)<input id="fMetaRefin" type="number" min="1" max="100" value="10" style="min-width:90px"></label>
+  <label>Buscar<input id="fBusca" placeholder="nome ou adesão"></label>
+  <label>Seu nome (registro)<input id="fUser" placeholder="quem está registrando"></label>
+  <label>&nbsp;<button id="btnCsv">⬇ Exportar tabela (Excel)</button></label>
+</div>
+<div class="tabs" id="tabs">
+  <div class="tab on" data-t="resumo">📊 Resumo</div>
+  <div class="tab" data-t="hoje">⏱ Hoje (parcial)</div>
+  <div class="tab" data-t="pex">🏆 PEX</div>
+  <div class="tab" data-t="camp">✈️ Campanha Porto de Galinhas</div>
+  <div class="tab" data-t="cons">👤 Consultores</div>
+  <div class="tab" data-t="lojas">🏬 Lojas (Supervisor)</div>
+  <div class="tab" data-t="reco">🔁 Reconquista</div>
+  <div class="tab" data-t="refin">💰 Refin</div>
+  <div class="tab" data-t="quit">🎉 Quitados</div>
+  <div class="tab" data-t="aprov">📈 Aproveitamento</div>
+</div>
+<main id="main"><div class="card">Carregando dados…</div></main>
+<script src="reconquista-data.js"></script>
+<script src="reconquista-estrelas.js"></script>
+<script src="refin-data.js"></script>
+<script src="quit-data.js"></script>
+<script src="acesso-data.js"></script>
+<script src="campanha-data.js"></script>
+<script src="deflatores-data.js"></script>
+<script src="fimrel-data.js"></script>
+<script src="pex-data.js"></script>
+<script src="hoje-data.js"></script>
+<script src="supervisores-data.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const fmt=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt0=v=>'R$ '+Math.round(v||0).toLocaleString('pt-BR');
+const pct=v=>(isFinite(v)?v:0).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%';
+const tcase=s=>String(s||'').toLowerCase().replace(/(^|\s)\S/g,c=>c.toUpperCase());
+const short=n=>{const p=tcase(n).split(' ');return p.length>1?p[0]+' '+p[p.length-1]:p[0]};
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+(function(){try{const a=JSON.parse(localStorage.getItem('liga_auth')||'null');if(a&&a.t&&a.t!=='gestor'&&!String(a.t).startsWith('coord:')&&typeof ACESSO_USERS!=='undefined'&&!ACESSO_USERS.some(u=>u.t===a.t)){localStorage.removeItem('liga_auth');location.replace('treinamento.html')}}catch(e){}})();
+let MINEQ=null,POOLQ=null,MINEQ_ERR='',QUIT_MODE='meus';
+let D={},S={},TAB='resumo',SORT={k:null,d:-1},LASTCSV=null,CSVS={},RECO_ONLY_STAR=false,REFIN_MODE='meus',MINE=null,POOL=null,MINE_ERR='';
+
+function extract(src,name){
+  const k=src.indexOf('const '+name+' ');if(k<0)return null;
+  let i=src.indexOf('=',k)+1;while(/\s/.test(src[i]))i++;
+  let end;
+  if(src[i]==='['||src[i]==='{'){
+    let d=0,q=null;
+    for(let j=i;j<src.length;j++){const c=src[j];
+      if(q){if(c==='\\')j++;else if(c===q)q=null;continue}
+      if(c==="'"||c==='"'||c==='`'){q=c;continue}
+      if(c==='['||c==='{')d++;else if(c===']'||c==='}'){d--;if(d===0){end=j+1;break}}
+    }
+  }else end=src.indexOf(';',i);
+  return new Function('return '+src.slice(i,end))();
+}
+async function load(){
+  const src=await (await fetch('consultor.html?v='+Date.now())).text();
+  for(const n of ['LOJAS_SEED','CONSULTOR_LOJA_SEED','HISTORICO_CONSULTOR_SEED','SEGUROS_CONSULTOR_SEED','FAIXAS_CNC','PREMIO_SEGURO_UNITARIO','MIN_SEGUROS_ELEGIVEL','RECONQUISTA_STATUS_LABEL'])D[n]=extract(src,n);
+  D.REC=(typeof RECONQUISTA_SEED!=='undefined')?RECONQUISTA_SEED:[];
+  D.RECDATA=(typeof RECONQUISTA_DATA_ATUALIZADA!=='undefined')?RECONQUISTA_DATA_ATUALIZADA:'';
+  const st=D.RECONQUISTA_STATUS_LABEL||{};D.STAT={EF:'✅ Reconquistado',PR:'🤝 Promessa de pagamento',SR:'⏳ Em aberto — precisa contato'};
+  for(const k of Object.keys(st))D.STAT[k]=(typeof st[k]==='object'&&st[k])?st[k].label:st[k];
+  prepare();
+}
+function faixa(v){let a=null;for(const f of D.FAIXAS_CNC)if(v>=f.v)a=f;return a}
+function proxima(v){return D.FAIXAS_CNC.find(f=>v<f.v)||null}
+function premio(v){const f=faixa(v);return f?v*f.p/100:0}
+
+function prepare(){
+  const now=new Date(),ymNow=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const months=[...new Set(D.HISTORICO_CONSULTOR_SEED.map(e=>e.data.slice(0,7)))].sort();
+  S.ym=months.includes(ymNow)?ymNow:months[months.length-1];
+  const [y,m]=S.ym.split('-').map(Number);S.diasMes=new Date(y,m,0).getDate();
+  const ents=D.HISTORICO_CONSULTOR_SEED.filter(e=>e.data.startsWith(S.ym));
+  S.dates=[...new Set(ents.map(e=>e.data))].sort();S.ref=S.dates[S.dates.length-1];
+  S.diaRef=+S.ref.slice(8);S.restam=Math.max(S.diasMes-S.diaRef,0);
+  S.cons={};
+  ents.forEach(e=>{(S.cons[e.nome]=S.cons[e.nome]||[]).push(e)});
+  Object.values(S.cons).forEach(a=>a.sort((a,b)=>a.data<b.data?-1:1));
+  const sg=D.SEGUROS_CONSULTOR_SEED.filter(e=>e.data.startsWith(S.ym));S.seg={};
+  sg.forEach(e=>{(S.seg[e.nome]=S.seg[e.nome]||[]).push(e)});
+  Object.values(S.seg).forEach(a=>a.sort((a,b)=>a.data<b.data?-1:1));
+  S.lojaNome={};D.LOJAS_SEED.forEach(l=>S.lojaNome[l.codigo]=l.nome);
+  const [dd,mm,aa]=[S.ref.slice(8),S.ref.slice(5,7),S.ref.slice(0,4)];
+  $('#sub').textContent='Produção até '+dd+'/'+mm+'/'+aa+' · dia '+S.diaRef+' de '+S.diasMes+' · restam '+S.restam+' dias'+(D.RECDATA?' · Reconquista de '+D.RECDATA.split('-').reverse().join('/'):'');
+  {const ED=['53631','56097','55237','57036','54275'],EL=['54123','57035','54412','54245','57037'];const op=l=>`<option value="${l.codigo}">${esc(l.nome)}</option>`;const L=D.LOJAS_SEED;
+  $('#fLoja').innerHTML='<option value="">Todas as lojas</option>'+'<optgroup label="Coordenação A (5 lojas)">'+L.filter(l=>ED.includes(l.codigo)).map(op).join('')+'</optgroup><optgroup label="Coordenação B (5 lojas)">'+L.filter(l=>EL.includes(l.codigo)).map(op).join('')+'</optgroup>'+L.filter(l=>!ED.includes(l.codigo)&&!EL.includes(l.codigo)).map(op).join('');}
+  try{const a=JSON.parse(localStorage.getItem('liga_auth')||'null');
+    if(a){$('#hello').textContent='👤 '+a.nome;if(!$('#fUser').value)$('#fUser').value=a.nome;
+      if(!a.gestor&&a.loja&&D.LOJAS_SEED.some(l=>l.codigo===a.loja))$('#fLoja').value=a.loja}}catch(e){}
+  fillCons();
+  try{const a=JSON.parse(localStorage.getItem('liga_auth')||'null');if(a&&!a.gestor){const k=Object.keys(S.cons).find(n=>n.toLowerCase()===a.nome.toLowerCase());if(k)$('#fCons').value=k}}catch(e){}
+}
+function fillCons(){
+  const lj=$('#fLoja').value;
+  const names=Object.keys(S.cons).filter(n=>!lj||D.CONSULTOR_LOJA_SEED[n]===lj).sort();
+  $('#fCons').innerHTML='<option value="">Todos os consultores</option>'+names.map(n=>`<option value="${esc(n)}">${esc(short(n))}</option>`).join('');
+}
+function at(arr,date){let r=null;for(const e of arr||[]){if(e.data<=date)r=e;else break}return r}
+function rows(){
+  const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
+  const out=[];
+  for(const [nome,arr] of Object.entries(S.cons)){
+    const loja=D.CONSULTOR_LOJA_SEED[nome]||'';
+    if(lj&&loja!==lj)continue;if(cs&&nome!==cs)continue;
+    if(q&&tcase(nome).toLowerCase().indexOf(q)<0)continue;
+    const last=arr[arr.length-1];
+    const cnc=last.valores.CNC.atual||0,mix=(last.valores.ProducaoMix||{}).atual||0;
+    const sgs=S.seg[nome],sq=sgs?sgs[sgs.length-1].qtd:0;
+    const f=faixa(cnc),p=proxima(cnc),falta=p?p.v-cnc:0;
+    const ritmo=S.diaRef?cnc/S.diaRef:0,proj=ritmo*S.diasMes;
+    const nec=p&&S.restam?falta/S.restam:0;
+    out.push({nome,loja,lojaNome:S.lojaNome[loja]||'—',cnc,mix,sq,f,p,falta,ritmo,proj,nec,premioCnc:premio(cnc),
+      premioSeg:sq>=D.MIN_SEGUROS_ELEGIVEL?sq*D.PREMIO_SEGURO_UNITARIO:0,ativo:last.data>=S.dates[Math.max(S.dates.length-3,0)]});
+  }
+  out.forEach(r=>r.acao=acao(r));
+  return out;
+}
+function acao(r){
+  const a=[];const el=D.REC.filter(x=>x.codigo===r.loja&&x.elegivel).length;
+  if(r.cnc<=0)a.push('🚨 Sem CNC no mês: ative a base hoje (meta mínima R$ '+fmt0(D.FAIXAS_CNC[0].v)+').');
+  else if(!r.p)a.push('🏅 Faixa máxima atingida ('+r.f.p.toFixed(2)+'%). Mantenha e ajude a loja.');
+  else if(!r.f)a.push('Falta '+fmt0(r.falta)+' para a 1ª faixa de prêmio ('+fmt0(D.FAIXAS_CNC[0].v)+'): '+fmt0(r.nec)+'/dia.');
+  else if(r.nec<=r.ritmo*1.15)a.push('✅ No caminho: mantenha ~'+fmt0(r.ritmo)+'/dia e chega à faixa de '+fmt0(r.p.v)+'.');
+  else a.push('⚡ Acelerar: precisa '+fmt0(r.nec)+'/dia (hoje '+fmt0(r.ritmo)+'/dia) para a faixa de '+fmt0(r.p.v)+'.');
+  if(r.sq<D.MIN_SEGUROS_ELEGIVEL)a.push('🛡️ Faltam '+(D.MIN_SEGUROS_ELEGIVEL-r.sq)+' seguro(s) para o prêmio de seguros.');
+  if(el>0&&r.cnc>0)a.push('🔁 '+el+' leads elegíveis de Reconquista na loja.');
+  return a.join(' ');
+}
+function lojas(){
+  const lj=$('#fLoja').value,meta=+$('#fMeta').value||60000;const R=rows().filter(r=>true);
+  return D.LOJAS_SEED.filter(l=>!lj||l.codigo===lj).map(l=>{
+    const rs=R.filter(r=>r.loja===l.codigo),cnc=rs.reduce((s,r)=>s+r.cnc,0),mix=rs.reduce((s,r)=>s+r.mix,0);
+    const ritmo=S.diaRef?cnc/S.diaRef:0,proj=ritmo*S.diasMes,rec=D.REC.filter(x=>x.codigo===l.codigo);
+    return {codigo:l.codigo,nome:l.nome,cnc,mix,meta,pct:cnc/meta*100,ritmo,proj,projPct:proj/meta*100,
+      nec:S.restam?Math.max(meta-cnc,0)/S.restam:0,n:rs.length,semFaixa:rs.filter(r=>!r.f).length,
+      seg:rs.reduce((s,r)=>s+r.sq,0),recEl:rec.filter(x=>x.elegivel).length,recSaldo:rec.filter(x=>x.elegivel).reduce((s,x)=>s+(+x.saldo||0),0)};
+  });
+}
+function semaforo(l){return l.projPct>=80?['ok','Bom']:l.projPct>=70?['wn','Ok']:['bad','Baixo']}
+const kpi=(l,v,s)=>`<div class="card kpi"><div class="l">${l}</div><div class="v">${v}</div><div class="s">${s||''}</div></div>`;
+function bar(p){return `<div class="bar"><i style="width:${Math.min(Math.max(p,0),100)}%"></i></div>`}
+
+function lineChart(){
+  const lj=$('#fLoja').value,meta=(+$('#fMeta').value||60000)*(lj?1:D.LOJAS_SEED.length);
+  const pts=S.dates.map(d=>{let s=0;for(const [n,a] of Object.entries(S.cons)){if(lj&&D.CONSULTOR_LOJA_SEED[n]!==lj)continue;const e=at(a,d);if(e)s+=e.valores.CNC.atual||0}return [d,s]});
+  const W=640,H=230,P=44,max=Math.max(meta,...pts.map(p=>p[1]))*1.05||1;
+  const x=i=>P+(W-P-12)*(S.diasMes>1?(+pts[i][0].slice(8)-1)/(S.diasMes-1):0),y=v=>H-26-(H-44)*v/max;
+  const xs=d=>P+(W-P-12)*(d-1)/(S.diasMes-1);
+  let g=`<svg viewBox="0 0 ${W} ${H}" width="100%">`;
+  for(let k=0;k<=4;k++){const v=max*k/4;g+=`<line x1="${P}" x2="${W-12}" y1="${y(v)}" y2="${y(v)}" stroke="#34285c"/><text x="4" y="${y(v)+4}">${v>=1000?Math.round(v/1000)+'k':Math.round(v)}</text>`}
+  g+=`<line x1="${xs(1)}" y1="${y(0)}" x2="${xs(S.diasMes)}" y2="${y(meta)}" stroke="#f5b301" stroke-dasharray="5 4"/><text x="${W-120}" y="${y(meta)-6}">meta linear</text>`;
+  if(pts.length){const last=pts[pts.length-1],proj=last[1]/S.diaRef*S.diasMes;
+    g+=`<path d="M${pts.map((p,i)=>x(i)+','+y(p[1])).join(' L')}" fill="none" stroke="#ff7a1a" stroke-width="3"/>`;
+    g+=`<line x1="${x(pts.length-1)}" y1="${y(last[1])}" x2="${xs(S.diasMes)}" y2="${y(proj)}" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="4 4"/><text x="${xs(S.diasMes)-70}" y="${y(proj)-6}">proj. ${fmt0(proj)}</text>`;
+    pts.forEach((p,i)=>g+=`<circle cx="${x(i)}" cy="${y(p[1])}" r="3" fill="#ff7a1a"><title>${p[0].split('-').reverse().join('/')}: ${fmt(p[1])}</title></circle>`)}
+  return g+'</svg>';
+}
+function hbars(items,fmtv){
+  const max=Math.max(...items.map(i=>i.v),1);
+  return items.map(i=>`<div style="display:flex;align-items:center;gap:8px;margin:5px 0"><div style="width:130px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(i.l)}">${esc(i.l)}</div><div style="flex:1">${bar(i.v/max*100)}</div><div style="width:92px;text-align:right;font-size:12px">${fmtv(i.v)}</div></div>`).join('');
+}
+function table(cols,data,id){
+  if(SORT.id===id&&SORT.k){const c=cols.find(c=>c.k===SORT.k);if(c)data=[...data].sort((a,b)=>{const x=c.s?c.s(a):a[c.k],y=c.s?c.s(b):b[c.k];return (x>y?1:x<y?-1:0)*SORT.d})}
+  LASTCSV={cols,data};CSVS[id]={cols,data};
+  const cur=$('#fLoja')?$('#fLoja').value:'';
+  const tb=`<div class="tbar" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 0 6px"><span class="mut" style="font-size:12px">🏬 Loja:</span><select class="tbSel" style="padding:4px 6px;border-radius:6px;max-width:230px"><option value="">Todas as lojas</option>${(()=>{const ED=['53631','56097','55237','57036','54275'],EL=['54123','57035','54412','54245','57037'],L=D.LOJAS_SEED||[],op=l=>`<option value="${l.codigo}"${l.codigo===cur?' selected':''}>${esc(l.nome)}</option>`;return '<optgroup label="Coordenação A (5 lojas)">'+L.filter(l=>ED.includes(l.codigo)).map(op).join('')+'</optgroup><optgroup label="Coordenação B (5 lojas)">'+L.filter(l=>EL.includes(l.codigo)).map(op).join('')+'</optgroup>'+L.filter(l=>!ED.includes(l.codigo)&&!EL.includes(l.codigo)).map(op).join('')})()}</select><span class="mut" style="font-size:12px">${data.length} linha(s)</span>${canExport()?`<button class="tbExp" data-id="${id}" title="Baixa esta tabela já filtrada pela loja escolhida">⬇ Exportar (Excel)</button>`:''}</div>`;
+  return tb+`<div class="tw"><table><thead><tr>${cols.map(c=>`<th data-id="${id}" data-k="${c.k}">${c.h}${SORT.id===id&&SORT.k===c.k?(SORT.d>0?' ▲':' ▼'):''}</th>`).join('')}</tr></thead><tbody>${data.map(r=>'<tr>'+cols.map(c=>`<td class="${c.cls||''}">${c.f?c.f(r):esc(r[c.k])}</td>`).join('')+'</tr>').join('')}</tbody></table></div>`;
+}
+function render(){
+  const R=rows(),L=lojas(),m=$('#main');
+  if(TAB==='resumo'){
+    const cnc=R.reduce((s,r)=>s+r.cnc,0),meta=(+$('#fMeta').value||60000)*($('#fLoja').value?1:D.LOJAS_SEED.length);
+    const ritmo=S.diaRef?cnc/S.diaRef:0,proj=ritmo*S.diasMes,nec=S.restam?Math.max(meta-cnc,0)/S.restam:0;
+    const seg=R.reduce((s,r)=>s+r.sq,0),pr=R.reduce((s,r)=>s+r.premioCnc+r.premioSeg,0);
+    const lj=$('#fLoja').value,rec=D.REC.filter(x=>!lj||x.codigo===lj),el=rec.filter(x=>x.elegivel);
+    const top=[...R].sort((a,b)=>b.cnc-a.cnc).slice(0,10).map(r=>({l:short(r.nome),v:r.cnc}));
+    const alert=R.filter(r=>r.cnc<D.FAIXAS_CNC[0].v&&r.cnc>0).sort((a,b)=>b.cnc-a.cnc).slice(0,8);
+    m.innerHTML=`<div class="grid k6">
+      ${kpi('CNC acumulado',fmt0(cnc),pct(cnc/meta*100)+' da meta de '+fmt0(meta))}
+      ${kpi('Projeção do mês',fmt0(proj),pct(proj/meta*100)+' da meta no ritmo atual')}
+      ${kpi('Ritmo atual por dia',fmt0(ritmo),'precisa '+fmt0(nec)+'/dia · restam '+S.restam+' dias')}
+      ${kpi('Consultores na faixa de prêmio',R.filter(r=>r.f).length+' / '+R.length,'CNC ≥ '+fmt0(D.FAIXAS_CNC[0].v))}
+      ${kpi('Prêmios estimados',fmt(pr),'CNC + seguros (estimativa)')}
+      ${kpi('Seguros no mês',seg,R.filter(r=>r.sq>=D.MIN_SEGUROS_ELEGIVEL).length+' elegíveis (≥'+D.MIN_SEGUROS_ELEGIVEL+')')}
+      ${kpi('Reconquista elegível',el.length,fmt0(el.reduce((s,x)=>s+(+x.saldo||0),0))+' em saldo')}
+      ${kpi('Oportunidades de Refin',refinList().length,fmt0(refinList().reduce((s,x)=>s+x.pmt,0))+' de PMT · aba 💰 Refin')}
+      ${kpi('Clientes quitados',quitList().length,fmt0(quitList().reduce((s,x)=>s+x.pmt,0))+' de margem liberada · aba 🎉')}
+    </div>
+    <div class="grid g2" style="margin-top:12px">
+      <div class="card"><h3>Evolução do CNC acumulado vs meta</h3>${lineChart()}</div>
+      <div class="card"><h3>Top 10 consultores — CNC</h3>${hbars(top,fmt0)}</div>
+      <div class="card"><h3>Lojas — % da meta</h3>${hbars(L.map(l=>({l:l.nome.replace(' - Centro',''),v:l.pct})),pct)}</div>
+      <div class="card"><h3>🎯 Quase lá — foco de hoje</h3>${alert.length?alert.map(r=>`<p style="margin:6px 0"><b>${esc(short(r.nome))}</b> <span class="mut">(${esc(r.lojaNome)})</span><br><span class="act">${esc(r.acao)}</span></p>`).join(''):'<span class="mut">Sem consultores no intervalo.</span>'}</div>
+    </div>`;
+  }
+  if(TAB==='cons'){
+    m.innerHTML=deflCard(R)+'<div class="card" style="margin-top:12px"><h3>Consultores — situação e o que fazer</h3>'+table([
+      {k:'nome',h:'Consultor',f:r=>'<b>'+esc(short(r.nome))+'</b><br><span class="mut">'+esc(r.lojaNome)+'</span>',s:r=>r.nome},
+      {k:'cnc',h:'CNC',f:r=>fmt0(r.cnc),cls:'right'},
+      {k:'pf',h:'Faixa / prêmio',f:r=>r.f?`<span class="pill ok">${r.f.p.toFixed(2)}%</span> ${fmt(r.premioCnc)}`:'<span class="pill nt">sem faixa</span>',s:r=>r.premioCnc},
+      {k:'falta',h:'Próx. faixa',f:r=>r.p?`${fmt0(r.p.v)}<br>${bar(r.cnc/r.p.v*100)}<span class="mut">falta ${fmt0(r.falta)}</span>`:'🏅 máx',s:r=>r.falta},
+      {k:'nec',h:'Precisa/dia',f:r=>r.p?fmt0(r.nec):'—',cls:'right'},
+      {k:'proj',h:'Projeção',f:r=>fmt0(r.proj),cls:'right'},
+      {k:'sq',h:'Seguros',f:r=>r.sq+(r.sq>=D.MIN_SEGUROS_ELEGIVEL?' ✅':'')},
+      {k:'mix',h:'Mix total',f:r=>fmt0(r.mix),cls:'right'},
+      {k:'acao',h:'O que fazer',f:r=>'<div class="act">'+esc(r.acao)+'</div>'}
+    ],R.sort((a,b)=>b.cnc-a.cnc),'cons')+'</div>';
+  }
+  if(TAB==='lojas'){
+    m.innerHTML='<div class="card"><h3>Lojas — visão do supervisor</h3>'+table([
+      {k:'nome',h:'Loja',f:l=>'<b>'+esc(l.nome)+'</b>'},
+      {k:'sit',h:'Situação',f:l=>{const s=semaforo(l);return `<span class="pill ${s[0]}">${s[1]}</span>`},s:l=>l.projPct},
+      {k:'cnc',h:'CNC',f:l=>fmt0(l.cnc),cls:'right'},
+      {k:'pct',h:'% meta',f:l=>pct(l.pct)+bar(l.pct)},
+      {k:'proj',h:'Projeção',f:l=>fmt0(l.proj)+'<br><span class="mut">'+pct(l.projPct)+'</span>',cls:'right',s:l=>l.proj},
+      {k:'nec',h:'Precisa/dia',f:l=>fmt0(l.nec),cls:'right'},
+      {k:'semFaixa',h:'Sem faixa',f:l=>l.semFaixa+' de '+l.n},
+      {k:'seg',h:'Seguros',f:l=>l.seg},
+      {k:'recEl',h:'Reconquista elegível',f:l=>l.recEl+'<br><span class="mut">'+fmt0(l.recSaldo)+'</span>'},
+      {k:'ac',h:'Ação do supervisor',f:l=>'<div class="act">'+esc(acaoLoja(l,R))+'</div>',s:l=>l.semFaixa}
+    ],L.sort((a,b)=>b.pct-a.pct),'lojas')+'</div>';
+  }
+  if(TAB==='hoje'){renderHoje(m);return;}
+  if(TAB==='pex'){renderPex(m);return;}
+  if(TAB==='camp'){renderCamp(m);return;}
+  if(TAB==='refin'){renderRefin(m);return;}
+  if(TAB==='quit'){renderQuit(m);return;}
+  if(TAB==='aprov'){renderAprov(m);return;}
+  if(TAB==='reco'){
+    const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
+    const STAR_ALL=(typeof RECONQUISTA_ESTRELAS!=='undefined'?RECONQUISTA_ESTRELAS:[]);
+    const STM=STAR_ALL.filter(s=>String(s.data||'').startsWith(S.ym));
+    const sdate={};STM.forEach(s=>sdate[String(s.id)]=s.data);
+    const star=new Set(Object.keys(sdate));
+    const dtf=d=>d?d.split('-').reverse().join('/'):'—';
+    let rec=D.REC.filter(x=>(!lj||x.codigo===lj)&&(!cs||x.cons===cs)&&(!q||String(x.id).includes(q)||String(x.cons||'').toLowerCase().includes(q)));
+    const aberto=rec.filter(x=>!star.has(String(x.id))).length;
+    const pr=x=>/baixa/i.test(x.prio||'')||x.mot?0:1;
+    rec=[...rec].sort((a,b)=>(star.has(String(b.id))-star.has(String(a.id)))||((b.status==='EF')-(a.status==='EF'))||(pr(b)-pr(a))||(b.elegivel-a.elegivel)||(b.saldo-a.saldo));
+    const ST_=STM.filter(s=>(!lj||s.loja===lj)&&(!cs||s.cons===cs)&&(!q||String(s.id).includes(q)||String(s.cons||'').toLowerCase().includes(q)));
+    const rk=Object.entries(ST_.reduce((o,s)=>{const k=s.cons||'(sem consultor)';o[k]=(o[k]||0)+1;return o},{})).sort((a,b)=>b[1]-a[1]);
+    const med=['🥇','🥈','🥉'],mesTxt=S.ym.split('-').reverse().join('/');
+    const porLoja=D.LOJAS_SEED.map(l=>({l:l.nome,cod:l.codigo,est:STM.filter(s=>s.loja===l.codigo).length,ab:D.REC.filter(x=>x.codigo===l.codigo&&!star.has(String(x.id))&&x.status!=='EF').length,el:D.REC.filter(x=>x.codigo===l.codigo&&x.elegivel&&!star.has(String(x.id))).length})).filter(o=>!lj||o.cod===lj);
+    const fora=STAR_ALL.length-STM.length;
+    m.innerHTML=`<div class="grid k6">${kpi('Leads na base',rec.length,'')}${kpi('⭐ Reconquistados em '+mesTxt,ST_.length,'mês vigente · data da efetivação'+(typeof ESTRELAS_ATUALIZADO!=='undefined'?' · atualizado em '+ESTRELAS_ATUALIZADO.split('-').reverse().join('/'):''))}${kpi('Em aberto (precisa contato)',aberto,'')}${kpi('Prioridade (contato agora)',rec.filter(x=>!star.has(String(x.id))&&!(/baixa/i.test(x.prio||'')||x.mot)).length,'de '+rec.filter(x=>!star.has(String(x.id))).length+' leads em aberto · baixa prioridade no fim da lista')}</div>
+    <div class="grid g2" style="margin-top:12px"><div class="card"><h3>🏆 Ranking de estrelas ⭐ — Reconquista de ${mesTxt}</h3>${rk.length?rk.slice(0,12).map((r,i)=>`<div style="display:flex;gap:8px;align-items:center;margin:5px 0"><div style="width:30px">${med[i]||(i+1)+'º'}</div><div style="flex:1;font-size:13px">${esc(short(r[0]))}</div><div>${'⭐'.repeat(Math.min(r[1],10))}${r[1]>10?' +'+(r[1]-10):''} <b>${r[1]}</b></div></div>`).join(''):'<span class="mut">Nenhuma reconquista efetivada neste mês ainda.</span>'}
+    <p class="mut" style="font-size:12px">Uma estrela por contrato reconquistado e <b>efetivado no mês vigente</b> (pela data da efetivação). ${fora?fora+' reconquista(s) de meses anteriores não entram na contagem.':''}</p></div>
+    <div class="card"><h3>Reconquistas por loja — ${mesTxt}</h3>`+table([
+      {k:'l',h:'Loja',f:o=>'<b>'+esc(o.l)+'</b>'},
+      {k:'est',h:'⭐ no mês',f:o=>'<b>'+o.est+'</b>',cls:'right'},
+      {k:'ab',h:'Em aberto',cls:'right'},
+      {k:'el',h:'Elegíveis',cls:'right'}
+    ],porLoja,'reco_loja')+`<p class="mut" style="font-size:12px">Use esta tabela para conferir com o realizado no DNA (Reconquista efetivada no mês). Divergência? Me envie a base atualizada que eu corrijo.</p></div></div>
+    ${fimRelCard(lj,cs,q)}
+    <div class="card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><h3>${RECO_ONLY_STAR?'⭐ Reconquistados em '+mesTxt+' (data da efetivação)':'Leads de Reconquista (por adesão)'}</h3><button id="btnStar" class="${RECO_ONLY_STAR?'':'alt'}">${RECO_ONLY_STAR?'Ver todos os leads':'Ver só os reconquistados ⭐'}</button></div>`+(RECO_ONLY_STAR?table([
+      {k:'data',h:'Efetivado em',f:s=>'<b>'+dtf(s.data)+'</b>',s:s=>s.data},
+      {k:'id',h:'Adesão',f:s=>'<b>'+esc(s.id)+'</b>'},
+      {k:'cons',h:'Consultor',f:s=>esc(s.cons?short(s.cons):'—')},
+      {k:'loja',h:'Loja',f:s=>esc(S.lojaNome[s.loja]||s.loja),s:s=>s.loja},
+      {k:'origem',h:'Origem',f:s=>esc(s.origem==='FDR'?'FDR (reconquistado)':'Promessa efetivada')},
+      {k:'saldo',h:'Saldo',f:s=>fmt(s.saldo),cls:'right',s:s=>+s.saldo||0}
+    ],[...ST_].sort((a,b)=>b.data<a.data?-1:1),'reco_star'):table([
+      {k:'star',h:'⭐',f:x=>star.has(String(x.id))?'⭐':'',s:x=>star.has(String(x.id))?1:0,csv:x=>star.has(String(x.id))?'reconquistado':''},
+      {k:'dt',h:'Efetivado em',f:x=>star.has(String(x.id))?'<b>'+dtf(sdate[String(x.id)])+'</b>':'<span class="mut">—</span>',s:x=>sdate[String(x.id)]||'',csv:x=>dtf(sdate[String(x.id)])},
+      {k:'id',h:'Adesão',f:x=>'<b class="cpy" data-v="'+esc(x.id)+'" style="cursor:pointer" title="Copiar">'+esc(x.id)+' 📋</b>'},
+      {k:'tipo',h:'Tipo',f:x=>x.status==='EF'?'<span class="pill ok">FDR · prioridade</span>':'<span class="pill nt">Oportunidade</span>',s:x=>x.status==='EF'?1:0,csv:x=>x.status==='EF'?'FDR':'Oportunidade'},
+      {k:'cons',h:'Consultor',f:x=>esc(x.cons?short(x.cons):'—')},
+      {k:'loja',h:'Loja',f:x=>esc((S.lojaNome[x.codigo]||x.codigo)),s:x=>x.codigo},
+      {k:'banco',h:'Banco',f:x=>esc(String(x.banco||'').replace(/^\d+\s*-\s*/,''))},
+      {k:'status',h:'Situação',f:x=>{const ef=star.has(String(x.id));return `<span class="pill ${ef?'ok':'nt'}">${esc(ef?'✅ Reconquistado':'⏳ Em aberto — precisa contato')}</span>`},s:x=>star.has(String(x.id))?1:0},
+      {k:'prio',h:'Prioridade',f:x=>{const lo=/baixa/i.test(x.prio||'')||x.mot;return `<span class="pill ${lo?'nt':'ok'}">${lo?'Baixa prioridade':'⭐ Prioridade'}</span>`+(x.mot?'<br><span class="mut" style="font-size:11px">'+esc(String(x.mot).split('/')[0].trim())+'</span>':'')},s:x=>/baixa/i.test(x.prio||'')||x.mot?0:1,csv:x=>x.prio||''},
+      {k:'saldo',h:'Saldo',f:x=>fmt(x.saldo),cls:'right',s:x=>+x.saldo||0},
+      {k:'lk',h:'Link p/ o cliente',f:x=>x.link&&!star.has(String(x.id))?`<button class="lkb alt" data-a="copy" data-id="${esc(x.id)}" data-l="${esc(x.link)}">📋 Copiar</button> <button class="lkb" data-a="wa" data-id="${esc(x.id)}" data-l="${esc(x.link)}">💬 Enviar</button>`:'—',csv:x=>x.link||''},
+      {k:'reg',h:'Registro',f:x=>regSelect('C',x.id),s:x=>(REG['C:'+x.id]||{}).s||'',csv:x=>regCsv('C',x.id)}
+    ],rec.slice(0,600),'reco')+(rec.length>600?'<p class="mut">Mostrando 600 de '+rec.length+'. Use os filtros (loja, consultor ou adesão).</p>':'')+'<p class="mut" style="font-size:12px">O link abre a jornada de Reconquista direto para o cliente. "💬 Enviar" abre o WhatsApp com a mensagem pronta (escolha o contato do cliente); cada clique é registrado em Aproveitamento.</p>')+'</div>';
+    $('#btnStar').onclick=()=>{RECO_ONLY_STAR=!RECO_ONLY_STAR;render()};
+  }
+}
+const REFIN_GRUPO={SLZ:['53631','56097'],FORA:[],'':[]};
+function refinList(){
+  const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
+  const all=(typeof REFIN_SEED!=='undefined')?REFIN_SEED:[];
+  return all.filter(x=>(!lj||x.loja===lj||(x.loja==='SLZ'&&REFIN_GRUPO.SLZ.includes(lj)))&&(!cs||x.cons===cs)&&(!q||x.id.includes(q)||x.cid.toLowerCase().includes(q)||(x.cons||'').toLowerCase().includes(q)));
+}
+/* ===== Refin pessoal (criptografado por CPF) ===== */
+const unhex=h=>new Uint8Array(h.match(/../g).map(x=>parseInt(x,16)));
+const b64u=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+function getAuth(){try{return JSON.parse(localStorage.getItem('liga_auth')||'null')}catch(e){return null}}
+function encEntry(ENC,a){if(a.gestor){const t=String(a.t||'');return t.startsWith('coord:')?(ENC.coord||{})[t.slice(6)]:ENC.gestor}return ENC.users[a.t]}
+const hexs=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+async function sha256h(t){return hexs(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t)))}
+async function pbkHex(secret,saltHex){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),'PBKDF2',false,['deriveBits']);return hexs(await crypto.subtle.deriveBits({name:'PBKDF2',salt:unhex(saltHex),iterations:150000,hash:'SHA-256'},k,256))}
+function loadQEnc(){return new Promise((ok,no)=>{if(typeof QUIT_ENC!=='undefined')return ok();const s=document.createElement('script');s.src='quit-enc.js?v='+Date.now();s.onload=()=>ok();s.onerror=()=>no(new Error('Não foi possível carregar a lista protegida'));document.head.appendChild(s)})}
+async function loadMineQ(){
+  if(MINEQ||MINEQ_ERR)return;const a=getAuth();
+  if(!a||!a.ekey){MINEQ_ERR='nokey';return}
+  try{await loadQEnc();const ent=encEntry(QUIT_ENC,a);
+    if(!ent){MINEQ={leads:[],noentry:true};return}
+    MINEQ=await decBlob(ent,a.ekey);
+    if(MINEQ.pk){try{POOLQ=await decBlob(QUIT_ENC.pool,MINEQ.pk)}catch(e){POOLQ=null}}
+  }catch(e){MINEQ_ERR='fail:'+e.message}
+}
+function unlockCard(){const a=getAuth();if(!a||a.ekey||a.gestor)return a&&a.gestor&&!a.ekey?'<div class="card">🔑 Sessão sem chave. Saia e entre novamente com seu usuário e senha.</div>':'';
+  return '<div class="card" style="margin-bottom:12px"><h3>🔑 Liberar meus clientes com CPF e telefone</h3><p class="mut" style="font-size:13px">Digite seu CPF uma vez neste aparelho (ele não é guardado). Isso abre sua lista pessoal com CPF e telefone dos seus clientes.</p><input id="unCpf" inputmode="numeric" placeholder="000.000.000-00" style="min-width:200px"> <button id="unBtn">Liberar</button> <span id="unMsg" class="mut"></span></div>'}
+function bindUnlock(){const b=$('#unBtn');if(!b)return;b.onclick=async()=>{const a=getAuth(),msg=$('#unMsg');const cpf=($('#unCpf').value||'').replace(/\D/g,'');
+  if(cpf.length!==11){msg.textContent='Informe os 11 dígitos.';return}
+  msg.textContent='Verificando…';
+  try{const t=(await sha256h('liga-help-2026'+cpf)).slice(0,6);if(t!==a.t){msg.textContent='Este CPF não é o do usuário logado.';return}
+    await loadEnc();const ent=REFIN_ENC.users[a.t];if(!ent){msg.textContent='Sem lista pessoal para este CPF.';a.ekey='x';return}
+    const key=await pbkHex(cpf,ent.s);await decBlob(ent,key);a.ekey=key;localStorage.setItem('liga_auth',JSON.stringify(a));
+    MINE=null;MINE_ERR='';MINEQ=null;MINEQ_ERR='';POOL=null;POOLQ=null;render()}catch(e){msg.textContent='Não foi possível liberar: '+e.message}}}
+async function decBlob(entry,keyHex){const key=await crypto.subtle.importKey('raw',unhex(keyHex),'AES-GCM',false,['decrypt']);const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64u(entry.iv)},key,b64u(entry.ct));return JSON.parse(new TextDecoder().decode(pt))}
+function loadEnc(){return new Promise((ok,no)=>{if(typeof REFIN_ENC!=='undefined')return ok();const s=document.createElement('script');s.src='refin-enc.js?v='+Date.now();s.onload=()=>ok();s.onerror=()=>no(new Error('Não foi possível carregar a lista protegida'));document.head.appendChild(s)})}
+async function loadMine(){
+  if(MINE||MINE_ERR)return;const a=getAuth();
+  if(!a||!a.ekey){MINE_ERR='nokey';return}
+  try{await loadEnc();const ent=encEntry(REFIN_ENC,a);
+    if(!ent){MINE={nome:a.nome,leads:[],pk:null,noentry:true};return}
+    MINE=await decBlob(ent,a.ekey);
+    if(MINE.pk){try{POOL=await decBlob(REFIN_ENC.pool,MINE.pk)}catch(e){POOL=null}}
+  }catch(e){MINE_ERR='fail:'+e.message}
+}
+function wa(f){const d=String(f||'').replace(/\D/g,'');return d?`<a href="https://wa.me/55${d}" target="_blank" rel="noopener" data-trk="wa">💬 ${esc(d)}</a>`:''}
+function refinCols(nomes,priv){
+  const base=[
+    {k:'id',h:'Adesão / CPF',f:x=>'<b class="cpy" data-v="'+esc(x.ad||x.id)+'" title="Clique para copiar" style="cursor:pointer">'+esc(x.ad||x.id)+' 📋</b>'+(x.ct?'<br><span class="mut">contrato '+esc(x.ct)+'</span>':'')+(priv&&x.cpf?'<br><span class="mut cpy" data-v="'+esc(x.cpf)+'" style="cursor:pointer" title="Copiar CPF">CPF '+esc(x.cpf)+'</span>':''),s:x=>x.ad||x.id},
+    ...(priv?[{k:'fones',h:'Contato',f:x=>(x.fones||[]).map(wa).join('<br>')||'—',csv:x=>(x.fones||[]).join(' / ')}]:[]),
+    {k:'cid',h:'Cidade',f:x=>esc(x.cid)+(x.bairro?'<br><span class="mut">'+esc(x.bairro)+'</span>':'')},
+    {k:'loja',h:'Loja',f:x=>esc(nomes[x.loja]||x.loja),s:x=>x.loja},
+    {k:'cons',h:'Consultor',f:x=>x.cons?esc(short(x.cons))+(x.ex?' <span class="pill bad">sem consultor ativo</span>':''):'<span class="pill bad">sem consultor</span>',s:x=>x.cons||''},
+    {k:'prod',h:'Produto atual',f:x=>esc(x.prod)},
+    {k:'pp',h:'Parc. pagas',f:x=>x.pp+(x.atr?' <span class="pill bad">'+x.atr+' atraso</span>':''),cls:'right'},
+    {k:'pmt',h:'PMT',f:x=>fmt(x.pmt),cls:'right'},
+    {k:'sal',h:'Saldo devedor',f:x=>fmt(x.sal),cls:'right'},
+    {k:'tab',h:'Último contato',f:x=>esc(x.tab||'—')+(x.ua?'<br><span class="mut">'+x.ua.split('-').reverse().join('/')+'</span>':'')},
+    {k:'pr',h:'Ação',f:x=>{const p=refinPrio(x);return `<span class="pill ${p[0]}">${p[1]}</span>`},s:x=>refinPrio(x)[1]}
+  ];
+  if(priv)base.push({k:'lk',h:'Simulação / links',f:x=>((x.link?`<a href="${esc(x.link)}" target="_blank" rel="noopener" data-trk="sim">simulação</a>`:'')+(x.lr?`<br><a href="${esc(x.lr)}" target="_blank" rel="noopener" data-trk="reco_link">reconquista</a>`:''))||'—',csv:x=>((x.link||'')+' '+(x.lr||'')).trim()});
+  base.push({k:'reg',h:'Registro',f:x=>regSelect('R',x.id),s:x=>(REG['R:'+x.id]||{}).s||'',csv:x=>regCsv('R',x.id)});
+  return base;
+}
+function privToRow(p){return {...p}}
+async function renderRefin(m){
+  const a=getAuth();
+  if(REFIN_MODE==='meus'&&!(a&&a.ekey)&&!window.__rfInit){REFIN_MODE='rede'}
+  window.__rfInit=1;
+  const tabs=[['meus','🔒 Meus clientes'],['pool','🧑‍🤝‍🧑 Sem consultor (todos)'],['rede','🌐 Rede toda (resumo)']];
+  m.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+tabs.map(t=>`<button class="rfm ${REFIN_MODE===t[0]?'':'alt'}" data-m="${t[0]}">${t[1]}</button>`).join('')+'</div><div id="unBox"></div><div id="rfBody"></div>';
+  m.querySelectorAll('.rfm').forEach(b=>b.onclick=()=>{REFIN_MODE=b.dataset.m;render()});
+  $('#unBox').innerHTML=unlockCard();bindUnlock();
+  const el=$('#rfBody');
+  if(REFIN_MODE==='rede'){renderRefinRede(el);return}
+  if(!(a&&a.ekey)){el.innerHTML=REFIN_MODE==='pool'?'':'<div class="card">🔑 Digite seu CPF no quadro acima para liberar seus clientes com <b>CPF e telefone</b>.</div>';if(REFIN_MODE==='pool')renderRefinPool(el,true);return}
+  if(!MINE&&!MINE_ERR){el.innerHTML='<div class="card">🔓 Abrindo sua lista protegida…</div>';await loadMine();render();return}
+  if(MINE_ERR){el.innerHTML='<div class="card">⚠️ Não consegui abrir a lista protegida ('+esc(MINE_ERR)+'). Saia e entre novamente com seu CPF.</div>';return}
+  if(REFIN_MODE==='pool'){renderRefinPool(el,false);return}
+  const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
+  const nomes={SLZ:'São Luís (2 lojas)',FORA:'Fora da rede','':'Sem loja definida'};D.LOJAS_SEED.forEach(l=>nomes[l.codigo]=l.nome);
+  let L=(MINE.leads||[]).filter(x=>(!lj||x.loja===lj||(x.loja==='SLZ'&&REFIN_GRUPO.SLZ.includes(lj)))&&(!cs||x.cons===cs)&&(!q||x.id.includes(q)||x.cid.toLowerCase().includes(q)||(x.cons||'').toLowerCase().includes(q)));
+  if(MINE.noentry){el.innerHTML='<div class="card">Seu CPF não tem uma lista pessoal de refin nesta base. Veja a aba <b>Sem consultor (todos)</b> para pegar clientes disponíveis.</div>';return}
+  const tab=t=>L.filter(x=>x.tab===t).length,trab=L.filter(x=>(REG['R:'+x.id]||{}).s).length;
+  el.innerHTML=`<div class="grid k6">${kpi(a.gestor?'Refin (todos os consultores)':'Meus clientes de Refin',L.length,'com contato liberado')}${kpi('PMT somado',fmt0(L.reduce((s,x)=>s+x.pmt,0)),'por mês')}${kpi('Ligar agora',tab('Não Contato'),'nunca contatados')}${kpi('Já trabalhados',trab,pct(L.length?trab/L.length*100:0)+' da lista')}</div>
+   ${atencaoBlock(MINE.leads||[],'R')}
+   <div class="card" style="margin-top:12px"><h3>${a.gestor?'Todos os clientes de refin com consultor':'Meus clientes de refin — prioridade para você'}</h3><p class="mut" style="font-size:13px">Estes são os clientes que você mesmo vendeu: o vínculo é seu. Dados de contato são pessoais — não compartilhe.</p>`+table(refinCols(nomes,true),[...L].sort((x,y)=>y.pmt-x.pmt),'refin_meus')+'</div>';
+}
+function renderRefinPool(el,noKey){
+  const nomes={SLZ:'São Luís (2 lojas)',FORA:'Fora da rede','':'Sem loja definida'};D.LOJAS_SEED.forEach(l=>nomes[l.codigo]=l.nome);
+  const lj=$('#fLoja').value,q=$('#fBusca').value.trim().toLowerCase();
+  const pm={};(POOL||[]).forEach(p=>pm[p.id]=p);
+  let L=(typeof REFIN_SEED!=='undefined'?REFIN_SEED:[]).filter(x=>x.ex&&(!lj||x.loja===lj||(x.loja==='SLZ'&&REFIN_GRUPO.SLZ.includes(lj)))&&(!q||x.id.includes(q)||x.cid.toLowerCase().includes(q))).map(x=>pm[x.id]?{...pm[x.id]}:x);
+  const priv=!!POOL;
+  el.innerHTML+=`<div class="grid k6">${kpi('Clientes sem consultor ativo',L.length,'disponíveis para qualquer consultor')}${kpi('PMT somado',fmt0(L.reduce((s,x)=>s+x.pmt,0)),'por mês')}${kpi('Saldo devedor',fmt0(L.reduce((s,x)=>s+x.sal,0)),'')}</div>
+   <div class="card" style="margin-top:12px"><h3>🧑‍🤝‍🧑 Refin de consultores que saíram — liberado para todos</h3><p class="mut" style="font-size:13px">Clientes de consultores desligados (ou sem consultor). Quem ligar primeiro, <b>registra</b> o contato na coluna Registro para não duplicar.${priv?'':' Para ver os telefones, entre com seu CPF.'}</p>`+table(refinCols(nomes,priv),[...L].sort((x,y)=>y.pmt-x.pmt),'refin_pool')+'</div>';
+}
+function renderRefinRede(m){
+  const L=refinList(),tab=t=>L.filter(x=>x.tab===t).length;
+  const nomes={SLZ:'São Luís (2 lojas)',FORA:'Fora da rede','':'Sem loja definida'};
+  D.LOJAS_SEED.forEach(l=>nomes[l.codigo]=l.nome);
+  m.innerHTML=`<div class="grid k6">${kpi('Oportunidades de Refin',L.length,'clientes aptos a refinanciar')}
+    ${kpi('Com consultor ativo',L.filter(x=>!x.ex).length,'cada um tem seu dono')}
+    ${kpi('Sem consultor ativo',L.filter(x=>x.ex).length,'liberados para todos')}
+    ${kpi('Parcela (PMT) somada',fmt0(L.reduce((s,x)=>s+x.pmt,0)),'por mês')}
+    ${kpi('Saldo devedor somado',fmt0(L.reduce((s,x)=>s+x.sal,0)),'carteira apta')}
+    ${kpi('Ligar agora',tab('Não Contato'),'nunca contatados')}</div>
+    ${atencaoBlock(L,'R')}
+    <div class="grid g2" style="margin-top:12px"><div class="card"><h3>Oportunidades por consultor</h3>${hbars(Object.entries(L.reduce((o,x)=>{const k=x.ex?'(sem consultor ativo)':short(x.cons);o[k]=(o[k]||0)+1;return o},{})).map(([k,v])=>({l:k,v})).sort((a,b)=>b.v-a.v).slice(0,12),v=>v)}</div>
+    <div class="card"><h3>Situação do último contato</h3>${hbars(Object.entries(L.reduce((o,x)=>(o[x.tab||'—']=(o[x.tab||'—']||0)+1,o),{})).map(([k,v])=>({l:k,v})).sort((a,b)=>b.v-a.v),v=>v)}
+    <p class="mut" style="font-size:12px">Esta visão não mostra telefone nem CPF. Cada consultor vê os próprios clientes com contato na aba "Meus clientes" (login com CPF).</p></div></div>
+    <div class="card" style="margin-top:12px"><h3>Lista da rede (clique no cabeçalho para ordenar)</h3>`+table(refinCols(nomes,false),[...L].sort((a,b)=>b.pmt-a.pmt).slice(0,500),'refin')+(L.length>500?'<p class="mut">Mostrando 500 de '+L.length+'. Use os filtros.</p>':'')+'</div>';
+}
+function refinPrio(x){
+  // alta: sem desistência recente e com parcelas pagas; baixa: desistência
+  if(/venda|agenda|aberto/i.test(x.tab)&&!/sem venda/i.test(x.tab))return ['bad','Em andamento'];
+  if(/Não Contato/i.test(x.tab))return ['ok','Ligar agora'];
+  if(/Sem Oferta/i.test(x.tab))return ['wn','Reoferecer'];
+  if(/Desist/i.test(x.tab))return ['nt','Retomar (desistiu)'];
+  return ['wn','Avaliar'];
+}
+function _oldRefinUnused(m){
+  const L=refinList(),tab=t=>L.filter(x=>x.tab===t).length;
+  const nomes={SLZ:'São Luís (2 lojas)',FORA:'Fora da rede','':'Sem loja definida'};
+  D.LOJAS_SEED.forEach(l=>nomes[l.codigo]=l.nome);
+  m.innerHTML=`<div class="grid k6">${kpi('Oportunidades de Refin',L.length,'clientes aptos a refinanciar')}
+    ${kpi('Parcela (PMT) somada',fmt0(L.reduce((s,x)=>s+x.pmt,0)),'por mês')}
+    ${kpi('Saldo devedor somado',fmt0(L.reduce((s,x)=>s+x.sal,0)),'carteira apta')}
+    ${kpi('Ligar agora',tab('Não Contato'),'nunca contatados')}
+    ${kpi('Retomar',tab('Desistência')+tab('Sem Oferta'),'desistência / sem oferta')}
+    ${kpi('Parcelas pagas ≥ 12',L.filter(x=>x.pp>=12).length,'maior chance de aprovação')}</div>
+    <div class="grid g2" style="margin-top:12px"><div class="card"><h3>Oportunidades por loja/praça</h3>${hbars(Object.entries(L.reduce((o,x)=>(o[x.loja]=(o[x.loja]||0)+1,o),{})).map(([k,v])=>({l:nomes[k]||k,v})).sort((a,b)=>b.v-a.v),v=>v)}</div>
+    <div class="card"><h3>Situação do último contato</h3>${hbars(Object.entries(L.reduce((o,x)=>(o[x.tab||'—']=(o[x.tab||'—']||0)+1,o),{})).map(([k,v])=>({l:k,v})).sort((a,b)=>b.v-a.v),v=>v)}
+    <p class="mut" style="font-size:12px">A base não traz a loja do cliente: a loja é estimada pela cidade. Telefones e CPF ficam só na planilha dos supervisores.</p></div></div>
+    <div class="card" style="margin-top:12px"><h3>Lista de oportunidades (clique no cabeçalho para ordenar)</h3>`+table([
+      {k:'id',h:'Adesão',f:x=>'<b>'+esc(x.ad||x.id)+'</b>'},
+      {k:'cid',h:'Cidade',f:x=>esc(x.cid)},
+      {k:'loja',h:'Loja',f:x=>esc(nomes[x.loja]||x.loja),s:x=>x.loja},
+      {k:'prod',h:'Produto atual',f:x=>esc(x.prod)},
+      {k:'pp',h:'Parc. pagas',f:x=>x.pp+(x.atr?' <span class="pill bad">'+x.atr+' atraso</span>':''),cls:'right'},
+      {k:'pmt',h:'PMT',f:x=>fmt(x.pmt),cls:'right'},
+      {k:'sal',h:'Saldo devedor',f:x=>fmt(x.sal),cls:'right'},
+      {k:'tab',h:'Último contato',f:x=>esc(x.tab||'—')+(x.ua?'<br><span class="mut">'+x.ua.split('-').reverse().join('/')+'</span>':'')},
+      {k:'pr',h:'Ação',f:x=>{const p=refinPrio(x);return `<span class="pill ${p[0]}">${p[1]}</span>`},s:x=>refinPrio(x)[1]},
+      {k:'reg',h:'Registro',f:x=>regSelect('R',x.id),s:x=>(REG['R:'+x.id]||{}).s||'',csv:x=>regCsv('R',x.id)}
+    ],[...L].sort((a,b)=>b.pmt-a.pmt).slice(0,500),'refin')+(L.length>500?'<p class="mut">Mostrando 500 de '+L.length+'. Use os filtros.</p>':'')+'</div>';
+}
+/* ===== Registro de contato (aproveitamento das listas) ===== */
+const SYNC_URL='';/* opcional: URL do Apps Script (ver apps-script-registro.gs) para compartilhar o registro entre aparelhos */
+const ST={'':['— não trabalhado —','nt'],contatado:['📞 Contatado','wn'],interessado:['🔥 Interessado','ok'],vendido:['💰 Vendido','ok'],sem_interesse:['🚫 Sem interesse','bad']};
+let REG={};try{REG=JSON.parse(localStorage.getItem('liga_reg')||'{}')}catch(e){}
+function saveReg(){try{localStorage.setItem('liga_reg',JSON.stringify(REG))}catch(e){}}
+function who(){return ($('#fUser').value||'').trim()||'(sem nome)'}
+function regSelect(list,id){const k=list+':'+id,v=(REG[k]||{}).s||'';return `<select class="regsel" data-k="${esc(k)}" style="min-width:130px;padding:4px">${Object.entries(ST).map(([a,b])=>`<option value="${a}"${a===v?' selected':''}>${b[0]}</option>`).join('')}</select>`}
+function regCsv(list,id){return ST[(REG[list+':'+id]||{}).s||''][0]}
+function setReg(k,s,remote){const cur=REG[k]||{};REG[k]={s,u:remote?remote.u:who(),t:remote?remote.t:Date.now()};saveReg();
+  if(!remote&&SYNC_URL){try{fetch(SYNC_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({key:k,s:s,u:REG[k].u,t:REG[k].t})})}catch(e){}}}
+async function syncPull(){if(!SYNC_URL)return;try{const a=await (await fetch(SYNC_URL)).json();let ch=0;for(const r of a){if(!REG[r.key]||REG[r.key].t<r.t){REG[r.key]={s:r.s,u:r.u,t:r.t};ch++}}if(ch){saveReg();if(TAB==='aprov')render()}}catch(e){}}
+document.addEventListener('change',e=>{const d=e.target.closest&&e.target.closest('.dinp');if(d){setReg(d.dataset.k,d.value);render();return}
+  const s=e.target.closest&&e.target.closest('.regsel');if(s){setReg(s.dataset.k,s.value);s.style.outline=s.value?'2px solid #22c55e':'none'}});
+function aprovData(){
+  const lj=$('#fLoja').value;
+  const lists=[
+    {n:'💰 Refin',p:'R',L:refinList(),loja:x=>x.loja},
+    {n:'🎉 Quitados',p:'Q',L:quitList(),loja:x=>x.loja},
+    {n:'🔁 Reconquista',p:'C',L:D.REC.filter(x=>!lj||x.codigo===lj),loja:x=>x.codigo,idf:x=>x.id}
+  ];
+  return lists.map(l=>{const c={'':0,contatado:0,interessado:0,vendido:0,sem_interesse:0};
+    l.L.forEach(x=>{const s=(REG[l.p+':'+(l.idf?l.idf(x):x.id)]||{}).s||'';c[s]++});
+    const tot=l.L.length,trab=tot-c[''];
+    return {...l,tot,c,trab,pt:tot?trab/tot*100:0,conv:trab?c.vendido/trab*100:0};});
+}
+function usoLinks(){
+  const u={};Object.entries(REG).forEach(([k,r])=>{if(!k.startsWith('K:'))return;const n=r.u||'(sem nome)';const o=u[n]=u[n]||{n:0,t:0,k:{}};o.n++;o.t=Math.max(o.t,r.t||0);const kind=k.split(':')[1];o.k[kind]=(o.k[kind]||0)+1});
+  const L=Object.entries(u).sort((a,b)=>b[1].n-a[1].n);
+  if(!L.length)return '<span class="mut">Nenhum clique registrado ainda. Cliques em WhatsApp, simulação e links de reconquista são contados com o nome de quem está logado.</span><p class="mut" style="font-size:12px">'+(SYNC_URL?'✅ Sincronizado com a planilha compartilhada.':'⚠️ Sem planilha compartilhada, cada aparelho só enxerga os próprios cliques.')+'</p>';
+  const nm={wa:'WhatsApp',sim:'simulação',reco_link:'link reconquista',reco_copy:'copiou link reconquista',reco_wa:'enviou link reconquista'};
+  return hbars(L.map(([n,o])=>({l:n,v:o.n})),v=>v)+'<p class="mut" style="font-size:12px">'+L.slice(0,8).map(([n,o])=>esc(n)+': '+Object.entries(o.k).map(([k,v])=>v+' '+(nm[k]||k)).join(', ')+' (último: '+new Date(o.t).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+')').join('<br>')+'</p><p class="mut" style="font-size:12px">'+(SYNC_URL?'✅ Sincronizado com a planilha compartilhada.':'⚠️ Sem planilha compartilhada, cada aparelho só enxerga os próprios cliques.')+'</p>';
+}
+function renderAprov(m){
+  const A=aprovData(),all=A.reduce((s,a)=>s+a.tot,0),trab=A.reduce((s,a)=>s+a.trab,0),ven=A.reduce((s,a)=>s+a.c.vendido,0),int=A.reduce((s,a)=>s+a.c.interessado,0);
+  const users={};Object.entries(REG).forEach(([k,r])=>{if(r.s&&!/^[KD]:/.test(k)){const u=r.u||'(sem nome)';users[u]=users[u]||{n:0,v:0};users[u].n++;if(r.s==='vendido')users[u].v++}});
+  const ur=Object.entries(users).sort((a,b)=>b[1].n-a[1].n);
+  m.innerHTML=`<div class="grid k6">${kpi('Leads nas listas',all,'Refin + Quitados + Reconquista')}
+    ${kpi('Trabalhados',trab,pct(all?trab/all*100:0)+' do total')}
+    ${kpi('Interessados',int,'aguardando fechamento')}
+    ${kpi('Vendidos',ven,pct(trab?ven/trab*100:0)+' dos trabalhados')}
+    ${kpi('Sem registro',all-trab,'ainda não abordados')}</div>
+    <div class="card" style="margin-top:12px"><h3>Funil por lista</h3>`+table([
+      {k:'n',h:'Lista',f:a=>'<b>'+a.n+'</b>'},
+      {k:'tot',h:'Total',cls:'right'},
+      {k:'pt',h:'% trabalhado',f:a=>pct(a.pt)+bar(a.pt),s:a=>a.pt,csv:a=>a.pt.toFixed(1)},
+      {k:'ct',h:'Contatado',f:a=>a.c.contatado,s:a=>a.c.contatado},
+      {k:'ci',h:'Interessado',f:a=>a.c.interessado,s:a=>a.c.interessado},
+      {k:'cv',h:'Vendido',f:a=>'<b>'+a.c.vendido+'</b>',s:a=>a.c.vendido},
+      {k:'cs',h:'Sem interesse',f:a=>a.c.sem_interesse,s:a=>a.c.sem_interesse},
+      {k:'conv',h:'Conversão',f:a=>pct(a.conv),s:a=>a.conv,csv:a=>a.conv.toFixed(1)}
+    ],A,'aprov')+`</div>
+    <div class="grid g2" style="margin-top:12px"><div class="card"><h3>Quem está registrando</h3>${ur.length?hbars(ur.map(([u,v])=>({l:u,v:v.n})),v=>v):'<span class="mut">Nenhum registro ainda. Use a coluna "Registro" nas abas Refin, Quitados e Reconquista.</span>'}</div>
+    <div class="card"><h3>🖱️ Quem está clicando nos links</h3>${usoLinks()}</div>
+    <div class="card"><h3>Registro de contatos</h3>
+      <p class="mut" style="font-size:13px">${SYNC_URL?'✅ Sincronizado com a planilha compartilhada.':'⚠️ Neste aparelho o registro fica salvo só aqui. Para somar o time todo: exporte e importe, ou ative a planilha compartilhada (apps-script-registro.gs).'}</p>
+      <button id="btnExp">⬇ Exportar registro</button> <button id="btnImp" style="background:#8b5cf6">⬆ Importar registro</button> <button id="btnWa" style="background:#22c55e">📋 Copiar resumo p/ WhatsApp</button>
+      <input type="file" id="fImp" accept=".json" style="display:none"></div></div>`;
+  $('#btnExp').onclick=()=>{const b=new Blob([JSON.stringify(Object.entries(REG).map(([key,r])=>({key,...r})))],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='registro-liga-'+(who()||'time')+'.json';a.click()};
+  $('#btnImp').onclick=()=>$('#fImp').click();
+  $('#fImp').onchange=async e=>{try{const arr=JSON.parse(await e.target.files[0].text());let n=0;for(const r of arr){if(!REG[r.key]||REG[r.key].t<r.t){REG[r.key]={s:r.s,u:r.u,t:r.t};n++}}saveReg();alert(n+' registros importados.');render()}catch(x){alert('Arquivo inválido')}};
+  $('#btnWa').onclick=()=>{const t='📊 *Aproveitamento das listas* ('+new Date().toLocaleDateString('pt-BR')+')\n'+A.map(a=>a.n+': '+a.trab+'/'+a.tot+' trabalhados ('+pct(a.pt)+') · '+a.c.interessado+' interessados · '+a.c.vendido+' vendidos').join('\n');navigator.clipboard.writeText(t).then(()=>alert('Resumo copiado!'))};
+}
+function quitList(){
+  const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
+  const all=(typeof QUIT_SEED!=='undefined')?QUIT_SEED:[];
+  return all.filter(x=>(!lj||x.loja===lj)&&(!cs||x.cons===cs)&&(!q||x.id.includes(q)||x.cid.toLowerCase().includes(q)||x.cons.toLowerCase().includes(q)||x.ades.some(a=>a.includes(q))));
+}
+function renderQuitRede(m){
+  const L=quitList(),nomes={};D.LOJAS_SEED.forEach(l=>nomes[l.codigo]=l.nome);
+  const porC=Object.entries(L.reduce((o,x)=>{const k=x.cons||'(sem consultor)';o[k]=(o[k]||0)+1;return o},{})).map(([k,v])=>({l:short(k),v})).sort((a,b)=>b.v-a.v).slice(0,10);
+  const porL=Object.entries(L.reduce((o,x)=>(o[x.loja]=(o[x.loja]||0)+1,o),{})).map(([k,v])=>({l:nomes[k]||k,v})).sort((a,b)=>b.v-a.v);
+  m.innerHTML=`<div class="grid k6">${kpi('Clientes com empréstimo quitado',L.length,'oportunidade de nova contratação')}
+    ${kpi('Contratos quitados',L.reduce((s,x)=>s+x.n,0),'')}
+    ${kpi('Margem (PMT) liberada',fmt0(L.reduce((s,x)=>s+x.pmt,0)),'parcelas que deixaram de ser pagas')}
+    ${kpi('Valor já contratado',fmt0(L.reduce((s,x)=>s+x.lib,0)),'histórico desses clientes')}
+    ${kpi('2+ contratos quitados',L.filter(x=>x.n>=2).length,'clientes fiéis — priorize')}
+    ${kpi('Com representante legal',L.filter(x=>x.rl).length,'exige atenção na abordagem')}</div>
+    ${atencaoBlock(L,'Q')}
+    <div class="grid g2" style="margin-top:12px"><div class="card"><h3>Por loja</h3>${hbars(porL,v=>v)}</div>
+    <div class="card"><h3>Top consultores (quem vendeu o contrato)</h3>${hbars(porC,v=>v)}
+    <p class="mut" style="font-size:12px">Dica: o consultor que vendeu tem o vínculo — ele deve ligar primeiro. Para ver CPF e telefone dos seus clientes use a aba "Meus clientes" (login com CPF).</p></div></div>
+    <div class="card" style="margin-top:12px"><h3>Clientes que terminaram de pagar (ordenados pela margem liberada)</h3>`+table([
+      {k:'id',h:'Adesão',f:x=>'<b>'+esc(x.ades[0]||x.id)+'</b>'+(x.ades.length>1?'<br><span class="mut">+'+(x.ades.length-1)+' contrato(s)</span>':''),s:x=>x.ades[0]||x.id},
+      {k:'cid',h:'Cidade',f:x=>esc(x.cid)},
+      {k:'loja',h:'Loja',f:x=>esc(nomes[x.loja]||x.loja),s:x=>x.loja},
+      {k:'cons',h:'Consultor',f:x=>esc(x.cons?short(x.cons):'—')},
+      {k:'n',h:'Quitados',f:x=>x.n>=2?'<span class="pill ok">'+x.n+' contratos</span>':'1',cls:'right'},
+      {k:'pmt',h:'PMT liberado',f:x=>fmt(x.pmt),cls:'right'},
+      {k:'lib',h:'Já contratou',f:x=>fmt(x.lib),cls:'right'},
+      {k:'ult',h:'Última produção',f:x=>x.ult?x.ult.split('-').reverse().join('/'):'—',s:x=>x.ult},
+      {k:'prod',h:'Produto',f:x=>esc(x.prod||'—')+(x.rl?' <span class="pill wn">rep. legal</span>':'')},
+      {k:'ac',h:'Ação',f:x=>'<div class="act">'+(x.n>=2?'⭐ Cliente fiel: ofereça CNC/novo crédito com a margem de '+fmt0(x.pmt)+'.':'Ofereça novo crédito (margem liberada de '+fmt0(x.pmt)+').')+(x.pp>=24?' Contrato longo, bom histórico.':'')+'</div>',s:x=>x.n},
+      {k:'reg',h:'Registro',f:x=>regSelect('Q',x.id),s:x=>(REG['Q:'+x.id]||{}).s||'',csv:x=>regCsv('Q',x.id)}
+    ],[...L].sort((a,b)=>b.pmt-a.pmt).slice(0,500),'quit')+(L.length>500?'<p class="mut">Mostrando 500 de '+L.length+'. Use os filtros.</p>':'')+'</div>';
+}
+/* ===== helpers de mês, atenção à carteira e metas ===== */
+const inMonth=d=>!!d&&String(d).startsWith(S.ym);
+const isVenda=x=>/com venda/i.test(x.tab||'')&&!/sem venda/i.test(x.tab||'');
+const nivel=v=>v>=80?['ok','Ótimo']:v>50?['wn','Regular']:['bad','Crítico'];
+function atencaoCalc(list,kind){
+  const by={},pc=Math.max(1,+($('#fMetaRefin')&&$('#fMetaRefin').value)||10);
+  list.filter(x=>x.cons&&!x.ex).forEach(x=>{const o=by[x.cons]=by[x.cons]||{cons:x.cons,loja:x.loja,tot:0,trab:0,vend:0,pmtV:0,pmt:0};
+    o.tot++;o.pmt+=x.pmt||0;const reg=(REG[kind+':'+x.id]||{}).s||'';
+    if(inMonth(x.ua)||reg)o.trab++;
+    if((kind==='R'&&isVenda(x)&&inMonth(x.ua))||reg==='vendido'){o.vend++;o.pmtV+=x.pmt||0}});
+  return Object.values(by).map(o=>{o.pct=o.tot?o.trab/o.tot*100:0;o.st=nivel(o.pct);o.meta=Math.max(1,Math.ceil(o.tot*pc/100));o.pm=o.vend/o.meta*100;o.falta=o.tot-o.trab;
+    const need=Math.max(Math.ceil(o.tot*0.8)-o.trab,0),dia=Math.ceil(need/Math.max(S.restam,1));
+    o.plano=(need>0?'Faltam '+need+' clientes trabalhados para chegar a 80% (Ótimo): ~'+dia+' contato(s)/dia. ':'✅ Carteira bem trabalhada: mantenha. ')+(o.vend<o.meta?'Meta do mês: faltam '+(o.meta-o.vend)+' '+(kind==='R'?'refin(s)':'venda(s)')+'.':'🏅 Meta do mês batida.');return o}).sort((a,b)=>a.pct-b.pct);
+}
+function refinDiario(list){
+  const c={};list.filter(x=>isVenda(x)&&inMonth(x.ua)).forEach(x=>{c[x.ua]=(c[x.ua]||0)+1});
+  const days=[];for(let d=1;d<=Math.min(S.diaRef+1,S.diasMes);d++){const k=S.ym+'-'+String(d).padStart(2,'0');days.push([d,c[k]||0])}
+  const mx=Math.max(1,...days.map(x=>x[1])),tot=days.reduce((s,x)=>s+x[1],0);
+  return '<h3>📅 Refins com venda ao longo do mês ('+tot+')</h3><div style="display:flex;align-items:flex-end;gap:3px;height:96px">'+days.map(([d,v])=>`<div title="dia ${d}: ${v}" style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center"><span style="font-size:10px">${v||''}</span><div style="width:100%;background:linear-gradient(var(--or),var(--pu));height:${v/mx*66}px;min-height:${v?3:0}px;border-radius:3px"></div><span class="mut" style="font-size:9px">${d}</span></div>`).join('')+'</div><p class="mut" style="font-size:11px">Conta contatos tabulados no DNA como "Contato Efetivo com Venda" no mês.</p>';
+}
+function atencaoBlock(list,kind){
+  const A=atencaoCalc(list,kind),nome=kind==='R'?'Refin':'Quitados',pc=Math.max(1,+($('#fMetaRefin')&&$('#fMetaRefin').value)||10);
+  const tot=A.reduce((s,a)=>s+a.tot,0),trab=A.reduce((s,a)=>s+a.trab,0),vend=A.reduce((s,a)=>s+a.vend,0),meta=A.reduce((s,a)=>s+a.meta,0),p=tot?trab/tot*100:0,st=nivel(p);
+  if(!A.length)return '';
+  return `<div class="card" style="margin-top:12px"><h3>🩺 Atenção à carteira de ${nome} — por consultor</h3>
+   <div class="grid k6" style="margin-bottom:10px">${kpi('Carteira (clientes)',tot,'com consultor ativo')}${kpi('Trabalhados no mês',trab,pct(p)+' · '+st[1])}${kpi('Vendidos no mês',vend,'meta '+meta+' ('+pc+'% da carteira)')}${kpi('Falta trabalhar',tot-trab,'Ótimo ≥80% · Regular >50% · Crítico ≤50%')}</div>`+
+   table([
+    {k:'cons',h:'Consultor',f:a=>'<b>'+esc(short(a.cons))+'</b>',s:a=>a.cons},
+    {k:'tot',h:'Carteira',cls:'right'},
+    {k:'trab',h:'Trabalhados',f:a=>a.trab,cls:'right'},
+    {k:'falta',h:'Falta trabalhar',f:a=>a.falta,cls:'right'},
+    {k:'pct',h:'% atenção',f:a=>`<span class="pill ${a.st[0]}">${a.st[1]} · ${pct(a.pct)}</span>${bar(a.pct)}`,s:a=>a.pct,csv:a=>a.pct.toFixed(1)+'% '+a.st[1]},
+    {k:'vend',h:'Vendidos',f:a=>'<b>'+a.vend+'</b>',cls:'right'},
+    {k:'meta',h:'Meta do mês',f:a=>a.meta+'<br>'+bar(a.pm)+'<span class="mut">'+pct(a.pm)+'</span>',cls:'right',s:a=>a.pm,csv:a=>a.vend+'/'+a.meta},
+    {k:'pmtV',h:'PMT vendido',f:a=>fmt0(a.pmtV),cls:'right'},
+    {k:'plano',h:'Plano de ação',f:a=>'<div class="act">'+esc(a.plano)+'</div>'}
+   ],A,'atenc_'+kind)+(kind==='R'?'<div style="margin-top:12px">'+refinDiario(list)+'</div>':'')+'<p class="mut" style="font-size:11px">"Trabalhado" = cliente com contato registrado no DNA neste mês ou marcado no painel. Meta do mês = % da carteira (campo "Meta refin/mês" no topo).</p></div>';
+}
+function dcount(nome,f,val){const v=(REG['D:'+nome+':'+f]||{}).s;if(v!==undefined&&v!=='')return +v;return val>0?null:0}
+function defl(r){
+  const arr=S.cons[r.nome],last=arr[arr.length-1].valores;
+  const it=[
+    {k:'seg',lab:'Seguros independentes',n:r.sq,min:3,pen:20},
+    {k:'cb',lab:'Consignado BMG (benefícios distintos)',n:dcount(r.nome,'cb',(last.EmprestimoConsignado||{}).atual||0),min:3,pen:20},
+    {k:'cp',lab:'Consignado privado (CPFs distintos)',n:dcount(r.nome,'cp',(last.ConsigPrivado||{}).atual||0),min:2,pen:10},
+    {k:'sc',lab:'Super Conta (concluídos e pagos)',n:dcount(r.nome,'sc',1),min:3,pen:100}
+  ];
+  it.forEach(x=>{x.st=x.n===null?'?':x.n>=x.min?'ok':'bad';x.falta=x.n===null?null:Math.max(x.min-x.n,0)});
+  const bad=it.filter(x=>x.st==='bad'),inel=bad.some(x=>x.k==='sc'),pen=inel?100:bad.reduce((s,x)=>s+x.pen,0);
+  const plano=bad.length?bad.map(x=>'Faltam '+x.falta+' em '+x.lab.toLowerCase()).join('; ')+'.':(it.some(x=>x.st==='?')?'Informe a quantidade dos itens pendentes.':'✅ Sem deflator.');
+  return {it,bad,pen:Math.min(pen,100),inel,plano,alerta:!!r.f&&bad.length>0,liq:r.premioCnc*(1-Math.min(pen,100)/100)};
+}
+
+function deflCard(R){
+  if(typeof DEFLATORES==='undefined')return deflCardOld(R);
+  const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
+  const nm=c=>S.lojaNome[c]||c;
+  const mk=(n,min,d)=>{const p=Math.round((1-d)*100);return `<b>${n}</b> / ${min} <span class="pill ${d<1?'bad':'ok'}">${d<1?'−'+p+'%':'✅'}</span>${n<min?'<br><span class="mut" style="font-size:11px">faltam '+(min-n)+'</span>':''}`};
+  let L=DEFLATORES.filter(d=>d.sit!=='CANCELADO'&&(!lj||d.loja===lj)&&(!cs||d.n.toUpperCase()===cs)&&(!q||d.n.toLowerCase().includes(q))).map(d=>{
+    const fx=!/FAIXA 0/i.test(d.faixa)&&d.pcnc>0;
+    const mult=d.dSeg*d.dSc*d.dCb*d.dCp*d.dRec*d.dEmi;
+    const perda=fx?d.pcnc*(1-mult):0;
+    const plano=[];
+    if(d.si<3)plano.push('faltam '+(3-d.si)+' seguro(s) independente(s)');
+    if(d.cb<3)plano.push('faltam '+(3-d.cb)+' contrato(s) de Consignado BMG (benefícios distintos)');
+    if(d.cp<2)plano.push('faltam '+(2-d.cp)+' contrato(s) de Consignado privado (CPFs distintos)');
+    if(d.sc<3)plano.push('faltam '+(3-d.sc)+' Super Conta concluído(s) e pago(s)');
+    if(d.recl>0)plano.push(d.recl+' reclamação(ões)/cancelamento(s): reverter quando possível');
+    if(d.fim>0)plano.push('fim de relacionamento: −'+d.fim+' pts (use a Reconquista para evitar)');
+    return {d,fx,mult,perda,alerta:fx&&mult<1,plano:plano.length?'Para zerar deflatores: '+plano.join('; ')+'.':'✅ Sem deflator.'};
+  }).sort((a,b)=>(b.alerta-a.alerta)||(a.mult-b.mult)||b.d.pprod-a.d.pprod);
+  const al=L.filter(o=>o.alerta),dt=DEFLATORES_ATUALIZADO.split('-').reverse().join('/');
+  return '<div class="card"><h3>🚨 Deflatores da LIGA — realizado × falta × plano de ação</h3>'+
+   `<p class="mut" style="font-size:12px">Base LIGA de ${dt}. Regras: Seguros independentes 3+ · Consignado BMG 3+ contratos · Consignado privado 2+ · Super Conta 3 concluídos e pagos (cada item abaixo do mínimo reduz o prêmio). ${al.length?'<b style="color:#fca5a5">🚨 '+al.length+' consultor(es) já em faixa de prêmio perdendo prêmio por deflator.</b>':'Nenhum consultor em faixa perdendo prêmio por deflator.'}</p>`+
+   table([
+    {k:'n',h:'Consultor',f:o=>(o.alerta?'🚨 ':'')+'<b>'+esc(short(o.d.n))+'</b><br><span class="mut">'+esc(nm(o.d.loja))+'</span> <span class="pill '+(o.d.sit==='ATIVO'?'ok':'wn')+'">'+esc(tcase(o.d.sit))+'</span>',s:o=>o.d.n},
+    {k:'fx',h:'Faixa CNC (proj.)',f:o=>o.fx?`<span class="pill ok">${esc(o.d.faixa.replace('FAIXA ','Faixa '))}</span><br>${fmt(o.d.pcnc)}`:'<span class="pill nt">sem faixa</span>',s:o=>o.d.pcnc},
+    {k:'si',h:'Seguros indep. (3+)',f:o=>mk(o.d.si,3,o.d.dSeg),s:o=>o.d.si},
+    {k:'cb',h:'Consig. BMG (3+)',f:o=>mk(o.d.cb,3,o.d.dCb),s:o=>o.d.cb},
+    {k:'cp',h:'Consig. privado (2+)',f:o=>mk(o.d.cp,2,o.d.dCp),s:o=>o.d.cp},
+    {k:'sc',h:'Super Conta (3+)',f:o=>mk(o.d.sc,3,o.d.dSc),s:o=>o.d.sc},
+    {k:'rc',h:'Reclam. / Fim relac.',f:o=>(o.d.recl?'<span class="pill bad">'+o.d.recl+' reclam.</span> ':'0 reclam. ')+'<br>'+(o.d.fim?'<span class="pill bad">−'+o.d.fim+' pts fim relac.</span>':'<span class="mut">sem fim de relac.</span>'),s:o=>o.d.fim},
+    {k:'pp',h:'Prêmio produção → final',f:o=>fmt(o.d.pprod+o.d.pbonus)+' → <b>'+fmt(o.d.pfinal)+'</b>',cls:'right',s:o=>o.d.pfinal},
+    {k:'imp',h:'Alerta',f:o=>o.alerta?`<span class="pill bad">🚨 perde ${fmt(o.perda)}</span><br><span class="mut" style="font-size:11px">no prêmio de CNC por deflator</span>`:(o.mult<1?'<span class="pill wn">deflator ativo (sem faixa ainda)</span>':'<span class="pill ok">sem deflator</span>'),s:o=>o.perda,csv:o=>o.perda},
+    {k:'pl',h:'Plano de ação',f:o=>'<div class="act">'+esc(o.plano)+'</div>',csv:o=>o.plano}
+   ],L,'defl2')+'</div>';
+}
+
+function deflCardOld(R){
+  const L=R.map(r=>({r,d:defl(r)})).sort((a,b)=>(b.d.alerta-a.d.alerta)||(b.d.pen-a.d.pen)||(b.r.cnc-a.r.cnc));
+  const al=L.filter(x=>x.d.alerta);
+  const cell=(r,x)=>x.n===null?`<input class="dinp" data-k="D:${esc(r.nome)}:${x.k}" type="number" min="0" placeholder="qtd?" style="width:62px;min-width:62px;padding:3px"><br><span class="mut" style="font-size:10px">mín ${x.min} · informar</span>`:`<b>${x.n}</b> / ${x.min} <span class="pill ${x.st==='ok'?'ok':'bad'}">${x.st==='ok'?'✅':'−'+(x.k==='sc'?'elegib.':x.pen+'%')}</span>${x.st==='bad'?'<br><span class="mut" style="font-size:11px">faltam '+x.falta+'</span>':''}${x.k!=='seg'?`<br><input class="dinp" data-k="D:${esc(r.nome)}:${x.k}" type="number" min="0" value="${x.n}" title="Ajustar qtd" style="width:52px;min-width:52px;padding:2px;font-size:11px">`:''}`;
+  return '<div class="card"><h3>🚨 Deflatores da LIGA — realizado × falta × plano de ação</h3>'+
+   `<p class="mut" style="font-size:12px">Regras da cartilha: Seguros independentes 3+ (2 = −20%) · Consignado BMG 3+ contratos (1–2 = −20%) · Consignado privado 2+ (1 = −10%) · Super Conta 3 concluídos e pagos (elegibilidade). ${al.length?'<b style="color:#fca5a5">🚨 '+al.length+' consultor(es) já em faixa de prêmio perdendo prêmio por deflator.</b>':'Nenhum consultor em faixa perdendo prêmio por deflator conhecido.'} Quantidades de contratos que a base não traz podem ser informadas na própria linha.</p>`+
+   table([
+    {k:'nome',h:'Consultor',f:o=>(o.d.alerta?'🚨 ':'')+'<b>'+esc(short(o.r.nome))+'</b><br><span class="mut">'+esc(o.r.lojaNome)+'</span>',s:o=>o.r.nome},
+    {k:'pf',h:'Faixa / prêmio CNC',f:o=>o.r.f?`<span class="pill ok">${o.r.f.p.toFixed(2)}%</span> ${fmt(o.r.premioCnc)}`:'<span class="pill nt">sem faixa</span>',s:o=>o.r.premioCnc},
+    {k:'seg',h:'Seguros indep. (3+)',f:o=>cell(o.r,o.d.it[0]),s:o=>o.d.it[0].n},
+    {k:'cb',h:'Consig. BMG (3+)',f:o=>cell(o.r,o.d.it[1]),s:o=>o.d.it[1].n??-1},
+    {k:'cp',h:'Consig. privado (2+)',f:o=>cell(o.r,o.d.it[2]),s:o=>o.d.it[2].n??-1},
+    {k:'sc',h:'Super Conta (3+)',f:o=>cell(o.r,o.d.it[3]),s:o=>o.d.it[3].n??-1},
+    {k:'imp',h:'Impacto no prêmio',f:o=>o.d.alerta?`<span class="pill bad">🚨 −${o.d.pen}%</span><br>${o.d.inel?'<span class="mut">perde elegibilidade</span>':fmt(o.r.premioCnc)+' → <b>'+fmt(o.d.liq)+'</b>'}`:(o.d.bad.length?'<span class="pill wn">−'+o.d.pen+'% (sem faixa ainda)</span>':'<span class="pill ok">sem deflator</span>'),s:o=>o.d.pen,csv:o=>o.d.pen+'%'},
+    {k:'pl',h:'Plano de ação',f:o=>'<div class="act">'+esc(o.d.plano)+'</div>',csv:o=>o.d.plano}
+   ],L,'defl')+'</div>';
+}
+function trackClick(kind,id){const k='K:'+kind+':'+id+':'+Date.now();REG[k]={s:'clique',u:who(),t:Date.now()};saveReg();
+  if(SYNC_URL){try{fetch(SYNC_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:JSON.stringify({key:k,s:'clique',u:REG[k].u,t:REG[k].t})})}catch(e){}}}
+const waLink=l=>'https://wa.me/?text='+encodeURIComponent('Olá! Aqui é da Help!. Segue o seu link para regularizar o contrato com segurança: '+l);
+/* ----- Quitados: modos ----- */
+function quitCols(nomes,priv){
+  return [
+    {k:'id',h:'Adesão / CPF',f:x=>'<b class="cpy" data-v="'+esc((x.ades||[])[0]||x.id)+'" title="Clique para copiar" style="cursor:pointer">'+esc((x.ades||[])[0]||x.id)+' 📋</b>'+(priv&&x.cpf?'<br><span class="mut cpy" data-v="'+esc(x.cpf)+'" style="cursor:pointer" title="Copiar CPF">CPF '+esc(x.cpf)+'</span>':'')+((x.ades||[]).length>1?'<br><span class="mut">+'+(x.ades.length-1)+' contrato(s)</span>':''),s:x=>x.id},
+    ...(priv?[{k:'fones',h:'Contato',f:x=>(x.fones||[]).map(wa).join('<br>')||'—',csv:x=>(x.fones||[]).join(' / ')}]:[]),
+    {k:'cid',h:'Cidade',f:x=>esc(x.cid)+(x.bairro?'<br><span class="mut">'+esc(x.bairro)+'</span>':'')},
+    {k:'loja',h:'Loja',f:x=>esc(nomes[x.loja]||x.loja),s:x=>x.loja},
+    {k:'cons',h:'Consultor',f:x=>x.cons?esc(short(x.cons))+(x.ex?' <span class="pill bad">sem consultor ativo</span>':''):'<span class="pill bad">sem consultor</span>',s:x=>x.cons||''},
+    {k:'n',h:'Quitados',f:x=>x.n>=2?'<span class="pill ok">'+x.n+' contratos</span>':'1',cls:'right'},
+    {k:'pmt',h:'PMT liberado',f:x=>fmt(x.pmt),cls:'right'},
+    {k:'lib',h:'Já contratou',f:x=>fmt(x.lib),cls:'right'},
+    {k:'ult',h:'Última produção',f:x=>x.ult?x.ult.split('-').reverse().join('/'):'—',s:x=>x.ult},
+    {k:'tab',h:'Último contato',f:x=>esc(x.tab||'—')+(x.ua?'<br><span class="mut">'+x.ua.split('-').reverse().join('/')+'</span>':'')},
+    {k:'ac',h:'Ação',f:x=>'<div class="act">'+(x.n>=2?'⭐ Cliente fiel: ofereça CNC/novo crédito com a margem de '+fmt0(x.pmt)+'.':'Ofereça novo crédito (margem liberada de '+fmt0(x.pmt)+').')+'</div>',s:x=>x.n},
+    {k:'reg',h:'Registro',f:x=>regSelect('Q',x.id),s:x=>(REG['Q:'+x.id]||{}).s||'',csv:x=>regCsv('Q',x.id)}
+  ];
+}
+async function renderQuit(m){
+  const a=getAuth();
+  const tabs=[['meus','🔒 Meus clientes'],['pool','🧑‍🤝‍🧑 Sem consultor (todos)'],['rede','🌐 Rede toda (resumo)']];
+  if(QUIT_MODE==='meus'&&!(a&&a.ekey)&&!window.__qInit)QUIT_MODE='rede';window.__qInit=1;
+  m.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+tabs.map(t=>`<button class="qm ${QUIT_MODE===t[0]?'':'alt'}" data-m="${t[0]}">${t[1]}</button>`).join('')+'</div><div id="unBox"></div><div id="qBody"></div>';
+  m.querySelectorAll('.qm').forEach(b=>b.onclick=()=>{QUIT_MODE=b.dataset.m;render()});
+  $('#unBox').innerHTML=unlockCard();bindUnlock();
+  const el=$('#qBody');
+  if(QUIT_MODE==='rede'){renderQuitRede(el);return}
+  const nomes={};D.LOJAS_SEED.forEach(l=>nomes[l.codigo]=l.nome);
+  const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
+  const flt=x=>(!lj||x.loja===lj)&&(!cs||x.cons===cs)&&(!q||x.id.includes(q)||(x.cid||'').toLowerCase().includes(q)||(x.cons||'').toLowerCase().includes(q)||(x.ades||[]).some(z=>z.includes(q)));
+  if(!(a&&a.ekey)){
+    if(QUIT_MODE==='pool'){const L=(typeof QUIT_SEED!=='undefined'?QUIT_SEED:[]).filter(x=>x.ex&&flt(x));el.innerHTML=`<div class="card"><h3>🧑‍🤝‍🧑 Quitados de consultores que saíram — liberado para todos</h3><p class="mut" style="font-size:13px">Libere seu CPF no quadro acima para ver telefones. Registre o contato para não duplicar.</p>`+table(quitCols(nomes,false),[...L].sort((x,y)=>y.pmt-x.pmt).slice(0,500),'quit_pool')+'</div>'}
+    else el.innerHTML='<div class="card">🔑 Digite seu CPF no quadro acima para liberar seus clientes com <b>CPF e telefone</b>.</div>';
+    return}
+  if(!MINEQ&&!MINEQ_ERR){el.innerHTML='<div class="card">🔓 Abrindo sua lista protegida…</div>';await loadMineQ();render();return}
+  if(MINEQ_ERR){el.innerHTML='<div class="card">⚠️ Não consegui abrir a lista protegida ('+esc(MINEQ_ERR)+'). Saia e entre novamente.</div>';return}
+  if(QUIT_MODE==='pool'){
+    const pm={};(POOLQ||[]).forEach(p=>pm[p.id]=p);
+    const L=(typeof QUIT_SEED!=='undefined'?QUIT_SEED:[]).filter(x=>x.ex&&flt(x)).map(x=>pm[x.id]?{...pm[x.id]}:x);
+    el.innerHTML=`<div class="grid k6">${kpi('Quitados sem consultor ativo',L.length,'disponíveis para qualquer consultor')}${kpi('PMT liberado',fmt0(L.reduce((s,x)=>s+x.pmt,0)),'')}</div><div class="card" style="margin-top:12px"><h3>🧑‍🤝‍🧑 Quitados de consultores que saíram — liberado para todos</h3><p class="mut" style="font-size:13px">Quem ligar primeiro registra o contato na coluna Registro.</p>`+table(quitCols(nomes,!!POOLQ),[...L].sort((x,y)=>y.pmt-x.pmt).slice(0,500),'quit_pool')+'</div>';return}
+  if(MINEQ.noentry){el.innerHTML='<div class="card">Seu CPF não tem clientes quitados vinculados. Veja <b>Sem consultor (todos)</b>.</div>';return}
+  const L=(MINEQ.leads||[]).filter(flt);
+  el.innerHTML=`<div class="grid k6">${kpi(a.gestor?'Quitados (todos os consultores)':'Meus clientes quitados',L.length,'com contato liberado')}${kpi('PMT liberado',fmt0(L.reduce((s,x)=>s+x.pmt,0)),'por mês')}${kpi('2+ contratos quitados',L.filter(x=>x.n>=2).length,'clientes fiéis')}${kpi('Já trabalhados',L.filter(x=>(REG['Q:'+x.id]||{}).s).length,'registro no painel')}</div>${atencaoBlock(MINEQ.leads||[],'Q')}
+   <div class="card" style="margin-top:12px"><h3>Meus clientes quitados — você tem o vínculo</h3><p class="mut" style="font-size:13px">Dados de contato são pessoais — não compartilhe.</p>`+table(quitCols(nomes,true),[...L].sort((x,y)=>y.pmt-x.pmt).slice(0,800),'quit_meus')+'</div>';
+}
+
+
+/* ===== Campanha: Viagem Porto de Galinhas ===== */
+let CAMP_CANC=false;
+function campAcao(c){
+  if(c.sit==='CANCELADO')return 'Cancelado — fora da campanha.';
+  const a=[];
+  if(c.sit==='BLOQUEADO')a.push('⚠️ Situação BLOQUEADO no DNA: regularize com o supervisor para concorrer.');
+  if(c.prem==='Premiado')a.push('🏆 Premiado!');
+  else{
+    if(c.elP==='Sim'&&c.elS==='Sim')a.push('✅ Elegível em produção e seguros.');
+    else if(c.elP==='Sim')a.push('Elegível em produção; falta elegibilidade de seguros (projeção: '+c.si+' seguros independentes).');
+    else if(c.elS==='Sim')a.push('Elegível em seguros; falta elegibilidade de produção.');
+    else a.push('Ainda não elegível: acelere produção e seguros (posição '+c.rkP+' na rede, projeção '+Math.round(c.proj/1000)+' mil pts).');
+  }
+  if(c.rec>0)a.push('📣 '+c.rec+' reclamação(ões): cuidado com a qualidade da venda.');
+  return a.join(' ');
+}
+function renderCamp(m){
+  if(typeof CAMPANHA==='undefined'){m.innerHTML='<div class="card">Dados da campanha não carregados.</div>';return}
+  const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
+  const all=CAMPANHA,vivos=all.filter(c=>c.sit!=='CANCELADO');
+  let L=all.filter(c=>(!lj||c.loja===lj)&&(!cs||c.n===cs)&&(!q||c.n.toLowerCase().includes(q))&&(CAMP_CANC||c.sit!=='CANCELADO'));
+  const best=[...vivos].sort((a,b)=>a.rkP-b.rkP)[0],bestS=[...vivos].sort((a,b)=>a.rkS-b.rkS)[0];
+  const dt=CAMPANHA_ATUALIZADA.split('-').reverse().join('/');
+  const nomeLoja=c=>S.lojaNome[c]||c;
+  const pill=c=>c==='ATIVO'?'ok':c==='BLOQUEADO'?'wn':'bad';
+  const lojas=Object.values(vivos.reduce((o,c)=>{const x=o[c.loja]=o[c.loja]||{loja:c.loja,n:0,proj:0,elP:0,elS:0,best:1e9,seg:0};x.n++;x.proj+=c.proj;x.elP+=c.elP==='Sim'?1:0;x.elS+=c.elS==='Sim'?1:0;x.best=Math.min(x.best,c.rkP);return o},{}));
+  (typeof CAMPANHA_LOJAS!=='undefined'?CAMPANHA_LOJAS:[]).forEach(z=>{const x=lojas.find(l=>l.loja===z.cod);if(x){x.seg=z.seg;x.ativos=z.ativos;x.hc=z.hc}else lojas.push({loja:z.cod,n:0,proj:0,elP:0,elS:0,best:0,seg:z.seg,ativos:z.ativos,hc:z.hc})});
+  const maxP=Math.max(...L.map(c=>c.proj),1);
+  const P=CAMPANHA_PESOS;
+  m.innerHTML=`<div class="card" style="background:linear-gradient(90deg,#0e7490,#8b5cf6);border:0"><h3 style="font-size:19px;margin:0">✈️ ${esc(CAMPANHA_NOME)} — ranking da campanha</h3><div style="font-size:13px;opacity:.95">Base de ${dt} · ${vivos.length} consultores ativos/bloqueados da Franquia Demo · pontos ponderados pelos pesos de cada produto</div></div>
+  <div class="grid k6" style="margin-top:12px">
+    ${kpi('Melhor posição na rede',best?best.rkP+'º':'—',best?esc(short(best.n))+' · '+esc(nomeLoja(best.loja)):'')}
+    ${kpi('Melhor em seguros',bestS?bestS.rkS+'º':'—',bestS?esc(short(bestS.n)):'')}
+    ${kpi('Elegíveis em produção',vivos.filter(c=>c.elP==='Sim').length+' / '+vivos.length,'segundo o DNA')}
+    ${kpi('Elegíveis em seguros',vivos.filter(c=>c.elS==='Sim').length+' / '+vivos.length,'segundo o DNA')}
+    ${kpi('Premiados',all.filter(c=>c.prem==='Premiado').length,'até agora')}
+    ${kpi('Produção projetada (pts)',Math.round(vivos.reduce((s,c)=>s+c.proj,0)/1000).toLocaleString('pt-BR')+' mil','soma dos consultores ativos')}
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h3>Como os pontos são calculados</h3><p style="font-size:13px">Produção: <b>CNC ×${P.cnc}</b> · Consignado BMG ×${P.cb} · Consig. privado ×${P.cp} · Bmg Card ×${P.bc} · Cartão Benefício ×${P.ct} · FGTS ×${P.fg}.<br>Seguros: Seguro CNC ×${P.sc} · Vida Familiar ×${P.sv} · Bmg Med ×${P.sm}.</p><p class="mut" style="font-size:12px">Quanto mais CNC, mais pontos: cada R$ 1 de CNC vale 5× um R$ 1 de Consignado ou FGTS. A <b>posição na rede</b> compara você com todos os consultores do país; a <b>posição 4F</b>, só com o nosso time.</p>
+    <p class="mut" style="font-size:12px">⚠️ Regulamento (premiação, corte de posição e prazo) não veio no arquivo. Me envie para eu mostrar a linha de corte e quanto falta para cada um.</p></div>
+    <div class="card"><h3>Lojas na campanha</h3>`+table([
+      {k:'loja',h:'Loja',f:l=>'<b>'+esc(nomeLoja(l.loja))+'</b>',s:l=>l.loja},
+      {k:'n',h:'Consultores',f:l=>l.n+(l.ativos!==undefined?' <span class="mut">('+l.ativos+' ativos)</span>':''),cls:'right'},
+      {k:'best',h:'Melhor posição',f:l=>l.best?l.best+'º':'—',cls:'right',s:l=>l.best||9999},
+      {k:'elP',h:'Eleg. prod.',cls:'right'},
+      {k:'elS',h:'Eleg. seg.',cls:'right'},
+      {k:'seg',h:'Seguros no mês',cls:'right'},
+      {k:'hc',h:'Seguros/consultor',f:l=>l.hc!==undefined?l.hc.toLocaleString('pt-BR',{maximumFractionDigits:1}):'—',cls:'right',s:l=>l.hc||0}
+    ],lojas.filter(l=>!lj||l.loja===lj).sort((a,b)=>(b.hc||0)-(a.hc||0)),'camp_lojas')+`</div></div>
+  <div class="card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px"><h3>Ranking da campanha — consultores</h3><button id="btnCampC" class="alt">${CAMP_CANC?'Ocultar cancelados':'Mostrar cancelados'}</button></div>`+table([
+    {k:'rkP',h:'Posição rede',f:c=>'<b>'+c.rkP+'º</b>',s:c=>c.rkP,cls:'right'},
+    {k:'rkF',h:'Posição 4F',f:c=>c.rkF+'º',s:c=>c.rkF,cls:'right'},
+    {k:'n',h:'Consultor',f:c=>'<b>'+esc(short(c.n))+'</b><br><span class="mut">'+esc(nomeLoja(c.loja))+' · '+c.meses+' meses</span>',s:c=>c.n},
+    {k:'sit',h:'Situação',f:c=>`<span class="pill ${pill(c.sit)}">${esc(tcase(c.sit))}</span>`,s:c=>c.sit},
+    {k:'elP',h:'Elegível produção',f:c=>`<span class="pill ${c.elP==='Sim'?'ok':'nt'}">${esc(c.elP)}</span>`,s:c=>c.elP},
+    {k:'elS',h:'Elegível seguros',f:c=>`<span class="pill ${c.elS==='Sim'?'ok':'nt'}">${esc(c.elS)}</span>`,s:c=>c.elS},
+    {k:'prem',h:'Premiado',f:c=>c.prem==='Premiado'?'🏆 Sim':'<span class="mut">Não</span>',s:c=>c.prem},
+    {k:'proj',h:'Produção projetada (pts)',f:c=>Math.round(c.proj).toLocaleString('pt-BR')+bar(c.proj/maxP*100),s:c=>c.proj,cls:'right'},
+    {k:'prod',h:'Pontos atuais',f:c=>Math.round(c.prod).toLocaleString('pt-BR'),s:c=>c.prod,cls:'right'},
+    {k:'cnc',h:'CNC (pts)',f:c=>Math.round(c.cnc).toLocaleString('pt-BR'),s:c=>c.cnc,cls:'right'},
+    {k:'rkS',h:'Posição seguros',f:c=>c.rkS+'º',s:c=>c.rkS,cls:'right'},
+    {k:'st',h:'Seguros (pts)',f:c=>c.st+'<br><span class="mut">projeção '+c.si+'</span>',s:c=>c.st,cls:'right'},
+    {k:'pm',h:'% meta',f:c=>pct(c.pm*100),s:c=>c.pm,cls:'right'},
+    {k:'rec',h:'Reclam.',f:c=>c.rec?'<span class="pill bad">'+c.rec+'</span>':'0',s:c=>c.rec,cls:'right'},
+    {k:'ac',h:'O que fazer',f:c=>'<div class="act">'+esc(campAcao(c))+'</div>',csv:c=>campAcao(c)}
+  ],L.sort((a,b)=>a.rkP-b.rkP),'camp')+'</div>';
+  const b=$('#btnCampC');if(b)b.onclick=()=>{CAMP_CANC=!CAMP_CANC;render()};
+}
+
+
+/* ===== Hoje (parcial) — Produtividade help! ===== */
+function renderHoje(m){
+  if(typeof HOJE==='undefined'){m.innerHTML='<div class="card">Dados do dia indisponíveis.</div>';return}
+  const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().trim();
+  const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
+  const ros={};(typeof DEFLATORES!=='undefined'?DEFLATORES:[]).forEach(d=>{ros[norm(d.n)]=d});
+  const nm=c=>S.lojaNome[c]||'—';
+  let L=HOJE.c.map(x=>{const r=ros[norm(x.n)];return {n:x.n,loja:r?r.loja:'',sit:r?r.sit:'',dig:x.dig||0,digProj:x.digProj||0,ap:x.ap||0,apProj:x.apProj||0,meta:x.meta||0}})
+    .filter(x=>x.sit!=='CANCELADO'&&(!lj||x.loja===lj)&&(!cs||norm(x.n)===norm(cs))&&(!q||x.n.toLowerCase().includes(q)));
+  const dig=L.reduce((s,x)=>s+x.dig,0),ap=L.reduce((s,x)=>s+x.ap,0),meta=L.reduce((s,x)=>s+x.meta,0);
+  const prod=L.filter(x=>x.dig>0),zer=L.filter(x=>x.dig===0);
+  const porLoja={};L.forEach(x=>{const k=x.loja||'—';(porLoja[k]=porLoja[k]||{c:k,dig:0,ap:0,meta:0,n:0,z:0});const o=porLoja[k];o.dig+=x.dig;o.ap+=x.ap;o.meta+=x.meta;o.n++;if(x.dig===0)o.z++});
+  m.innerHTML=`<div class="card" style="border-left:4px solid #f97316"><b>⏱ Produção parcial do dia — ${esc(HOJE.dia)}</b><br><span class="mut" style="font-size:12px">Fonte: ${esc(HOJE.fonte)} · atualizado às <b>${esc(HOJE.atualizado)}</b>. Só CNC (Crédito na Conta). Este dado muda ao longo do dia e <b>não é o fechamento</b>: o oficial entra quando o BI vira o dia. Valores em R$.</span></div>
+  <div class="grid k6" style="margin-top:12px">
+    ${kpi('Digitado hoje (CNC)',fmt0(dig),'projeção do dia '+fmt0(L.reduce((s,x)=>s+x.digProj,0)))}
+    ${kpi('Aprovado hoje',fmt0(ap),'aprovação do dia, parcial')}
+    ${kpi('Consultores com digitação',prod.length+' / '+L.length,zer.length+' ainda sem digitar')}
+    ${kpi('Lojas zeradas hoje',HOJE.lojasZeradas+' / '+HOJE.lojasTotal,'franquia toda (CNC)')}
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h3>🎯 Ainda sem digitar hoje (CNC)</h3>${zer.length?zer.sort((a,b)=>b.meta-a.meta).map(x=>`<p style="margin:5px 0"><b>${esc(short(x.n))}</b> <span class="mut">(${esc(nm(x.loja))}) · meta diária (BI) ${fmt0(x.meta)}</span></p>`).join(''):'<span class="mut">Todos já digitaram hoje. 🎉</span>'}</div>
+    <div class="card"><h3>Lojas — hoje</h3>${table([
+      {k:'c',h:'Loja',f:o=>'<b>'+esc(nm(o.c))+'</b>',s:o=>nm(o.c)},
+      {k:'dig',h:'Digitado',f:o=>fmt0(o.dig),cls:'right'},
+      {k:'ap',h:'Aprovado',f:o=>fmt0(o.ap),cls:'right'},
+      {k:'z',h:'Sem digitar',f:o=>o.z+' / '+o.n}
+    ],Object.values(porLoja),'hoje_loja')}</div>
+  </div>
+  <div class="card" style="margin-top:12px"><h3>Consultores — hoje</h3>${table([
+    {k:'n',h:'Consultor',f:x=>'<b>'+esc(short(x.n))+'</b><br><span class="mut">'+esc(x.loja?nm(x.loja):'loja não identificada')+'</span>',s:x=>x.n},
+    {k:'dig',h:'Digitado',f:x=>fmt0(x.dig),cls:'right'},
+    {k:'digProj',h:'Projeção digitação',f:x=>x.digProj?fmt0(x.digProj):'—',cls:'right'},
+    {k:'ap',h:'Aprovado',f:x=>x.ap?fmt0(x.ap):'—',cls:'right'},
+    {k:'meta',h:'Meta diária (DU, BI)',f:x=>fmt0(x.meta),cls:'right'},
+    {k:'pc',h:'% da meta (digitado)',f:x=>x.meta?pct(x.dig/x.meta*100)+bar(x.dig/x.meta*100):'—',s:x=>x.meta?x.dig/x.meta:0}
+  ],L,'hoje')}</div>`;
+}
+/* ===== PEX — Programa de Excelência ===== */
+function renderPex(m){
+  if(typeof PEX==='undefined'){m.innerHTML='<div class="card">Dados do PEX indisponíveis.</div>';return}
+  const lj=$('#fLoja').value,nm=c=>S.lojaNome[c]||c;
+  const tot=PEX.itens.reduce((s,i)=>s+i.p,0),mx=PEX.itens.reduce((s,i)=>s+i.max,0);
+  const perda=PEX.itens.filter(i=>i.p<i.max).sort((a,b)=>(b.max-b.p)-(a.max-a.p));
+  const L=PEX.lojas.filter(l=>!lj||l.c===lj).sort((a,b)=>a.rank-b.rank);
+  const A=PEX.anual;
+  m.innerHTML=`<div class="card" style="border-left:4px solid #f97316"><b>🏆 PEX — Programa de Excelência (7ª edição)</b><br><span class="mut" style="font-size:12px">Fonte: Power BI PEX · Mês de referência <b>${esc(PEX.ref)}</b> · base ${esc(PEX.base)} · atualizado ${esc(PEX.atualizado)}. Premiação do PEX é por qualidade (reclamações, ação cível, fim de relacionamento, checklist, treinamentos); o 1º lugar pode ganhar até uma loja montada.</span></div>
+  <div class="grid k6" style="margin-top:12px">
+    ${kpi('Pontos do mês ('+esc(PEX.ref)+')',tot.toLocaleString('pt-BR')+' / '+mx,pct(tot/mx*100)+' do máximo dos itens do mês')}
+    ${kpi('Pontuação anual — franqueado',A.franqueado.toLocaleString('pt-BR')+' / '+A.max,'ranking anual: '+A.rank+'º · '+esc(A.tipo))}
+    ${kpi('2º semestre',A.s2.toLocaleString('pt-BR'),'1º semestre fechou em '+A.s1.toLocaleString('pt-BR'))}
+    ${kpi('Ranking mensal da franquia',PEX.totalRank+'º',fmt0(PEX.totalProd)+' projetados')}
+  </div>
+  <div class="grid g2" style="margin-top:12px">
+    <div class="card"><h3>Itens do mês (franquia)</h3>${PEX.itens.map(i=>`<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><div style="width:190px;font-size:12px">${esc(i.k)}</div><div style="flex:1">${bar(i.p/i.max*100)}</div><div style="width:70px;text-align:right;font-size:12px"><b>${i.p.toLocaleString('pt-BR')}</b> / ${i.max}</div></div>`).join('')}</div>
+    <div class="card"><h3>🎯 Onde estamos perdendo pontos</h3>${perda.map(i=>`<p style="margin:7px 0"><b>${esc(i.k)}</b>: faltam <b>${(i.max-i.p).toLocaleString('pt-BR')} pts</b><br><span class="act">${i.k.startsWith('Fim')?'Cada cliente que transfere o benefício custa ponto. Use a aba 🔁 Reconquista (lista de Fim de Relacionamento) para trazer o cliente de volta antes do fechamento do mês.':i.k.startsWith('Check')?'Cumpra o checklist de padronização da loja (vistoria semestral).':'Evite ocorrências: documente bem a venda e trate reclamações no 1º contato.'}</span></p>`).join('')||'<span class="mut">Todos os itens no máximo.</span>'}</div>
+  </div>
+  <div class="card" style="margin-top:12px"><h3>Lojas — pontos do mês e ranking</h3>${table([
+    {k:'c',h:'Loja',f:l=>'<b>'+esc(nm(l.c))+'</b>',s:l=>nm(l.c)},
+    {k:'rank',h:'Rank mensal',f:l=>l.rank+'º'},
+    {k:'prod',h:'Produção projetada',f:l=>fmt0(l.prod),cls:'right'},
+    {k:'rec1',h:'Reclam. 1ª inst.',f:l=>l.rec1+' / 20 '+(l.rec1>=20?'✅':'⚠️')},
+    {k:'rec2',h:'Reclam. 2ª inst.',f:l=>l.rec2+' / 20 '+(l.rec2>=20?'✅':'⚠️')},
+    {k:'fim',h:'Fim de relacionamento',f:l=>l.fim+' / 20 '+(l.fim>=20?'✅':'⚠️')+'<br>'+bar(l.fim/20*100)}
+  ],L,'pex')}
+  <p class="mut" style="font-size:11px;margin-top:8px">Todas as lojas da Franquia Demo estão hoje como "Não elegível / Não premiado" no PEX (Ranking B). Os pontos por loja de Fim de Relacionamento mostram onde mais clientes saíram: as lojas com 0 são as que mais perderam pontos.</p></div>`;
+}
+function fimRelCard(lj,cs,q){
+  if(typeof FIMREL==='undefined')return '';
+  const nm=c=>S.lojaNome[c]||c,dtf=d=>d?d.split('-').reverse().join('/'):'—';
+  const L=FIMREL.filter(x=>(!lj||x.loja===lj)&&(!cs||x.cons===cs)&&(!q||x.ad.includes(q)||x.cons.toLowerCase().includes(q)));
+  const por=Object.entries(L.reduce((o,x)=>{o[x.cons]=(o[x.cons]||0)+1;return o},{})).sort((a,b)=>b[1]-a[1]);
+  const dt=FIMREL_ATUALIZADO.split('-').reverse().join('/');
+  return '<div class="card" style="margin-top:12px"><h3>🚪 Fim de relacionamento — clientes que saíram recentemente</h3>'+
+   `<p class="mut" style="font-size:12px">Base LIGA de ${dt}. São contratos de CNC cujo cliente transferiu o benefício. Cada contrato custa <b>−50 pts</b> ao consultor. <b>Plano:</b> reconquistar o cliente e colocar a promessa de reconquista até o último dia útil do mês; se efetivar só no mês seguinte, o contrato não deflaciona.</p>`+
+   `<div class="grid k6">${kpi('Contratos que saíram',L.length,'−'+(L.length*50)+' pts em risco')}</div>`+
+   (por.length?'<p style="font-size:13px">'+por.map(([n,v])=>esc(short(n))+' <b>'+v+'</b>').join(' · ')+'</p>':'')+
+   table([
+    {k:'ad',h:'Adesão',f:x=>'<b class="cpy" data-v="'+esc(x.ad)+'" style="cursor:pointer" title="Copiar">'+esc(x.ad)+' 📋</b>'},
+    {k:'cons',h:'Consultor',f:x=>esc(short(x.cons))},
+    {k:'loja',h:'Loja',f:x=>esc(nm(x.loja)),s:x=>x.loja},
+    {k:'dc',h:'Contrato',f:x=>dtf(x.dc),s:x=>x.dc},
+    {k:'df',h:'Saiu em',f:x=>'<b>'+dtf(x.df)+'</b>',s:x=>x.df},
+    {k:'ac',h:'O que fazer',f:x=>'<div class="act">Procurar o cliente e abrir a reconquista deste contrato antes do último dia útil do mês.</div>',csv:x=>'Reconquistar antes do ultimo dia util'}
+   ],L,'fimrel')+'</div>';
+}
+
+function acaoLoja(l,R){
+  const a=[];const rs=R.filter(r=>r.loja===l.codigo);
+  if(l.projPct<=50)a.push('Crítico: reunião rápida hoje; precisa '+fmt0(l.nec)+'/dia.');
+  else if(l.projPct<80)a.push('Atenção: precisa '+fmt0(l.nec)+'/dia para voltar ao ritmo.');
+  else a.push('No ritmo: manter e puxar quem está sem faixa.');
+  const z=rs.filter(r=>r.cnc<=0).map(r=>short(r.nome));if(z.length)a.push('Sem CNC: '+z.join(', ')+'.');
+  const q=rs.filter(r=>r.p&&r.f&&r.falta<=r.nec*2).slice(0,3).map(r=>short(r.nome));
+  const sf=rs.filter(r=>r.cnc>0&&!r.f).map(r=>short(r.nome));if(sf.length)a.push('Perto da 1ª faixa: '+sf.slice(0,4).join(', ')+'.');
+  if(l.recEl)a.push('Distribuir '+l.recEl+' leads de Reconquista.');
+  return a.join(' ');
+}
+/* Exportação: só supervisor (lista SUPERVISORES), coordenador ou gestor. Controle simples no navegador. */
+function canExport(){
+  const a=getAuth();if(!a)return false;
+  if(a.gestor||String(a.t||'').startsWith('coord:'))return true;
+  const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().trim();
+  return typeof SUPERVISORES!=='undefined'&&SUPERVISORES.some(n=>norm(n)===norm(a.nome));
+}
+function csv(id){
+  if(!canExport())return;
+  const src=(typeof id==='string'&&CSVS[id])?CSVS[id]:LASTCSV;
+  if(!src)return;const {cols,data}=src;
+  const emo=/[\u{1F000}-\u{1FFFF}\u2600-\u27BF\uFE0F\u200D]/gu;
+  const strip=h=>String(h??'').replace(/<[^>]*>/g,' ').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(emo,'').replace(/\s+/g,' ').trim();
+  const X=v=>String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'');
+  const row=(arr,st)=>'<Row>'+arr.map(v=>'<Cell'+(st?' ss:StyleID="h"':'')+'><Data ss:Type="String">'+X(v)+'</Data></Cell>').join('')+'</Row>';
+  const lines=[row(cols.map(c=>strip(c.h)),true)].concat(data.map(r=>row(cols.map(c=>strip(c.csv?c.csv(r):(c.f?c.f(r):r[c.k]))))));
+  const xml='<?xml version="1.0" encoding="UTF-8"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="h"><Font ss:Bold="1"/><Interior ss:Color="#FDE68A" ss:Pattern="Solid"/></Style></Styles><Worksheet ss:Name="Painel LIGA"><Table>'+lines.join('')+'</Table></Worksheet></Workbook>';
+  const b=new Blob([xml],{type:'application/vnd.ms-excel;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);
+  const lj=$('#fLoja').value,ln=lj?(S.lojaNome[lj]||lj).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'-'):'todas-as-lojas';
+  a.download='painel-liga-'+(typeof id==='string'?id:TAB)+'-'+ln+'-'+new Date().toISOString().slice(0,10)+'.xls';a.click();
+}
+document.addEventListener('click',e=>{
+  const cpy=e.target.closest('.cpy');if(cpy){try{navigator.clipboard.writeText(cpy.dataset.v);const o=cpy.style.outline;cpy.style.outline='2px solid #22c55e';setTimeout(()=>cpy.style.outline=o,700)}catch(x){}}
+  const lk=e.target.closest('.lkb');if(lk){const l=lk.dataset.l,id=lk.dataset.id;trackClick('reco_'+lk.dataset.a,id);if(lk.dataset.a==='copy'){navigator.clipboard.writeText(l).then(()=>{lk.textContent='✅ Copiado'})}else window.open(waLink(l),'_blank','noopener')}
+  const tk=e.target.closest('a[data-trk]');if(tk){const row=tk.closest('tr'),c=row&&row.querySelector('.cpy');trackClick(tk.dataset.trk,c?c.dataset.v:'')}
+  const t=e.target.closest('.tab');if(t){TAB=t.dataset.t;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));render();}
+  const ex=e.target.closest('.tbExp');if(ex){csv(ex.dataset.id)}
+  const th=e.target.closest('th[data-k]');if(th){const k=th.dataset.k,id=th.dataset.id;SORT={id,k,d:SORT.k===k&&SORT.id===id?-SORT.d:-1};render();}
+});
+$('#fLoja').onchange=()=>{fillCons();render()};$('#fCons').onchange=render;$('#fBusca').oninput=render;$('#btnCsv').onclick=()=>csv();
+if(!canExport()){const b=$('#btnCsv');if(b&&b.parentElement)b.parentElement.style.display='none'}
+document.addEventListener('change',e=>{const s=e.target.closest&&e.target.closest('.tbSel');if(s){$('#fLoja').value=s.value;fillCons();render()}});
+$('#fMetaRefin').onchange=()=>{try{localStorage.setItem('liga_meta_refin',$('#fMetaRefin').value)}catch(e){}render()};
+try{const mr=localStorage.getItem('liga_meta_refin');if(mr)$('#fMetaRefin').value=mr}catch(e){}
+$('#fMeta').onchange=()=>{try{localStorage.setItem('liga_meta',$('#fMeta').value)}catch(e){};render()};
+try{const v=localStorage.getItem('liga_meta');if(v)$('#fMeta').value=v;const u=localStorage.getItem('liga_user');if(u)$('#fUser').value=u}catch(e){}
+$('#lnkSair').onclick=e=>{e.preventDefault();try{localStorage.removeItem('liga_auth')}catch(x){}location.href='treinamento.html'};
+$('#fUser').onchange=()=>{try{localStorage.setItem('liga_user',$('#fUser').value)}catch(e){}};
+load().then(()=>{render();syncPull()}).catch(e=>{$('#main').innerHTML='<div class="card">Erro ao carregar dados: '+esc(e.message)+'</div>'});
+</script>
+</body>
+</html>
