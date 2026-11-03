@@ -53,13 +53,13 @@ svg text{fill:#c9bfe9;font-size:11px}
   <label>&nbsp;<button id="btnCsv">⬇ Exportar tabela (Excel)</button></label>
 </div>
 <div class="tabs" id="tabs">
-  <div class="tab on" data-t="resumo">📊 Resumo</div>
+  <div class="tab on" data-t="reco">🔁 Reconquista · PRIORIDADE</div>
+  <div class="tab" data-t="resumo">📊 Resumo</div>
   <div class="tab" data-t="hoje">⏱ Hoje (parcial)</div>
   <div class="tab" data-t="pex">🏆 PEX</div>
   <div class="tab" data-t="camp">✈️ Campanha Porto de Galinhas</div>
   <div class="tab" data-t="cons">👤 Consultores</div>
   <div class="tab" data-t="lojas">🏬 Lojas (Supervisor)</div>
-  <div class="tab" data-t="reco">🔁 Reconquista</div>
   <div class="tab" data-t="refin">💰 Refin</div>
   <div class="tab" data-t="quit">🎉 Quitados</div>
   <div class="tab" data-t="aprov">📈 Aproveitamento</div>
@@ -86,7 +86,7 @@ const short=n=>{const p=tcase(n).split(' ');return p.length>1?p[0]+' '+p[p.lengt
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 (function(){try{const a=JSON.parse(localStorage.getItem('liga_auth')||'null');if(a&&a.t&&a.t!=='gestor'&&!String(a.t).startsWith('coord:')&&typeof ACESSO_USERS!=='undefined'&&!ACESSO_USERS.some(u=>u.t===a.t)){localStorage.removeItem('liga_auth');location.replace('treinamento.html')}}catch(e){}})();
 let MINEQ=null,POOLQ=null,MINEQ_ERR='',QUIT_MODE='meus';
-let D={},S={},TAB='resumo',SORT={k:null,d:-1},LASTCSV=null,CSVS={},RECO_ONLY_STAR=false,REFIN_MODE='meus',MINE=null,POOL=null,MINE_ERR='';
+let D={},S={},TAB='reco',SORT={k:null,d:-1},LASTCSV=null,CSVS={},RECO_ONLY_STAR=false,REFIN_MODE='meus',MINE=null,POOL=null,MINE_ERR='';
 
 function extract(src,name){
   const k=src.indexOf('const '+name+' ');if(k<0)return null;
@@ -292,7 +292,7 @@ function render(){
     const med=['🥇','🥈','🥉'],mesTxt=S.ym.split('-').reverse().join('/');
     const porLoja=D.LOJAS_SEED.map(l=>({l:l.nome,cod:l.codigo,est:STM.filter(s=>s.loja===l.codigo).length,ab:D.REC.filter(x=>x.codigo===l.codigo&&!star.has(String(x.id))&&x.status!=='EF').length,el:D.REC.filter(x=>x.codigo===l.codigo&&x.elegivel&&!star.has(String(x.id))).length})).filter(o=>!lj||o.cod===lj);
     const fora=STAR_ALL.length-STM.length;
-    m.innerHTML=`<div class="grid k6">${kpi('Leads na base',rec.length,'')}${kpi('⭐ Reconquistados em '+mesTxt,ST_.length,'mês vigente · data da efetivação'+(typeof ESTRELAS_ATUALIZADO!=='undefined'?' · atualizado em '+ESTRELAS_ATUALIZADO.split('-').reverse().join('/'):''))}${kpi('Em aberto (precisa contato)',aberto,'')}${kpi('Prioridade (contato agora)',rec.filter(x=>!star.has(String(x.id))&&!(/baixa/i.test(x.prio||'')||x.mot)).length,'de '+rec.filter(x=>!star.has(String(x.id))).length+' leads em aberto · baixa prioridade no fim da lista')}</div>
+    m.innerHTML=`<div class="card" style="border-left:6px solid #f26a21;margin-bottom:12px"><h3>🎯 Comece por aqui: ordem de acionamento da Reconquista</h3><ol style="margin:6px 0 0 18px;line-height:1.6"><li><b>Campanha 25%</b> (maciças 25 e 26, as mais recentes): botão <i>“Elegíveis Campanha 25%”</i> no DNA.</li><li><b>FDR</b> (fim de relacionamento) do <b>mais recente para o mais antigo</b>: botão <i>“Novo Maciça”</i> no DNA.</li><li>Depois, as demais oportunidades desta lista (maior saldo primeiro).</li></ol><p class="mut" style="font-size:12px;margin:8px 0 0">Reconquista paga independente de elegibilidade (50 pts/contrato até 3, 100 pts do 4º em diante) e a comissão fica no CPF de quem originou. Orientação BMG de 03/11. Esta lista já vem ordenada: ⭐ reconquistados, FDR, prioridade, saldo.</p></div><div class="grid k6">${kpi('Leads na base',rec.length,'')}${kpi('⭐ Reconquistados em '+mesTxt,ST_.length,'mês vigente · data da efetivação'+(typeof ESTRELAS_ATUALIZADO!=='undefined'?' · atualizado em '+ESTRELAS_ATUALIZADO.split('-').reverse().join('/'):''))}${kpi('Em aberto (precisa contato)',aberto,'')}${kpi('Prioridade (contato agora)',rec.filter(x=>!star.has(String(x.id))&&!(/baixa/i.test(x.prio||'')||x.mot)).length,'de '+rec.filter(x=>!star.has(String(x.id))).length+' leads em aberto · baixa prioridade no fim da lista')}</div>
     <div class="grid g2" style="margin-top:12px"><div class="card"><h3>🏆 Ranking de estrelas ⭐ — Reconquista de ${mesTxt}</h3>${rk.length?rk.slice(0,12).map((r,i)=>`<div style="display:flex;gap:8px;align-items:center;margin:5px 0"><div style="width:30px">${med[i]||(i+1)+'º'}</div><div style="flex:1;font-size:13px">${esc(short(r[0]))}</div><div>${'⭐'.repeat(Math.min(r[1],10))}${r[1]>10?' +'+(r[1]-10):''} <b>${r[1]}</b></div></div>`).join(''):'<span class="mut">Nenhuma reconquista efetivada neste mês ainda.</span>'}
     <p class="mut" style="font-size:12px">Uma estrela por contrato reconquistado e <b>efetivado no mês vigente</b> (pela data da efetivação). ${fora?fora+' reconquista(s) de meses anteriores não entram na contagem.':''}</p></div>
     <div class="card"><h3>Reconquistas por loja — ${mesTxt}</h3>`+table([
