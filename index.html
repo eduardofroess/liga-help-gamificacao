@@ -55,6 +55,7 @@ svg text{fill:#c9bfe9;font-size:11px}
 <div class="tabs" id="tabs">
   <div class="tab on" data-t="reco">🔁 Reconquista · PRIORIDADE</div>
   <div class="tab" data-t="resumo">📊 Resumo</div>
+  <div class="tab" data-t="prod">💼 Produção do mês</div>
   <div class="tab" data-t="hoje">⏱ Hoje (parcial)</div>
   <div class="tab" data-t="pex">🏆 PEX</div>
   <div class="tab" data-t="camp">✈️ Campanha Porto de Galinhas</div>
@@ -75,6 +76,7 @@ svg text{fill:#c9bfe9;font-size:11px}
 <script src="fimrel-data.js"></script>
 <script src="pex-data.js"></script>
 <script src="hoje-data.js"></script>
+<script src="prod-data.js"></script>
 <script src="supervisores-data.js"></script>
 <script>
 const $=s=>document.querySelector(s);
@@ -270,6 +272,7 @@ function render(){
       {k:'ac',h:'Ação do supervisor',f:l=>'<div class="act">'+esc(acaoLoja(l,R))+'</div>',s:l=>l.semFaixa}
     ],L.sort((a,b)=>b.pct-a.pct),'lojas')+'</div>';
   }
+  if(TAB==='prod'){renderProd(m);return;}
   if(TAB==='hoje'){renderHoje(m);return;}
   if(TAB==='pex'){renderPex(m);return;}
   if(TAB==='camp'){renderCamp(m);return;}
@@ -828,6 +831,41 @@ function renderHoje(m){
     {k:'meta',h:'Meta diária (DU, BI)',f:x=>fmt0(x.meta),cls:'right'},
     {k:'pc',h:'% da meta (digitado)',f:x=>x.meta?pct(x.dig/x.meta*100)+bar(x.dig/x.meta*100):'—',s:x=>x.meta?x.dig/x.meta:0}
   ],L,'hoje')}</div>`;
+}
+function renderProd(m){
+  if(typeof PRODMES==='undefined'){m.innerHTML='<div class="card">Produção do mês indisponível.</div>';return}
+  const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().trim();
+  const lj=$('#fLoja').value,cs=$('#fCons').value,q=$('#fBusca').value.trim().toLowerCase();
+  const ros={};(typeof DEFLATORES!=='undefined'?DEFLATORES:[]).forEach(d=>{ros[norm(d.n)]=d});
+  const nm=c=>S.lojaNome[c]||'—';
+  let L=PRODMES.c.map(x=>{const r=ros[norm(x.n)];return Object.assign({},x,{loja:r?r.loja:(x.loja||''),sit:r?r.sit:''})})
+    .filter(x=>(!lj||x.loja===lj)&&(!cs||norm(x.n)===norm(cs))&&(!q||x.n.toLowerCase().includes(q)));
+  const sum=k=>L.reduce((s,x)=>s+x[k],0);
+  const porLoja={};L.forEach(x=>{const k=x.loja||'—';(porLoja[k]=porLoja[k]||{c:k,cnc:0,cncProj:0,cb:0,cp:0,mix:0,n:0});const o=porLoja[k];o.cnc+=x.cnc;o.cncProj+=x.cncProj;o.cb+=x.cb;o.cp+=x.cp;o.mix+=x.mix;o.n++});
+  m.innerHTML=`<div class="card" style="border-left:4px solid #7c3aed"><b>💼 Produção liberada do mês — ${esc(PRODMES.mes)}</b><br><span class="mut" style="font-size:12px">Fonte: Power BI Produção Franquias (Meta vs Realizado) · base ${esc(PRODMES.base)} · atualizado ${esc(PRODMES.atualizado)}. Valor liberado (pago), em R$. A soma dos consultores de cada loja bate com o total da loja no BI.</span></div>
+  <div class="grid k6" style="margin-top:12px">
+    ${kpi('CNC liberado',fmt0(sum('cnc')),'projeção '+fmt0(sum('cncProj')))}
+    ${kpi('Consignado BMG',fmt0(sum('cb')),'liberado no mês')}
+    ${kpi('Consignado Privado',fmt0(sum('cp')),'liberado no mês')}
+    ${kpi('Produção MIX',fmt0(sum('mix')),L.length+' consultores')}
+  </div>
+  <div class="card" style="margin-top:12px"><h3>Lojas</h3>${table([
+    {k:'c',h:'Loja',f:o=>'<b>'+esc(nm(o.c))+'</b>',s:o=>nm(o.c)},
+    {k:'cnc',h:'CNC liberado',f:o=>fmt0(o.cnc),cls:'right'},
+    {k:'cncProj',h:'CNC projetado',f:o=>fmt0(o.cncProj),cls:'right'},
+    {k:'cb',h:'Consig. BMG',f:o=>fmt0(o.cb),cls:'right'},
+    {k:'cp',h:'Privado',f:o=>fmt0(o.cp),cls:'right'},
+    {k:'mix',h:'MIX',f:o=>fmt0(o.mix),cls:'right'}
+  ],Object.values(porLoja),'prod_loja')}</div>
+  <div class="card" style="margin-top:12px"><h3>Consultores</h3>${table([
+    {k:'n',h:'Consultor',f:x=>'<b>'+esc(short(x.n))+'</b><br><span class="mut">'+esc(x.loja?nm(x.loja):'loja não identificada')+'</span>',s:x=>x.n},
+    {k:'cnc',h:'CNC liberado',f:x=>fmt0(x.cnc),cls:'right'},
+    {k:'cncProj',h:'CNC projetado',f:x=>fmt0(x.cncProj),cls:'right'},
+    {k:'pc',h:'% meta CNC (proj.)',f:x=>x.cncMeta?pct(x.cncProj/x.cncMeta*100)+bar(x.cncProj/x.cncMeta*100):'—',s:x=>x.cncMeta?x.cncProj/x.cncMeta:0},
+    {k:'cb',h:'Consig. BMG',f:x=>x.cb?fmt0(x.cb):'—',cls:'right'},
+    {k:'cp',h:'Privado',f:x=>x.cp?fmt0(x.cp):'—',cls:'right'},
+    {k:'mix',h:'MIX',f:x=>fmt0(x.mix),cls:'right'}
+  ],L,'prod')}</div>`;
 }
 /* ===== PEX — Programa de Excelência ===== */
 function renderPex(m){
