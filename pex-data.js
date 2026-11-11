@@ -1,6 +1,6 @@
 // PEX (Programa de Excelência) — fonte: Power BI "PEX" > Mensal 2 Semestre, Data de Referência out/26
 var PEX={
- ref:"out/26", base:"08/11/2026", atualizado:"09/11/2026 08:36",
+ ref:"out/26", base:"11/11/2026", atualizado:"11/11/2026 13:51",
  itens:[
   {k:"Ações Cíveis",p:18,max:20,g:"Qualidade na Venda"},
   {k:"Reclamações 1ª instância",p:20,max:20,g:"Qualidade na Venda"},
@@ -8,7 +8,7 @@ var PEX={
   {k:"Fim de Relacionamento",p:7.5,max:20,g:"Qualidade na Venda"},
   {k:"Checklist de padronização",p:14.5,max:20,g:"Padrão Help"}
  ],
- anual:{franqueado:17.75,max:100,rank:26,s2:4.85,s1:26.52,atual:"09/11/2026 08:36",tipo:"Ranking B"},
+ anual:{franqueado:17.75,max:100,rank:26,s2:4.85,s1:26.52,atual:"11/11/2026 13:51",tipo:"Ranking B"},
  lojas:[
   {c:"53631",rank:96,prod:82866.04,rec1:20,rec2:20,fim:20},
   {c:"54245",rank:173,prod:49004.5,rec1:20,rec2:20,fim:0},

@@ -1,6 +1,6 @@
 // Produção PARCIAL do dia — fonte: Power BI "Produtividade help!" > Análise CNC (visão Consultor, Diário). Só CNC (Crédito na Conta).
 var HOJE={
- fonte:"Produtividade help! · Análise CNC", dia:"03/11/2026 (último dia com digitação fechada; 04/11 ainda sem digitação no Power BI)", atualizado:"09/11/2026 08:36",
+ fonte:"Produtividade help! · Análise CNC", dia:"03/11/2026 (último dia com digitação fechada; 04/11 ainda sem digitação no Power BI)", atualizado:"11/11/2026 13:51",
  // n: nome; dig/digProj: digitação do dia e projeção; ap/apProj: aprovação do dia e projeção; meta: meta diária (DU)
  c:[
   {n:"ADRIANO FREITAS CALDAS",meta:3127},
