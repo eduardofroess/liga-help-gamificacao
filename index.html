@@ -316,7 +316,7 @@ function render(){
       {k:'star',h:'⭐',f:x=>star.has(String(x.id))?'⭐':'',s:x=>star.has(String(x.id))?1:0,csv:x=>star.has(String(x.id))?'reconquistado':''},
       {k:'dt',h:'Efetivado em',f:x=>star.has(String(x.id))?'<b>'+dtf(sdate[String(x.id)])+'</b>':'<span class="mut">—</span>',s:x=>sdate[String(x.id)]||'',csv:x=>dtf(sdate[String(x.id)])},
       {k:'id',h:'Adesão',f:x=>'<b class="cpy" data-v="'+esc(x.id)+'" style="cursor:pointer" title="Copiar">'+esc(x.id)+' 📋</b>'},
-      {k:'tipo',h:'Tipo',f:x=>x.status==='EF'?'<span class="pill ok">FDR · prioridade</span>':'<span class="pill nt">Oportunidade</span>',s:x=>x.status==='EF'?1:0,csv:x=>x.status==='EF'?'FDR':'Oportunidade'},
+      {k:'tipo',h:'Tipo',f:x=>(x.ant==='FDR'||x.status==='EF'?'<span class="pill ok">'+(x.fdrn?'FDR novo do mês':'FDR · prioridade')+'</span>':'<span class="pill nt">Oportunidade</span>')+(x.prom?' <span class="pill nt">🤝 Promessa</span>':''),s:x=>(x.ant==='FDR'||x.status==='EF'?(x.fdrn?3:2):0)+(x.prom?0.5:0),csv:x=>(x.ant==='FDR'||x.status==='EF'?(x.fdrn?'FDR novo':'FDR'):'Oportunidade')+(x.prom?' + Promessa':'')},
       {k:'cons',h:'Consultor',f:x=>esc(x.cons?short(x.cons):'—')},
       {k:'loja',h:'Loja',f:x=>esc((S.lojaNome[x.codigo]||x.codigo)),s:x=>x.codigo},
       {k:'banco',h:'Banco',f:x=>esc(String(x.banco||'').replace(/^\d+\s*-\s*/,''))},
